@@ -15,7 +15,37 @@ Request::Request()
 	std::memset((void*)&m_request, 0, sizeof(m_request));
 };
 
+/**
+ * @brief Parse the raw request
+ *
+ * Fill the m_request struct with parsed data.
+ *
+ * @throws exception on error
+ */
+void Request::parse()
+{
+	size_t pos = 0;
+	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
+	while (m_buffer.substr(pos, 2) == "\r\n")
+		pos += 2;
+	m_request.method = _Request::parse_method(m_buffer, pos);
+	m_request.target = _Request::parse_target(m_buffer, pos);
+	m_request.protocol = _Request::parse_protocol(m_buffer, pos);
+}
 
+// TODO: check with a file if the crlf is translated to a single \n
+// TODO: real implementation
+void Request::read_socket()
+{
+	m_buffer =  "GET /exemple.com HTTP/1.1\r\n";
+}
+
+const request_t& Request::get_request() const
+{
+	return (m_request);
+}
+
+// Helper functions
 namespace _Request {
 
 	// TODO: call this function from an init one called from the main
@@ -116,37 +146,6 @@ namespace _Request {
 		throw std::exception();
 	}
 
-}
-
-/**
- * @brief Parse the raw request
- *
- * Fill the m_request struct with parsed data.
- *
- * @throws exception on error
- */
-void Request::parse()
-{
-	size_t pos = 0;
-	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
-	while (m_buffer.substr(pos, 2) == "\r\n")
-		pos += 2;
-	m_request.method = _Request::parse_method(m_buffer, pos);
-	m_request.target = _Request::parse_target(m_buffer, pos);
-	m_request.protocol = _Request::parse_protocol(m_buffer, pos);
-}
-
-
-// TODO: check with a file if the crlf is translated to a single \n
-// TODO: real implementation
-void Request::read_socket()
-{
-	m_buffer =  "GET /exemple.com HTTP/1.1\r\n";
-}
-
-const request_t& Request::get_request() const
-{
-	return (m_request);
 }
 //
 // #include <iostream>
