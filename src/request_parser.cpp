@@ -26,7 +26,7 @@ void Request::parse()
 {
 	size_t pos = 0;
 	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
-	while (m_buffer.substr(pos, 2) == "\r\n")
+	while (m_buffer.substr(pos, 2) == CRLF)
 		pos += 2;
 	m_request.method = _Request::parse_method(m_buffer, pos);
 	m_request.target = _Request::parse_target(m_buffer, pos);
