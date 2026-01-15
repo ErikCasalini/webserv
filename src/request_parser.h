@@ -18,6 +18,7 @@ private:
 
 namespace _Request {
 	method_t parse_method(const std::string& buffer, size_t& pos);
+	std::string parse_target(const std::string& buffer, size_t& pos);
 }
 
 #endif

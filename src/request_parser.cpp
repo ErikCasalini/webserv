@@ -57,6 +57,21 @@ namespace _Request {
 		throw std::exception();
 	}
 
+	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
+	// Only handles target as origin form (e.g /index.html)
+	// TODO: handle query strings (e.g /main?l=en/index.html?q=now/)
+	std::string parse_target(const std::string& buffer, size_t& pos)
+	{
+		std::string target;
+		size_t start = pos;
+		// TODO: check for path format validity (but what is valid?)
+		while (!std::isspace(buffer.at(pos))) {
+			++pos;
+		}
+		target = buffer.substr(start, pos - start);
+		consume_single_whitespace(buffer, pos);
+		return (target);
+	};
 }
 
 /**
@@ -73,6 +88,7 @@ void Request::parse()
 	while (m_buffer.substr(pos, 2) == "\r\n")
 		pos += 2;
 	m_request.method = _Request::parse_method(m_buffer, pos);
+	m_request.target = _Request::parse_target(m_buffer, pos);
 }
 
 
