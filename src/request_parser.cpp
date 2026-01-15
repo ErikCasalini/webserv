@@ -22,11 +22,23 @@ namespace _Request {
 	static const std::map<std::string, method_t> build_method_map()
 	{
 		std::map<std::string, method_t> methods;
-		// All the methods must be uppercase
+		// Following rfc9112 all the methods must be uppercase
 		methods["DELETE"] = del;
 		methods["GET"] = get;
 		methods["POST"] = post;
 		return (methods);
+	}
+
+	// TODO: call this function from an init one called from the main
+	static const std::map<std::string, protocol_t> build_protocol_map()
+	{
+		std::map<std::string, protocol_t> protocols;
+		protocols["0.9"] = zero_nine;
+		protocols["1.0"] = one;
+		protocols["1.1"] = one_one;
+		protocols["2"] = two;
+		protocols["3"] = three;
+		return (protocols);
 	}
 	
 	static void consume_single_whitespace(const std::string& buffer, size_t& pos)
@@ -37,6 +49,14 @@ namespace _Request {
 			throw std::exception();
 		// TODO!: determine if we need to skip more than the ' ' char (tab...)
 		if (buffer.at(pos) == ' ')
+			throw std::exception();
+	}
+
+	static void consume_single_crlf(const std::string& buffer, size_t& pos)
+	{
+		if (buffer.substr(pos, 2) == CRLF)
+			pos += 2;
+		else
 			throw std::exception();
 	}
 
@@ -72,6 +92,30 @@ namespace _Request {
 		consume_single_whitespace(buffer, pos);
 		return (target);
 	};
+
+	// TODO: do we need to handle protocol case insensitive?
+	// Case sensitive protocol parsing (expect uppercase)
+	protocol_t parse_protocol(const std::string& buffer, size_t& pos)
+	{
+		const std::string http_name = "HTTP/";
+		if (buffer.substr(pos, http_name.length()) != http_name)
+			throw std::exception();
+		else
+			pos += http_name.length();
+
+		static const std::map<std::string, protocol_t> protocols = build_protocol_map();
+		std::map<std::string, protocol_t>::const_iterator protocol = protocols.begin();
+		std::map<std::string, protocol_t>::const_iterator end = protocols.end();
+		for (; protocol != end; ++protocol) {
+			if (buffer.substr(pos, protocol->first.length()) == protocol->first) {
+				pos += protocol->first.length();
+				consume_single_crlf(buffer, pos);
+				return (protocol->second);
+			}
+		}
+		throw std::exception();
+	}
+
 }
 
 /**
@@ -89,6 +133,7 @@ void Request::parse()
 		pos += 2;
 	m_request.method = _Request::parse_method(m_buffer, pos);
 	m_request.target = _Request::parse_target(m_buffer, pos);
+	m_request.protocol = _Request::parse_protocol(m_buffer, pos);
 }
 
 

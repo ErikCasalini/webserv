@@ -4,6 +4,8 @@
 # include <map>
 # include <string>
 
+# define CRLF "\r\n"
+
 enum method_t
 {
 	del,
