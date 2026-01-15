@@ -37,7 +37,7 @@ DEP_FILES := $(OBJ:.o=.d)
 ###########
 # TARGETS #
 ###########
-.PHONY: all clean fclean re dbg noerr asan usan
+.PHONY: all clean fclean re dbg noerr test asan usan
 
 all: $(BUILD_DIR) $(NAME)
 
@@ -45,6 +45,9 @@ dbg: CXXFLAGS = $(CXXFLAGS_DB)
 dbg: all
 noerr: CXXFLAGS = $(CXXFLAGS_NE)
 noerr: all
+
+test:
+	./test/test_runner.sh
 
 asan: CXXFLAGS = $(CXXFLAGS_AS)
 asan: CXX = clang++
