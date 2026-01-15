@@ -5,6 +5,13 @@
 
 Request::Request()
 {
+	// PERF: is this call necessary as an error is returned on failure?
+	// If an user try to read body while there isn't in this request:
+	// in any case it must be avoided and the unique solution
+	// is to use the struct with care.
+	// In this struct the objects will be zero initialized
+	// and only the structs will be filled with garbage
+	// moreover if any of this structs can't be parsed an exception must be thrown.
 	std::memset((void*)&m_request, 0, sizeof(m_request));
 };
 
@@ -28,18 +35,19 @@ namespace _Request {
 			++pos;
 		else
 			throw std::exception();
+		// TODO!: determine if we need to skip more than the ' ' char (tab...)
 		if (buffer.at(pos) == ' ')
 			throw std::exception();
 	}
 
-	// On success the method (and the space following it) will be consumed
-	// from the iterator. Throws on failure.
+	// The method (and the space following it) will be consumed from pos.
+	// Throws on failure.
 	method_t parse_method(const std::string& buffer, size_t& pos)
 	{
 		static const std::map<std::string, method_t> methods = build_method_map();
 		std::map<std::string, method_t>::const_iterator method = methods.begin();
-		std::map<std::string, method_t>::const_iterator method_end = methods.end();
-		for (; method != method_end; ++method) {
+		std::map<std::string, method_t>::const_iterator end = methods.end();
+		for (; method != end; ++method) {
 			if (buffer.substr(pos, method->first.length()) == method->first) {
 				pos += method->first.length();
 				consume_single_whitespace(buffer, pos);
@@ -55,6 +63,8 @@ namespace _Request {
  * @brief Parse the raw request
  *
  * Fill the m_request struct with parsed data.
+ *
+ * @throws exception on error
  */
 void Request::parse()
 {
