@@ -4,7 +4,7 @@
 // TODO: check with a file if the crlf is translated to a single \n
 // std::string buffer = "GET /exemple.com HTTP/1.1\r\n";
 
-using _Request::parse_method;
+using namespace _Request;
 
 void test_parse_method()
 {
@@ -61,8 +61,38 @@ void test_parse_method()
 	} catch (const std::exception& e) {};
 }
 
+void test_parse_target()
+{
+	// correct inputs
+	std::string target = "/ex http/1.1\r\n";
+	size_t pos = 0;
+	assert(parse_target(target, pos) == "/ex");
+	assert(pos == 4);
+
+	std::string target_2 = "/ex/ex.html http/1.1\r\n";
+	pos = 0;
+	assert(parse_target(target_2, pos) == "/ex/ex.html");
+	assert(pos == 12);
+
+	// wrong inputs
+	std::string end_of_buffer = "";
+	pos = 0;
+	try {
+		parse_target(end_of_buffer, pos);
+		assert(false);
+	} catch (const std::exception& e) {};
+
+	std::string tab_after = "/ex\t";
+	pos = 0;
+	try {
+		parse_target(tab_after, pos);
+		assert(false);
+	} catch (const std::exception& e) {};
+}
+
 int main(void)
 {
 	test(test_parse_method, "test_parse_method");
+	test(test_parse_target, "test_parse_target");
 	return (0);
 }
