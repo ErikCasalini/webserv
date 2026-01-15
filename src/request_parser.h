@@ -1,0 +1,23 @@
+#ifndef REQUEST_PARSER_H
+# define REQUEST_PARSER_H
+
+# include "http_types.h"
+# include <string>
+
+class Request
+{
+public:
+	Request();
+	void read_socket();
+	void parse();
+	const request_t& get_request() const;
+private:
+	request_t m_request;
+	std::string m_buffer;
+};
+
+namespace _Request {
+	method_t parse_method(const std::string& buffer, size_t& pos);
+}
+
+#endif
