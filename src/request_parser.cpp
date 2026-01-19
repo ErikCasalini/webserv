@@ -29,8 +29,11 @@ void Request::parse()
 	while (m_buffer.substr(pos, 2) == CRLF)
 		pos += 2;
 	m_request.method = _Request::parse_method(m_buffer, pos);
+	_Request::consume_single_whitespace(m_buffer, pos);
 	m_request.target = _Request::parse_target(m_buffer, pos);
+	_Request::consume_single_whitespace(m_buffer, pos);
 	m_request.protocol = _Request::parse_protocol(m_buffer, pos);
+	_Request::consume_single_crlf(m_buffer, pos);
 }
 
 // TODO: check with a file if the crlf is translated to a single \n
@@ -71,7 +74,7 @@ namespace _Request {
 		return (protocols);
 	}
 	
-	static void consume_single_whitespace(const std::string& buffer, size_t& pos)
+	void consume_single_whitespace(const std::string& buffer, size_t& pos)
 	{
 		if (buffer.at(pos) == ' ')
 			++pos;
@@ -82,7 +85,7 @@ namespace _Request {
 			throw std::exception();
 	}
 
-	static void consume_single_crlf(const std::string& buffer, size_t& pos)
+	void consume_single_crlf(const std::string& buffer, size_t& pos)
 	{
 		if (buffer.substr(pos, 2) == CRLF)
 			pos += 2;
@@ -100,7 +103,6 @@ namespace _Request {
 		for (; method != end; ++method) {
 			if (buffer.substr(pos, method->first.length()) == method->first) {
 				pos += method->first.length();
-				consume_single_whitespace(buffer, pos);
 				return (method->second);
 			}
 		}
@@ -119,7 +121,6 @@ namespace _Request {
 			++pos;
 		}
 		target = buffer.substr(start, pos - start);
-		consume_single_whitespace(buffer, pos);
 		return (target);
 	};
 
@@ -139,7 +140,6 @@ namespace _Request {
 		for (; protocol != end; ++protocol) {
 			if (buffer.substr(pos, protocol->first.length()) == protocol->first) {
 				pos += protocol->first.length();
-				consume_single_crlf(buffer, pos);
 				return (protocol->second);
 			}
 		}

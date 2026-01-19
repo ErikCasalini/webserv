@@ -18,6 +18,8 @@ private:
 
 // Helper functions namespace
 namespace _Request {
+	void consume_single_whitespace(const std::string& buffer, size_t& pos);
+	void consume_single_crlf(const std::string& buffer, size_t& pos);
 	method_t parse_method(const std::string& buffer, size_t& pos);
 	std::string parse_target(const std::string& buffer, size_t& pos);
 	protocol_t parse_protocol(const std::string& buffer, size_t& pos);
