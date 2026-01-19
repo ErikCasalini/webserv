@@ -22,8 +22,15 @@ enum protocol_t
 	three
 };
 
+enum status_t
+{
+	ok,
+	bad_request
+};
+
 struct request_t
 {
+	status_t status;
 	method_t method;
 	std::string target;
 	protocol_t protocol;

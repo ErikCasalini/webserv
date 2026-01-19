@@ -3,14 +3,22 @@
 
 # include "http_types.h"
 # include <string>
+# include <exception>
 
+// TODO: add an init function that creates the method and protocol maps
 class Request
 {
 public:
 	Request();
+
 	void read_socket();
 	void parse();
 	const request_t& get_request() const;
+
+	class BadRequest : public std::exception {
+	public:
+		const char* what() const throw();
+	};
 private:
 	request_t m_request;
 	std::string m_buffer;

@@ -1,6 +1,7 @@
 #include "http_types.h"
 #include "request_parser.h"
 #include <cstring>
+#include <stdexcept>
 #include <string>
 
 Request::Request()
@@ -26,14 +27,19 @@ void Request::parse()
 {
 	size_t pos = 0;
 	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
-	while (m_buffer.substr(pos, 2) == CRLF)
-		pos += 2;
-	m_request.method = _Request::parse_method(m_buffer, pos);
-	_Request::consume_single_whitespace(m_buffer, pos);
-	m_request.target = _Request::parse_target(m_buffer, pos);
-	_Request::consume_single_whitespace(m_buffer, pos);
-	m_request.protocol = _Request::parse_protocol(m_buffer, pos);
-	_Request::consume_single_crlf(m_buffer, pos);
+	try {
+		while (m_buffer.substr(pos, 2) == CRLF)
+			pos += 2;
+		m_request.method = _Request::parse_method(m_buffer, pos);
+		_Request::consume_single_whitespace(m_buffer, pos);
+		m_request.target = _Request::parse_target(m_buffer, pos);
+		_Request::consume_single_whitespace(m_buffer, pos);
+		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
+		_Request::consume_single_crlf(m_buffer, pos);
+	} catch (const Request::BadRequest& e) {
+		m_request.status = bad_request;
+	}
+	m_request.status = ok;
 }
 
 // TODO: check with a file if the crlf is translated to a single \n
@@ -46,6 +52,11 @@ void Request::read_socket()
 const request_t& Request::get_request() const
 {
 	return (m_request);
+}
+
+const char* Request::BadRequest::what() const throw()
+{
+	return ("bad request");
 }
 
 // Helper functions
@@ -79,10 +90,10 @@ namespace _Request {
 		if (buffer.at(pos) == ' ')
 			++pos;
 		else
-			throw std::exception();
+			throw Request::BadRequest();
 		// TODO!: determine if we need to skip more than the ' ' char (tab...)
 		if (buffer.at(pos) == ' ')
-			throw std::exception();
+			throw Request::BadRequest();
 	}
 
 	void consume_single_crlf(const std::string& buffer, size_t& pos)
@@ -90,7 +101,7 @@ namespace _Request {
 		if (buffer.substr(pos, 2) == CRLF)
 			pos += 2;
 		else
-			throw std::exception();
+			throw Request::BadRequest();
 	}
 
 	// The method (and the space following it) will be consumed from pos.
@@ -106,7 +117,7 @@ namespace _Request {
 				return (method->second);
 			}
 		}
-		throw std::exception();
+		throw Request::BadRequest();
 	}
 
 	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
@@ -117,8 +128,12 @@ namespace _Request {
 		std::string target;
 		size_t start = pos;
 		// TODO: check for path format validity (but what is valid?)
-		while (!std::isspace(buffer.at(pos))) {
-			++pos;
+		try {
+			while (!std::isspace(buffer.at(pos))) {
+				++pos;
+			}
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest();
 		}
 		target = buffer.substr(start, pos - start);
 		return (target);
@@ -130,7 +145,7 @@ namespace _Request {
 	{
 		const std::string http_name = "HTTP/";
 		if (buffer.substr(pos, http_name.length()) != http_name)
-			throw std::exception();
+			throw Request::BadRequest();
 		else
 			pos += http_name.length();
 
@@ -143,7 +158,7 @@ namespace _Request {
 				return (protocol->second);
 			}
 		}
-		throw std::exception();
+		throw Request::BadRequest();
 	}
 
 }
