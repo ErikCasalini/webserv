@@ -31,11 +31,11 @@ void Request::parse()
 		while (m_buffer.substr(pos, 2) == CRLF)
 			pos += 2;
 		m_request.method = _Request::parse_method(m_buffer, pos);
-		_Request::consume_single_whitespace(m_buffer, pos);
+		_Request::consume_sp(m_buffer, pos);
 		m_request.target = _Request::parse_target(m_buffer, pos);
-		_Request::consume_single_whitespace(m_buffer, pos);
+		_Request::consume_sp(m_buffer, pos);
 		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
-		_Request::consume_single_crlf(m_buffer, pos);
+		_Request::consume_crlf(m_buffer, pos);
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
 	}
@@ -85,18 +85,17 @@ namespace _Request {
 		return (protocols);
 	}
 	
-	void consume_single_whitespace(const std::string& buffer, size_t& pos)
+	void consume_sp(const std::string& buffer, size_t& pos)
 	{
 		if (buffer.at(pos) == ' ')
 			++pos;
 		else
 			throw Request::BadRequest();
-		// TODO!: determine if we need to skip more than the ' ' char (tab...)
 		if (buffer.at(pos) == ' ')
 			throw Request::BadRequest();
 	}
 
-	void consume_single_crlf(const std::string& buffer, size_t& pos)
+	void consume_crlf(const std::string& buffer, size_t& pos)
 	{
 		if (buffer.substr(pos, 2) == CRLF)
 			pos += 2;
@@ -135,6 +134,8 @@ namespace _Request {
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest();
 		}
+		if (pos == start)
+			throw Request::BadRequest();
 		target = buffer.substr(start, pos - start);
 		return (target);
 	};
