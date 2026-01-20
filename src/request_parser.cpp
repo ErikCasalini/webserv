@@ -27,10 +27,13 @@ Request::Request()
 void Request::parse()
 {
 	size_t pos = 0;
-	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
 	try {
+		// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
 		while (m_buffer.substr(pos, 2) == CRLF)
 			pos += 2;
+
+		// request line
+		// TODO: handle simple requests in the form `METHOD TARGET`
 		m_request.method = _Request::parse_method(m_buffer, pos);
 		_Request::consume_sp(m_buffer, pos);
 		m_request.target = _Request::parse_target(m_buffer, pos);
@@ -117,6 +120,7 @@ namespace _Request {
 				return (method->second);
 			}
 		}
+		// TODO: replace this exception by NotImplemented when the method is uppercase but not found in the map
 		throw Request::BadRequest();
 	}
 
@@ -141,10 +145,10 @@ namespace _Request {
 		return (target);
 	};
 
-	// TODO: do we need to handle protocol case insensitive?
 	// Case sensitive protocol parsing (expect uppercase)
 	protocol_t parse_protocol(const std::string& buffer, size_t& pos)
 	{
+		// Following rfc9112 the protocol name is case sensitive
 		const std::string http_name = "HTTP/";
 		if (buffer.substr(pos, http_name.length()) != http_name)
 			throw Request::BadRequest();

@@ -25,7 +25,8 @@ enum protocol_t
 enum status_t
 {
 	ok,
-	bad_request
+	bad_request, // 400
+	not_implemented // 501
 };
 
 struct request_t
