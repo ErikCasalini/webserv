@@ -26,8 +26,10 @@ DEP_FLAGS := 	-MMD
 NAME := webserv
 
 SRC_DIR := src
-vpath %.cpp $(SRC_DIR)
-SRC := request_parser.cpp
+LIB_DIR := src/lib
+vpath %.cpp $(SRC_DIR):$(LIB_DIR)
+SRC := request_parser.cpp \
+	   cctype_cast.cpp
 
 BUILD_DIR := build
 OBJ := $(SRC:%.cpp=$(BUILD_DIR)/%.o)

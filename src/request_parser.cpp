@@ -1,5 +1,6 @@
 #include "http_types.h"
 #include "request_parser.h"
+#include "../include/cctype_cast.h"
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -128,7 +129,7 @@ namespace _Request {
 		size_t start = pos;
 		// TODO: check for path format validity (but what is valid?)
 		try {
-			while (!std::isspace(buffer.at(pos))) {
+			while (!is_space(buffer.at(pos))) {
 				++pos;
 			}
 		} catch (const std::out_of_range& e) {
