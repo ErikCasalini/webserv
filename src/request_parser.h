@@ -32,9 +32,15 @@ private:
 namespace _Request {
 	void consume_sp(const std::string& buffer, size_t& pos);
 	void consume_crlf(const std::string& buffer, size_t& pos);
+	void consume_ows_cr(const std::string& buffer, size_t& pos);
+
 	method_t parse_method(const std::string& buffer, size_t& pos);
 	std::string parse_target(const std::string& buffer, size_t& pos);
 	protocol_t parse_protocol(const std::string& buffer, size_t& pos);
+
+	std::string extract_key(const std::string& buffer, size_t& pos);
+	std::vector<std::string> extract_values(const std::string& buffer, size_t& pos);
+	headers_t parse_headers(const std::string& m_buffer, size_t& pos);
 }
 
 #endif

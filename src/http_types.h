@@ -3,6 +3,7 @@
 
 # include <map>
 # include <string>
+# include <vector>
 
 # define CRLF "\r\n"
 
@@ -29,13 +30,15 @@ enum status_t
 	not_implemented // 501
 };
 
+typedef std::map<std::string, std::vector<std::string> > headers_t;
+
 struct request_t
 {
 	status_t status;
 	method_t method;
 	std::string target;
 	protocol_t protocol;
-	std::map<std::string, std::string> header;
+	headers_t headers;
 	std::string body;
 };
 

@@ -1,6 +1,7 @@
 #include "http_types.h"
 #include "request_parser.h"
 #include "../include/cctype_cast.h"
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -45,6 +46,9 @@ void Request::parse()
 		_Request::consume_sp(m_buffer, pos);
 		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
 		_Request::consume_crlf(m_buffer, pos);
+
+		// headers
+		m_request.headers = _Request::parse_headers(m_buffer, pos);
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
 	}
@@ -114,6 +118,14 @@ namespace _Request {
 			throw Request::BadRequest();
 	}
 
+	void consume_ows_cr(const std::string& buffer, size_t& pos)
+	{
+		while (buffer.at(pos) == ' '
+				|| buffer.at(pos) == '\t'
+				|| (buffer.at(pos) == '\r' && buffer.substr(pos, 2) != CRLF))
+			++pos;
+	}
+
 	// The method (and the space following it) will be consumed from pos.
 	// Throws on failure.
 	method_t parse_method(const std::string& buffer, size_t& pos)
@@ -174,6 +186,64 @@ namespace _Request {
 		throw Request::BadRequest();
 	}
 
+	std::string extract_key(const std::string& buffer, size_t& pos)
+	{
+		std::string key;
+		size_t start = pos;
+		// Catch out-of-range exceptions if at end of string
+		try {
+			while (is_graph(buffer.at(pos))) {
+				if (buffer.at(pos) == ':') {
+					if (pos == start)
+						throw Request::BadRequest();
+					std::string key = buffer.substr(start, pos);
+					std::transform(key.begin(), key.end(), key.begin(), to_lowercase);
+					++pos;
+					return (key);
+				}
+				else if (is_space(buffer.at(pos)))
+					throw Request::BadRequest();
+				++pos;
+			}
+		} catch (const std::out_of_range& e) {}
+		throw Request::BadRequest();
+	}
+
+	// TODO: handle quoted strings: "asdsda" or quoted pairs: \n
+	std::vector<std::string> extract_values(const std::string& buffer, size_t& pos)
+	{
+		std::vector<std::string> values;
+		while (1) {
+			consume_ows_cr(buffer, pos);
+			size_t start = pos;
+			while (buffer.substr(pos, 2) != CRLF && buffer.at(pos) != ',')
+				++pos;
+			if (start == pos)
+				throw Request::BadRequest();
+			// push the string with trailing whitespaces
+			// TODO: remove them when actually parsing values
+			values.push_back(buffer.substr(pos, pos - start));
+			if (buffer.substr(pos, 2) == CRLF)
+				return (values);
+			if (buffer.at(pos) == ',')
+				++pos;
+		}
+		throw Request::BadRequest();
+	}
+
+	headers_t parse_headers(const std::string& buffer, size_t& pos)
+	{
+		headers_t headers;
+
+		while (buffer.substr(pos, 2) != CRLF) {
+			std::string key = extract_key(buffer, pos);
+			std::vector<std::string> values = extract_values(buffer, pos);
+			headers[key] = values;
+			consume_crlf(buffer, pos);
+		}
+		// TODO: actually parse the headers (content-length...)
+		return (headers);
+	}
 }
 //
 // #include <iostream>
