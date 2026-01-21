@@ -1,4 +1,5 @@
 #include "../src/request_parser.h"
+#include "../src/http_types.h"
 #include "lib_test.h"
 
 // TODO: check with a file if the crlf is translated to a single \n
@@ -78,9 +79,46 @@ void test_parse_target()
 	} catch (const Request::BadRequest& e) {};
 }
 
+void test_parse_protocol()
+{
+	// correct inputs
+	std::string o = "HTTP/1.0";
+	size_t pos = 0;
+	assert(parse_protocol(o, pos) == one);
+	assert(pos == 8);
+
+	std::string o_o = "HTTP/1.1";
+	pos = 0;
+	assert(parse_protocol(o_o, pos) == one_one);
+	assert(pos == 8);
+
+	// wrong inputs
+	std::string end_of_buffer = "";
+	pos = 0;
+	try {
+		parse_protocol(end_of_buffer, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string invalid = "HTTP/9.9";
+	pos = 0;
+	try {
+		parse_protocol(invalid, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string lowercase = "http/1.1";
+	pos = 0;
+	try {
+		parse_protocol(lowercase, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+}
+
 int main(void)
 {
 	test(test_parse_method, "test_parse_method");
 	test(test_parse_target, "test_parse_target");
+	test(test_parse_protocol, "test_parse_protocol");
 	return (0);
 }
