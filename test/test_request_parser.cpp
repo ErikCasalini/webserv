@@ -115,10 +115,64 @@ void test_parse_protocol()
 	} catch (const Request::BadRequest& e) {};
 }
 
+void test_extract_key()
+{
+	// correct inputs
+	std::string host = "host:";
+	size_t pos = 0;
+	assert(extract_key(host, pos) == "host");
+	assert(pos == 5);
+
+	std::string content_encoding = "content-encoding: ";
+	pos = 0;
+	assert(extract_key(content_encoding, pos) == "content-encoding");
+	assert(pos == 17);
+
+	// wrong inputs
+	std::string leading_spaces = " host:";
+	pos = 0;
+	try {
+		extract_key(leading_spaces, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string trailing_spaces = "host :";
+	pos = 0;
+	try {
+		extract_key(trailing_spaces, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string end_of_buffer = "";
+	pos = 0;
+	try {
+		extract_key(end_of_buffer, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string empty = ":";
+	pos = 0;
+	try {
+		extract_key(empty, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string empty_2 = " :";
+	pos = 0;
+	try {
+		extract_key(empty_2, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+}
+
 int main(void)
 {
+	// start line
 	test(test_parse_method, "test_parse_method");
 	test(test_parse_target, "test_parse_target");
 	test(test_parse_protocol, "test_parse_protocol");
+	// headers
+	test(test_extract_key, "test_extract_key");
 	return (0);
 }
