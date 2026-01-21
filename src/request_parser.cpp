@@ -37,6 +37,11 @@ void Request::parse()
 		m_request.method = _Request::parse_method(m_buffer, pos);
 		_Request::consume_sp(m_buffer, pos);
 		m_request.target = _Request::parse_target(m_buffer, pos);
+		// Start line for 0.9 don't have the PROTOCOL field
+		if (m_buffer.substr(pos, 2) == CRLF) {
+			m_request.protocol = zero_nine;
+			throw Request::NotImplemented();
+		}
 		_Request::consume_sp(m_buffer, pos);
 		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
 		_Request::consume_crlf(m_buffer, pos);
@@ -63,6 +68,11 @@ const char* Request::BadRequest::what() const throw()
 	return ("bad request");
 }
 
+const char* Request::NotImplemented::what() const throw()
+{
+	return ("not implemented");
+}
+
 // Helper functions
 namespace _Request {
 
@@ -81,11 +91,8 @@ namespace _Request {
 	static const std::map<std::string, protocol_t> build_protocol_map()
 	{
 		std::map<std::string, protocol_t> protocols;
-		protocols["0.9"] = zero_nine;
 		protocols["1.0"] = one;
 		protocols["1.1"] = one_one;
-		protocols["2"] = two;
-		protocols["3"] = three;
 		return (protocols);
 	}
 	

@@ -19,6 +19,10 @@ public:
 	public:
 		const char* what() const throw();
 	};
+	class NotImplemented : public std::exception {
+	public:
+		const char* what() const throw();
+	};
 private:
 	request_t m_request;
 	std::string m_buffer;
