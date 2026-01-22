@@ -213,22 +213,18 @@ namespace _Request {
 	std::vector<std::string> extract_values(const std::string& buffer, size_t& pos)
 	{
 		std::vector<std::string> values;
-		while (1) {
-			consume_ows_cr(buffer, pos);
+		try {
 			size_t start = pos;
-			while (buffer.substr(pos, 2) != CRLF && buffer.at(pos) != ',')
+			while (buffer.substr(pos, 2) != CRLF)
 				++pos;
-			if (start == pos)
-				throw Request::BadRequest();
-			// push the string with trailing whitespaces
-			// TODO: remove them when actually parsing values
-			values.push_back(buffer.substr(pos, pos - start));
-			if (buffer.substr(pos, 2) == CRLF)
-				return (values);
-			if (buffer.at(pos) == ',')
-				++pos;
+			// Push the full string without any checks,
+			// actual parsing is done after only if the key is recognized.
+			values.push_back(buffer.substr(start, pos));
+			pos += 2;
+			return (values);
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest();
 		}
-		throw Request::BadRequest();
 	}
 
 	headers_t parse_headers(const std::string& buffer, size_t& pos)
@@ -237,9 +233,7 @@ namespace _Request {
 
 		while (buffer.substr(pos, 2) != CRLF) {
 			std::string key = extract_key(buffer, pos);
-			std::vector<std::string> values = extract_values(buffer, pos);
-			headers[key] = values;
-			consume_crlf(buffer, pos);
+			headers[key] = extract_values(buffer, pos);
 		}
 		// TODO: actually parse the headers (content-length...)
 		return (headers);
