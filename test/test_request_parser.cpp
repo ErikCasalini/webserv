@@ -128,6 +128,16 @@ void test_extract_key()
 	assert(extract_key(content_encoding, pos) == "content-encoding");
 	assert(pos == 17);
 
+	std::string upper = "HOST:";
+	pos = 0;
+	assert(extract_key(upper, pos) == "host");
+	assert(pos == 5);
+
+	std::string mixed = "Host:";
+	pos = 0;
+	assert(extract_key(mixed, pos) == "host");
+	assert(pos == 5);
+
 	// wrong inputs
 	std::string leading_spaces = " host:";
 	pos = 0;
