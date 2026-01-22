@@ -166,6 +166,50 @@ void test_extract_key()
 
 }
 
+void test_extract_values()
+{
+	// correct inputs
+	std::string empty = "\r\n";
+	size_t pos = 0;
+	assert(extract_values(empty, pos)[0] == "");
+	assert(pos == 2);
+
+	std::string lenght = "234\r\n";
+	pos = 0;
+	assert(extract_values(lenght, pos)[0] == "234");
+	assert(pos == 5);
+
+	std::string lenght_lead = " 234\r\n";
+	pos = 0;
+	assert(extract_values(lenght_lead, pos)[0] == " 234");
+	assert(pos == 6);
+
+	std::string list = " 234 ,  4 \r\n";
+	pos = 0;
+	assert(extract_values(list, pos)[0] == " 234 ,  4 ");
+	assert(pos == 12);
+
+	std::string list_empty = " 234 ,  , 4 \r\n";
+	pos = 0;
+	assert(extract_values(list_empty, pos)[0] == " 234 ,  , 4 ");
+	assert(pos == 14);
+
+	// wrong inputs
+	std::string no_crlf = "234";
+	pos = 0;
+	try {
+		extract_values(no_crlf, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+
+	std::string empty_no_crlf = "";
+	pos = 0;
+	try {
+		extract_values(empty_no_crlf, pos);
+		assert(false);
+	} catch (const Request::BadRequest& e) {};
+}
+
 int main(void)
 {
 	// start line
@@ -174,5 +218,6 @@ int main(void)
 	test(test_parse_protocol, "test_parse_protocol");
 	// headers
 	test(test_extract_key, "test_extract_key");
+	test(test_extract_values, "test_extract_values");
 	return (0);
 }
