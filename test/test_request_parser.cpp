@@ -12,17 +12,17 @@ void test_parse_method()
 	// correct inputs
 	std::string del_buf = "DELETE";
 	size_t pos = 0;
-	assert(parse_method(del_buf, pos) == del);
+	assert((parse_method(del_buf, pos) == del));
 	assert(pos == 6);
 
 	std::string get_buf = "GET";
 	pos = 0;
-	assert(parse_method(get_buf, pos) == get);
+	assert((parse_method(get_buf, pos) == get));
 	assert(pos == 3);
 
 	std::string post_buf = "POST";
 	pos = 0;
-	assert(parse_method(post_buf, pos) == post);
+	assert((parse_method(post_buf, pos) == post));
 	assert(pos == 4);
 
 	// wrong inputs
@@ -62,12 +62,12 @@ void test_parse_target()
 	// tests must include a space at the end of the string.
 	std::string target = "/ex ";
 	size_t pos = 0;
-	assert(parse_target(target, pos) == "/ex");
+	assert((parse_target(target, pos) == "/ex"));
 	assert(pos == 3);
 
 	std::string target_2 = "/ex/ex.html ";
 	pos = 0;
-	assert(parse_target(target_2, pos) == "/ex/ex.html");
+	assert((parse_target(target_2, pos) == "/ex/ex.html"));
 	assert(pos == 11);
 
 	// wrong inputs
@@ -84,12 +84,12 @@ void test_parse_protocol()
 	// correct inputs
 	std::string o = "HTTP/1.0";
 	size_t pos = 0;
-	assert(parse_protocol(o, pos) == one);
+	assert((parse_protocol(o, pos) == one));
 	assert(pos == 8);
 
 	std::string o_o = "HTTP/1.1";
 	pos = 0;
-	assert(parse_protocol(o_o, pos) == one_one);
+	assert((parse_protocol(o_o, pos) == one_one));
 	assert(pos == 8);
 
 	// wrong inputs
@@ -120,22 +120,22 @@ void test_extract_key()
 	// correct inputs
 	std::string host = "host:";
 	size_t pos = 0;
-	assert(extract_key(host, pos) == "host");
+	assert((extract_key(host, pos) == "host"));
 	assert(pos == 5);
 
 	std::string content_encoding = "content-encoding: ";
 	pos = 0;
-	assert(extract_key(content_encoding, pos) == "content-encoding");
+	assert((extract_key(content_encoding, pos) == "content-encoding"));
 	assert(pos == 17);
 
 	std::string upper = "HOST:";
 	pos = 0;
-	assert(extract_key(upper, pos) == "host");
+	assert((extract_key(upper, pos) == "host"));
 	assert(pos == 5);
 
 	std::string mixed = "Host:";
 	pos = 0;
-	assert(extract_key(mixed, pos) == "host");
+	assert((extract_key(mixed, pos) == "host"));
 	assert(pos == 5);
 
 	// wrong inputs
@@ -181,27 +181,27 @@ void test_extract_values()
 	// correct inputs
 	std::string empty = "\r\n";
 	size_t pos = 0;
-	assert(extract_values(empty, pos) == "");
+	assert((extract_values(empty, pos) == ""));
 	assert(pos == 2);
 
 	std::string lenght = "234\r\n";
 	pos = 0;
-	assert(extract_values(lenght, pos) == "234");
+	assert((extract_values(lenght, pos) == "234"));
 	assert(pos == 5);
 
 	std::string lenght_lead = " 234\r\n";
 	pos = 0;
-	assert(extract_values(lenght_lead, pos) == " 234");
+	assert((extract_values(lenght_lead, pos) == " 234"));
 	assert(pos == 6);
 
 	std::string list = " 234 ,  4 \r\n";
 	pos = 0;
-	assert(extract_values(list, pos) == " 234 ,  4 ");
+	assert((extract_values(list, pos) == " 234 ,  4 "));
 	assert(pos == 12);
 
 	std::string list_empty = " 234 ,  , 4 \r\n";
 	pos = 0;
-	assert(extract_values(list_empty, pos) == " 234 ,  , 4 ");
+	assert((extract_values(list_empty, pos) == " 234 ,  , 4 "));
 	assert(pos == 14);
 
 	// wrong inputs
