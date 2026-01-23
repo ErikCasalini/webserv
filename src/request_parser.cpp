@@ -210,18 +210,18 @@ namespace _Request {
 	}
 
 	// TODO: handle quoted strings: "asdsda" or quoted pairs: \n
-	std::vector<std::string> extract_values(const std::string& buffer, size_t& pos)
+	std::string extract_values(const std::string& buffer, size_t& pos)
 	{
-		std::vector<std::string> values;
+		std::string val;
 		try {
 			size_t start = pos;
 			while (buffer.substr(pos, 2) != CRLF)
 				++pos;
 			// Push the full string without any checks,
 			// actual parsing is done after only if the key is recognized.
-			values.push_back(buffer.substr(start, pos));
+			val = buffer.substr(start, pos);
 			pos += 2;
-			return (values);
+			return (val);
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest();
 		}

@@ -39,8 +39,7 @@ namespace _Request {
 	protocol_t parse_protocol(const std::string& buffer, size_t& pos);
 
 	std::string extract_key(const std::string& buffer, size_t& pos);
-	std::vector<std::string> extract_values(const std::string& buffer, size_t& pos);
-	headers_t parse_headers(const std::string& m_buffer, size_t& pos);
+	std::string extract_values(const std::string& buffer, size_t& pos);
 }
 
 #endif

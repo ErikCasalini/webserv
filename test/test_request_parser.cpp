@@ -181,27 +181,27 @@ void test_extract_values()
 	// correct inputs
 	std::string empty = "\r\n";
 	size_t pos = 0;
-	assert(extract_values(empty, pos)[0] == "");
+	assert(extract_values(empty, pos) == "");
 	assert(pos == 2);
 
 	std::string lenght = "234\r\n";
 	pos = 0;
-	assert(extract_values(lenght, pos)[0] == "234");
+	assert(extract_values(lenght, pos) == "234");
 	assert(pos == 5);
 
 	std::string lenght_lead = " 234\r\n";
 	pos = 0;
-	assert(extract_values(lenght_lead, pos)[0] == " 234");
+	assert(extract_values(lenght_lead, pos) == " 234");
 	assert(pos == 6);
 
 	std::string list = " 234 ,  4 \r\n";
 	pos = 0;
-	assert(extract_values(list, pos)[0] == " 234 ,  4 ");
+	assert(extract_values(list, pos) == " 234 ,  4 ");
 	assert(pos == 12);
 
 	std::string list_empty = " 234 ,  , 4 \r\n";
 	pos = 0;
-	assert(extract_values(list_empty, pos)[0] == " 234 ,  , 4 ");
+	assert(extract_values(list_empty, pos) == " 234 ,  , 4 ");
 	assert(pos == 14);
 
 	// wrong inputs
