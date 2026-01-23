@@ -30,28 +30,28 @@ void test_parse_method()
 	pos = 0;
 	try {
 		parse_method(no_method, pos);
-		assert(false);
+		assert((false && "no_method"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string lowercase = "get";
 	pos = 0;
 	try {
 		parse_method(lowercase, pos);
-		assert(false);
+		assert((false && "lowercase"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string space_front = " GET";
 	pos = 0;
 	try {
 		parse_method(lowercase, pos);
-		assert(false);
+		assert((false && "lowercase"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string empty = "";
 	pos = 0;
 	try {
 		parse_method(empty, pos);
-		assert(false);
+		assert((false && "empty"));
 	} catch (const Request::BadRequest& e) {};
 }
 
@@ -75,7 +75,7 @@ void test_parse_target()
 	pos = 0;
 	try {
 		parse_target(end_of_buffer, pos);
-		assert(false);
+		assert((false && "end_of_buffer"));
 	} catch (const Request::BadRequest& e) {};
 }
 
@@ -97,21 +97,21 @@ void test_parse_protocol()
 	pos = 0;
 	try {
 		parse_protocol(end_of_buffer, pos);
-		assert(false);
+		assert((false && "end_of_buffer"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string invalid = "HTTP/9.9";
 	pos = 0;
 	try {
 		parse_protocol(invalid, pos);
-		assert(false);
+		assert((false && "invalid"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string lowercase = "http/1.1";
 	pos = 0;
 	try {
 		parse_protocol(lowercase, pos);
-		assert(false);
+		assert((false && "lowercase"));
 	} catch (const Request::BadRequest& e) {};
 }
 
@@ -143,35 +143,35 @@ void test_extract_key()
 	pos = 0;
 	try {
 		extract_key(leading_spaces, pos);
-		assert(false);
+		assert((false && "leading_spaces"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string trailing_spaces = "host :";
 	pos = 0;
 	try {
 		extract_key(trailing_spaces, pos);
-		assert(false);
+		assert((false && "trailing_spaces"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string end_of_buffer = "";
 	pos = 0;
 	try {
 		extract_key(end_of_buffer, pos);
-		assert(false);
+		assert((false && "end_of_buffer"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string empty = ":";
 	pos = 0;
 	try {
 		extract_key(empty, pos);
-		assert(false);
+		assert((false && "empty"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string empty_2 = " :";
 	pos = 0;
 	try {
 		extract_key(empty_2, pos);
-		assert(false);
+		assert((false && "empty_2"));
 	} catch (const Request::BadRequest& e) {};
 
 }
@@ -209,14 +209,14 @@ void test_extract_values()
 	pos = 0;
 	try {
 		extract_values(no_crlf, pos);
-		assert(false);
+		assert((false && "no crlf"));
 	} catch (const Request::BadRequest& e) {};
 
 	std::string empty_no_crlf = "";
 	pos = 0;
 	try {
 		extract_values(empty_no_crlf, pos);
-		assert(false);
+		assert((false && "empty_no_crlf"));
 	} catch (const Request::BadRequest& e) {};
 }
 
