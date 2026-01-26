@@ -324,6 +324,40 @@ void test_parse_content_length()
 		parse_content_length(plus_neg);
 		assert((false && "plus_neg"));
 	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t chars;
+	chars["content-length"] = "hello";
+	try {
+		parse_content_length(chars);
+		assert((false && "chars"));
+	} catch (const Request::BadRequest& e) {};
+}
+
+void test_parse_connection()
+{
+	// correct inputs
+	raw_headers_t keep_alive;
+	keep_alive["connection"] = "keep-alive";
+	assert((parse_connection(keep_alive) == true));
+
+	raw_headers_t keep_alive_up;
+	keep_alive_up["connection"] = "KEEP-ALIVE";
+	assert((parse_connection(keep_alive_up) == true));
+
+	raw_headers_t keep_alive_mixed;
+	keep_alive_mixed["connection"] = "Keep-Alive";
+	assert((parse_connection(keep_alive_mixed) == true));
+
+	raw_headers_t close;
+	close["connection"] = "close";
+	assert((parse_connection(close) == false));
+
+	raw_headers_t close_up;
+	close_up["connection"] = "close";
+	assert((parse_connection(close_up) == false));
+
+	// wrong inputs
+	// no wrong inputs, just treated as default -> close
 }
 
 int main(void)
@@ -337,5 +371,6 @@ int main(void)
 	test(test_extract_values, "test_extract_values");
 	test(test_extract_headers, "test_extract_headers");
 	test(test_parse_content_length, "test_parse_content_length");
+	test(test_parse_connection, "test_parse_connection");
 	return (0);
 }
