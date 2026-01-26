@@ -204,6 +204,12 @@ void test_extract_values()
 	assert((extract_values(list_empty, pos) == " 234 ,  , 4 "));
 	assert(pos == 14);
 
+	// TODO: is it correct according to the rfc? (space at start of line, remove \r)
+	std::string cr = "laskhdasdklhqwdlkwjhqd\rlkashdlkasdh  , 4 \r\n";
+	pos = 0;
+	assert((extract_values(cr, pos) == "laskhdasdklhqwdlkwjhqd\rlkashdlkasdh  , 4 "));
+	assert(pos == 43);
+
 	// wrong inputs
 	std::string no_crlf = "234";
 	pos = 0;
