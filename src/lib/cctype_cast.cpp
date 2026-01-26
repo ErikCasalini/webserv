@@ -1,7 +1,7 @@
 #include <cctype>
 #include "../../include/cctype_cast.h"
 
-int to_lowercase(char c)
+int to_lower(char c)
 {
 	return (std::tolower(static_cast<unsigned char>(c)));
 }

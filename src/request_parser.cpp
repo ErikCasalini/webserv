@@ -195,7 +195,7 @@ namespace _Request {
 					if (pos == start)
 						throw Request::BadRequest("missing header name");
 					std::string key = buffer.substr(start, pos);
-					std::transform(key.begin(), key.end(), key.begin(), to_lowercase);
+					std::transform(key.begin(), key.end(), key.begin(), to_lower);
 					++pos;
 					return (key);
 				}

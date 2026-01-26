@@ -6,7 +6,7 @@
 // Wrappers to do the required cast to unsigned char
 // to avoid undefined behavior with negative values
 // as this functions treat their argument as an int.
-int to_lowercase(char c);
+int to_lower(char c);
 int is_graph(char c);
 int is_space(char c);
 
