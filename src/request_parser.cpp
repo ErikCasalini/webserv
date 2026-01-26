@@ -219,7 +219,7 @@ namespace _Request {
 				++pos;
 			// Push the full string without any checks,
 			// actual parsing is done after only if the key is recognized.
-			val = buffer.substr(start, pos);
+			val = buffer.substr(start, pos - start);
 			pos += 2;
 			return (val);
 		} catch (const std::out_of_range& e) {
