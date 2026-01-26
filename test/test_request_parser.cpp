@@ -220,6 +220,46 @@ void test_extract_values()
 	} catch (const Request::BadRequest& e) {};
 }
 
+void test_extract_headers()
+{
+	// correct inputs
+	std::string content_length = "content-length: 123\r\n";
+	size_t pos = 0;
+	raw_headers_t headers;
+	headers = extract_headers(content_length, pos);
+	assert((headers["content-length"] == " 123"));
+	assert(pos == 21);
+
+	std::string host = "host:localhost\r\n";
+	pos = 0;
+	headers.clear();
+	headers = extract_headers(host, pos);
+	assert((headers["host"] == "localhost"));
+	assert(pos == 16);
+
+	std::string empty_val = "empty_val:\r\n";
+	pos = 0;
+	headers.clear();
+	headers = extract_headers(empty_val, pos);
+	assert((headers["empty_val"] == ""));
+	assert(pos == 12);
+
+	// wrong inputs
+	std::string no_crlf = "host:123.0.0.1";
+	pos = 0;
+	try {
+		extract_headers(no_crlf, pos);
+		assert((false && "no crlf"));
+	} catch (const Request::BadRequest& e) {};
+
+	std::string no_key = ":local\r\n";
+	pos = 0;
+	try {
+		extract_headers(no_key, pos);
+		assert((false && "no key"));
+	} catch (const Request::BadRequest& e) {};
+}
+
 int main(void)
 {
 	// start line
@@ -229,5 +269,6 @@ int main(void)
 	// headers
 	test(test_extract_key, "test_extract_key");
 	test(test_extract_values, "test_extract_values");
+	test(test_extract_headers, "test_extract_headers");
 	return (0);
 }
