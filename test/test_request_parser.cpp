@@ -260,6 +260,66 @@ void test_extract_headers()
 	} catch (const Request::BadRequest& e) {};
 }
 
+void test_parse_content_length()
+{
+	// correct inputs
+	raw_headers_t simple;
+	simple["content-length"] = "123";
+	assert((parse_content_length(simple) == 123));
+
+	raw_headers_t leading_spaces;
+	leading_spaces["content-length"] = "   123";
+	assert((parse_content_length(leading_spaces) == 123));
+
+	raw_headers_t trailing_spaces;
+	trailing_spaces["content-length"] = "123    ";
+	assert((parse_content_length(trailing_spaces) == 123));
+
+	raw_headers_t spaces;
+	spaces["content-length"] = "     123    ";
+	assert((parse_content_length(spaces) == 123));
+
+	raw_headers_t max_ulong;
+	max_ulong["content-length"] = "18446744073709551615";
+	assert((parse_content_length(max_ulong) == 18446744073709551615ul));
+
+	// wrong inputs
+	raw_headers_t spaces_inside;
+	spaces_inside["content-length"] = "     123 134    ";
+	try {
+		parse_content_length(spaces_inside);
+		assert((false && "spaces_inside"));
+	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t overflow;
+	overflow["content-length"] = "18446744073709551616";
+	try {
+		parse_content_length(overflow);
+		assert((false && "overflow"));
+	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t neg;
+	neg["content-length"] = "-134";
+	try {
+		parse_content_length(neg);
+		assert((false && "neg"));
+	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t double_neg;
+	double_neg["content-length"] = "--134";
+	try {
+		parse_content_length(double_neg);
+		assert((false && "double_neg"));
+	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t plus_neg;
+	plus_neg["content-length"] = "+-134";
+	try {
+		parse_content_length(plus_neg);
+		assert((false && "plus_neg"));
+	} catch (const Request::BadRequest& e) {};
+}
+
 int main(void)
 {
 	// start line
@@ -270,5 +330,6 @@ int main(void)
 	test(test_extract_key, "test_extract_key");
 	test(test_extract_values, "test_extract_values");
 	test(test_extract_headers, "test_extract_headers");
+	test(test_parse_content_length, "test_parse_content_length");
 	return (0);
 }
