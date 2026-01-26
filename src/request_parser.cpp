@@ -227,7 +227,7 @@ namespace _Request {
 	{
 		headers_t headers;
 
-		while (buffer.substr(pos, 2) != CRLF) {
+		while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
 			std::string key = extract_key(buffer, pos);
 			headers[key] = extract_values(buffer, pos);
 		}
