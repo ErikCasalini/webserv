@@ -257,11 +257,23 @@ namespace _Request {
 		throw Request::BadRequest("missing content-length value");
 	}
 
+	bool parse_connection(const raw_headers_t& raw_headers)
+	{
+		std::string val = raw_headers.at("connection");
+		strtrim(val);
+		std::transform(val.begin(), val.end(), val.begin(), to_lower);
+		if (val.length() > 0 && val == "keep-alive")
+			return (true);
+		else
+			return (false);
+	}
+
 	headers_t parse_headers(const std::string& buffer, size_t& pos, const request_t& request)
 	{
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
 		std::memset((void*)&headers, 0, sizeof(headers_t));
+		headers.keep_alive = parse_connection(raw_headers);
 		if (request.method == post)
 			headers.content_length = parse_content_length(raw_headers);
 		return (headers);
