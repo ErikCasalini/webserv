@@ -25,6 +25,7 @@ enum protocol_t
 
 enum status_t
 {
+	parsing,
 	ok,
 	bad_request, // 400
 	not_implemented // 501
@@ -35,6 +36,8 @@ struct headers_t
 	unsigned long content_length;
 	std::string cookies;
 	bool keep_alive;
+	// TODO: store it as a date type? What format to handle
+	std::string if_modified_since;
 };
 
 struct request_t
