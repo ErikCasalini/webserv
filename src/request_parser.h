@@ -2,8 +2,8 @@
 # define REQUEST_PARSER_H
 
 # include "http_types.h"
+# include <stdexcept>
 # include <string>
-# include <exception>
 
 // TODO: add an init function that creates the method and protocol maps
 class Request
@@ -15,13 +15,13 @@ public:
 	void parse();
 	const request_t& get_request() const;
 
-	class BadRequest : public std::exception {
+	class BadRequest : public std::runtime_error {
 	public:
-		const char* what() const throw();
+		BadRequest(const char* msg);
 	};
-	class NotImplemented : public std::exception {
+	class NotImplemented : public std::runtime_error {
 	public:
-		const char* what() const throw();
+		NotImplemented(const char* msg);
 	};
 private:
 	request_t m_request;

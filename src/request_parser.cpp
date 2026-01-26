@@ -41,7 +41,7 @@ void Request::parse()
 		// Start line for 0.9 don't have the PROTOCOL field
 		if (m_buffer.substr(pos, 2) == CRLF) {
 			m_request.protocol = zero_nine;
-			throw Request::NotImplemented();
+			throw Request::NotImplemented("HTTP 0.9 is not handled");
 		}
 		_Request::consume_sp(m_buffer, pos);
 		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
@@ -51,6 +51,8 @@ void Request::parse()
 		m_request.headers = _Request::parse_headers(m_buffer, pos);
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
+	} catch (const Request::NotImplemented& e) {
+		m_request.status = not_implemented;
 	}
 	m_request.status = ok;
 }
@@ -67,15 +69,9 @@ const request_t& Request::get_request() const
 	return (m_request);
 }
 
-const char* Request::BadRequest::what() const throw()
-{
-	return ("bad request");
-}
+Request::BadRequest::BadRequest(const char* msg) : std::runtime_error(msg) {};
 
-const char* Request::NotImplemented::what() const throw()
-{
-	return ("not implemented");
-}
+Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(msg) {};
 
 // Helper functions
 namespace _Request {
@@ -105,9 +101,9 @@ namespace _Request {
 		if (buffer.at(pos) == ' ')
 			++pos;
 		else
-			throw Request::BadRequest();
+			throw Request::BadRequest("missing SP");
 		if (buffer.at(pos) == ' ')
-			throw Request::BadRequest();
+			throw Request::BadRequest("extraneous SP");
 	}
 
 	void consume_crlf(const std::string& buffer, size_t& pos)
@@ -115,7 +111,7 @@ namespace _Request {
 		if (buffer.substr(pos, 2) == CRLF)
 			pos += 2;
 		else
-			throw Request::BadRequest();
+			throw Request::BadRequest("missing CRLF");
 	}
 
 	void consume_ows_cr(const std::string& buffer, size_t& pos)
@@ -140,7 +136,7 @@ namespace _Request {
 			}
 		}
 		// TODO: replace this exception by NotImplemented when the method is uppercase but not found in the map
-		throw Request::BadRequest();
+		throw Request::BadRequest("illformed method");
 	}
 
 	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
@@ -156,10 +152,10 @@ namespace _Request {
 				++pos;
 			}
 		} catch (const std::out_of_range& e) {
-			throw Request::BadRequest();
+			throw Request::BadRequest("non terminated target");
 		}
 		if (pos == start)
-			throw Request::BadRequest();
+			throw Request::BadRequest("missing target");
 		target = buffer.substr(start, pos - start);
 		return (target);
 	};
@@ -170,7 +166,7 @@ namespace _Request {
 		// Following rfc9112 the protocol name is case sensitive
 		const std::string http_name = "HTTP/";
 		if (buffer.substr(pos, http_name.length()) != http_name)
-			throw Request::BadRequest();
+			throw Request::BadRequest("invalid protocol name");
 		else
 			pos += http_name.length();
 
@@ -183,7 +179,7 @@ namespace _Request {
 				return (protocol->second);
 			}
 		}
-		throw Request::BadRequest();
+		throw Request::BadRequest("unknown protocol version");
 	}
 
 	std::string extract_key(const std::string& buffer, size_t& pos)
@@ -195,18 +191,18 @@ namespace _Request {
 			while (is_graph(buffer.at(pos))) {
 				if (buffer.at(pos) == ':') {
 					if (pos == start)
-						throw Request::BadRequest();
+						throw Request::BadRequest("missing header name");
 					std::string key = buffer.substr(start, pos);
 					std::transform(key.begin(), key.end(), key.begin(), to_lowercase);
 					++pos;
 					return (key);
 				}
 				else if (is_space(buffer.at(pos)))
-					throw Request::BadRequest();
+					throw Request::BadRequest("space between name and colon");
 				++pos;
 			}
 		} catch (const std::out_of_range& e) {}
-		throw Request::BadRequest();
+		throw Request::BadRequest("invalid header name");
 	}
 
 	// TODO: handle quoted strings: "asdsda" or quoted pairs: \n
@@ -223,11 +219,11 @@ namespace _Request {
 			pos += 2;
 			return (val);
 		} catch (const std::out_of_range& e) {
-			throw Request::BadRequest();
+			throw Request::BadRequest("missing CRLF after header line");
 		}
 	}
 
-	headers_t parse_headers(const std::string& buffer, size_t& pos)
+	raw_headers_t extract_headers(const std::string& buffer, size_t& pos)
 	{
 		headers_t headers;
 
