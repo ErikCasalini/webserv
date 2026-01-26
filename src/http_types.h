@@ -30,7 +30,12 @@ enum status_t
 	not_implemented // 501
 };
 
-typedef std::map<std::string, std::vector<std::string> > headers_t;
+struct headers_t
+{
+	unsigned long content_length;
+	std::string cookies;
+	bool keep_alive;
+};
 
 struct request_t
 {

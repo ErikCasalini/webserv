@@ -5,6 +5,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <errno.h>
 
 Request::Request()
 {
@@ -48,7 +49,8 @@ void Request::parse()
 		_Request::consume_crlf(m_buffer, pos);
 
 		// headers
-		m_request.headers = _Request::parse_headers(m_buffer, pos);
+		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
+		_Request::consume_crlf(m_buffer, pos);
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
 	} catch (const Request::NotImplemented& e) {
@@ -225,13 +227,43 @@ namespace _Request {
 
 	raw_headers_t extract_headers(const std::string& buffer, size_t& pos)
 	{
-		headers_t headers;
+		raw_headers_t headers;
 
 		while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
 			std::string key = extract_key(buffer, pos);
 			headers[key] = extract_values(buffer, pos);
 		}
-		// TODO: actually parse the headers (content-length...)
+		return (headers);
+	}
+
+	unsigned long parse_content_length(const raw_headers_t& raw_headers)
+	{
+		std::string val = raw_headers.at("content-length");
+		if (val.length() > 0) {
+			strtrim(val);
+			if (val.at(0) == '-')
+				throw Request::BadRequest("content-length is negative");
+			char* end = NULL;
+			errno = 0;
+			unsigned long len = std::strtoul(val.c_str(), &end, 10);
+			// TODO: check for max specified length (in config file or default value)
+			// is it a specific status code?
+			if (*end || errno) {
+				errno = 0;
+				throw Request::BadRequest("invalid content-length");
+			}
+			return (len);
+		}
+		throw Request::BadRequest("missing content-length value");
+	}
+
+	headers_t parse_headers(const std::string& buffer, size_t& pos, const request_t& request)
+	{
+		raw_headers_t raw_headers = extract_headers(buffer, pos);
+		headers_t headers;
+		std::memset((void*)&headers, 0, sizeof(headers_t));
+		if (request.method == post)
+			headers.content_length = parse_content_length(raw_headers);
 		return (headers);
 	}
 }

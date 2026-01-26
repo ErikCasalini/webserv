@@ -30,6 +30,8 @@ private:
 
 // Helper functions namespace
 namespace _Request {
+	typedef std::map<std::string, std::string> raw_headers_t;
+
 	void consume_sp(const std::string& buffer, size_t& pos);
 	void consume_crlf(const std::string& buffer, size_t& pos);
 	void consume_ows_cr(const std::string& buffer, size_t& pos);
@@ -40,6 +42,12 @@ namespace _Request {
 
 	std::string extract_key(const std::string& buffer, size_t& pos);
 	std::string extract_values(const std::string& buffer, size_t& pos);
+	raw_headers_t extract_headers(const std::string& m_buffer, size_t& pos);
+	unsigned long parse_content_length(const raw_headers_t& raw_headers);
+	headers_t parse_headers(
+			const std::string& buffer,
+			size_t& pos,
+			const request_t& request);
 }
 
 #endif
