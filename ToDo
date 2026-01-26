@@ -5,5 +5,7 @@ Request Pareser(int socket_fd, struct config):
   -Creer l'objet Request Data qui contient les infos attendues par HTTP
 
 Epoll Loop:
-  -Refac la loop epoll_wait
-
+  -Refac la loop epoll_wait | OK
+  -Modifier le tracking des etats EPOLLIN/EPOLLOUT en fonction des ce que dit le parseur
+  -Creer classe qui s'occupe de gérer les logs (print en live ou dans un fichier)
+  
