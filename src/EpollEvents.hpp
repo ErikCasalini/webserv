@@ -1,9 +1,7 @@
 #ifndef EPOLLEVENTS_HPP
 # define EPOLLEVENTS_HPP
 
-// # include <vector>
 # include <sys/epoll.h>
-# include "types.hpp"
 # include "main_loop.hpp"
 
 class EpollEvents

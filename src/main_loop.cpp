@@ -1,6 +1,8 @@
 #include "main_loop.hpp"
 #include "Sockets.hpp"
 #include "EpollEvents.hpp"
+#include "ActiveRequests.hpp"
+#include "ActiveResponses.hpp"
 #include "../include/c_network_exception.h"
 #include <unistd.h>
 #include <string.h>
@@ -113,6 +115,11 @@ void	open_new_sockets(int &ready_fds, EpollEvents &events, Sockets &sockets)
 	}
 }
 
+// void	read_from_sockets(ActiveRequests &requests, )
+// {
+
+// }
+
 void	handle_active_sockets(int &ready_fds, EpollEvents &events, Sockets &sockets, temp_config &config)
 {
 	for (size_t i = 0; i < events.size() && ready_fds; i++) {
@@ -151,9 +158,11 @@ void	handle_active_sockets(int &ready_fds, EpollEvents &events, Sockets &sockets
 
 int	main_server_loop(temp_config &config)
 {
-	int			ready_fds;
-	EpollEvents	events(config.socket_limit); // throws
-	Sockets		sockets(epoll_create_ex(1), config.socket_limit); // throws
+	int				ready_fds;
+	EpollEvents		events(config.socket_limit); // throws
+	ActiveRequests	requests(config.socket_limit); // throws
+	ActiveResponses	responses(config.socket_limit); // throws
+	Sockets			sockets(epoll_create_ex(1), config.socket_limit); // throws
 
 	init_listen_sockets(config.interfaces, sockets); // throws
 	while(1) {
