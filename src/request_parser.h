@@ -12,6 +12,7 @@ public:
 	Request();
 
 	int read_socket();
+	void clear();
 	void parse();
 	const request_t& get_request() const;
 
