@@ -11,7 +11,7 @@ class Request
 public:
 	Request();
 
-	void read_socket();
+	int read_socket();
 	void parse();
 	const request_t& get_request() const;
 
@@ -23,9 +23,12 @@ public:
 	public:
 		NotImplemented(const char* msg);
 	};
+
+	int m_sockfd;
 private:
 	request_t m_request;
 	std::string m_buffer;
+	const size_t m_recv_buf_size;
 };
 
 // Helper functions namespace

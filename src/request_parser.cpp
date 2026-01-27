@@ -6,8 +6,10 @@
 #include <stdexcept>
 #include <string>
 #include <errno.h>
+#include <sys/socket.h>
 
-Request::Request()
+
+Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 {
 	// PERF: is this call necessary as an error is returned on failure?
 	// If an user try to read body while there isn't in this request:
@@ -51,19 +53,28 @@ void Request::parse()
 		// headers
 		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
 		_Request::consume_crlf(m_buffer, pos);
+		m_request.status = ok;
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
 	} catch (const Request::NotImplemented& e) {
 		m_request.status = not_implemented;
 	}
-	m_request.status = ok;
+	m_buffer.erase(0, pos);
 }
 
 // TODO: check with a file if the crlf is translated to a single \n
-// TODO: real implementation
-void Request::read_socket()
+int Request::read_socket()
 {
-	m_buffer =  "GET /exemple.com HTTP/1.1\r\n";
+	char buf[m_recv_buf_size];
+	memset(buf, 0, m_recv_buf_size);
+	ssize_t ret = static_cast<ssize_t>(m_recv_buf_size);
+	while (ret == static_cast<ssize_t>(m_recv_buf_size)) {
+		ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
+		if (ret == -1)
+			return (-1);
+		m_buffer.append(buf, static_cast<std::string::size_type>(ret));
+	}
+	return (0);
 }
 
 const request_t& Request::get_request() const
