@@ -21,6 +21,13 @@ Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 	std::memset((void*)&m_request, 0, sizeof(m_request));
 };
 
+void Request::clear()
+{
+	m_sockfd = -1;
+	std::memset((void*)&m_request, 0, sizeof(m_request));
+	m_buffer.clear();
+}
+
 /**
  * @brief Parse the raw request
  *
