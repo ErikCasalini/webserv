@@ -19,7 +19,26 @@ Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 	// and only the structs will be filled with garbage
 	// moreover if any of this structs can't be parsed an exception must be thrown.
 	std::memset((void*)&m_request, 0, sizeof(m_request));
-};
+}
+
+Request::Request(const Request& src)
+	: m_sockfd(src.m_sockfd)
+	, m_request(src.m_request)
+	, m_buffer(src.m_buffer)
+	, m_recv_buf_size(src.m_recv_buf_size)
+{
+}
+
+Request& Request::operator=(const Request& src)
+{
+	if (&src != this) {
+		m_sockfd = src.m_sockfd;
+		m_request = src.m_request;
+		m_buffer = src.m_buffer;
+		m_recv_buf_size = src.m_recv_buf_size;
+	}
+	return (*this);
+}
 
 void Request::clear()
 {
