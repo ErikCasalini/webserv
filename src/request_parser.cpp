@@ -93,14 +93,11 @@ int Request::read_socket()
 {
 	char buf[m_recv_buf_size];
 	memset(buf, 0, m_recv_buf_size);
-	ssize_t ret = static_cast<ssize_t>(m_recv_buf_size);
-	while (ret == static_cast<ssize_t>(m_recv_buf_size)) {
-		ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
-		if (ret == -1)
-			return (-1);
+	ssize_t ret = 0;
+	ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
+	if (ret > 0)
 		m_buffer.append(buf, static_cast<std::string::size_type>(ret));
-	}
-	return (0);
+	return (ret);
 }
 
 const request_t& Request::get_request() const
