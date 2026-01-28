@@ -10,6 +10,8 @@ class Request
 {
 public:
 	Request();
+	Request(const Request& src);
+	Request& operator=(const Request& src);
 
 	int read_socket();
 	void clear();
@@ -29,7 +31,7 @@ public:
 private:
 	request_t m_request;
 	std::string m_buffer;
-	const size_t m_recv_buf_size;
+	size_t m_recv_buf_size;
 };
 
 // Helper functions namespace

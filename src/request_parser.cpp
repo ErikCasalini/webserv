@@ -19,7 +19,26 @@ Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 	// and only the structs will be filled with garbage
 	// moreover if any of this structs can't be parsed an exception must be thrown.
 	std::memset((void*)&m_request, 0, sizeof(m_request));
-};
+}
+
+Request::Request(const Request& src)
+	: m_sockfd(src.m_sockfd)
+	, m_request(src.m_request)
+	, m_buffer(src.m_buffer)
+	, m_recv_buf_size(src.m_recv_buf_size)
+{
+}
+
+Request& Request::operator=(const Request& src)
+{
+	if (&src != this) {
+		m_sockfd = src.m_sockfd;
+		m_request = src.m_request;
+		m_buffer = src.m_buffer;
+		m_recv_buf_size = src.m_recv_buf_size;
+	}
+	return (*this);
+}
 
 void Request::clear()
 {
@@ -74,14 +93,11 @@ int Request::read_socket()
 {
 	char buf[m_recv_buf_size];
 	memset(buf, 0, m_recv_buf_size);
-	ssize_t ret = static_cast<ssize_t>(m_recv_buf_size);
-	while (ret == static_cast<ssize_t>(m_recv_buf_size)) {
-		ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
-		if (ret == -1)
-			return (-1);
+	ssize_t ret = 0;
+	ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
+	if (ret > 0)
 		m_buffer.append(buf, static_cast<std::string::size_type>(ret));
-	}
-	return (0);
+	return (ret);
 }
 
 const request_t& Request::get_request() const
