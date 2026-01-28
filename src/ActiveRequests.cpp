@@ -10,31 +10,36 @@ ActiveRequests::ActiveRequests(int socket_limit)
 ActiveRequests::~ActiveRequests(void)
 {}
 
-/*
-	If sockfd is already associated with a request object
-		--> return this object
-	Else
-		--> sockfd is associated with the empty request
-		object closest to the top of the list and return this object
-*/
-Request	&ActiveRequests::add(int sockfd)
+int	ActiveRequests::add(int sockfd)
 {
-	int	index = -1;
-
 	for (int i = 0; i < m_socket_limit; i++) {
-		if (m_request_lst.at(i).m_sockfd == sockfd)
-			return (m_request_lst.at(i));
-		if (index < 0)
-			index = i;
-		if (i == m_socket_limit)
-			throw std::logic_error("Attempt to add a new Request to"
-								" ActiveRequests vector while full");
+		if (m_request_lst.at(i).m_sockfd == -1) {
+			m_request_lst.at(i).m_sockfd = sockfd;
+			return (i);
+		}
 	}
-	m_request_lst.at(index).m_sockfd = sockfd;
-	return (m_request_lst.at(index));
+	throw std::logic_error("Attempt to add Request while ActiveRequests is full");
 }
 
-void	ActiveRequests::remove(int sockfd)
+// int	ActiveRequests::add(int sockfd, int index)
+// {
+// 	if (index >= 0) {
+// 		m_request_lst.at(index).m_sockfd = sockfd;
+// 		return (index);
+// 	}
+// 	throw std::logic_error("Attempt to add Request to invalid index");
+// }
+
+int	ActiveRequests::search(int sockfd) const
+{
+	for (int i = 0; i < m_socket_limit; i++) {
+		if (m_request_lst.at(i).m_sockfd == sockfd)
+			return (i);
+	}
+	return (-1);
+}
+
+void	ActiveRequests::clear(int sockfd)
 {
 	for (int i = 0; i < m_socket_limit; i++) {
 		if (m_request_lst.at(i).m_sockfd == sockfd) {
@@ -42,5 +47,8 @@ void	ActiveRequests::remove(int sockfd)
 			return ;
 		}
 	}
-	throw std::logic_error("Attempt to remove inexistent Request");
+}
+Request	&ActiveRequests::at(int index) // throw
+{
+	return (m_request_lst.at(index));
 }

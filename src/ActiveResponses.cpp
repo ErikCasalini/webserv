@@ -15,7 +15,7 @@ ActiveResponses::~ActiveResponses(void)
 //
 // }
 
-void	ActiveResponses::remove(int sockfd)
+void	ActiveResponses::clear(int sockfd)
 {
 
 }

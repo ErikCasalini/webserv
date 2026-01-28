@@ -10,8 +10,11 @@ class	ActiveRequests
 
 								ActiveRequests(int socket_limit);
 								~ActiveRequests(void) {}
-		Request					&add(int sockfd);
-		void					remove(int sockfd);
+		// int						add(int sockfd, int index);
+		int						add(int sockfd);
+		void					clear(int sockfd);
+		int						search(int sockfd) const;
+		Request					&at(int index);
 
 	private:
 

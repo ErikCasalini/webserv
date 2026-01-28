@@ -10,7 +10,7 @@ class	ActiveResponses
 								ActiveResponses(int socket_limit);
 								~ActiveResponses(void);
 		// Response				&add(int sockfd);
-		void					remove(int sockfd);
+		void					clear(int sockfd);
 
 	private:
 

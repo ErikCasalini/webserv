@@ -1,13 +1,13 @@
 #include <stdexcept>
 
-class critical_exception : public std::runtime_error
+class CriticalException : public std::runtime_error
 {
 	public:
-	critical_exception(const char* _Nullable err)
+	CriticalException(const char* _Nullable err)
 	: std::runtime_error(err) {};
 };
 
-class recoverable_exception : public std::runtime_error {};
+class RecoverableException : public std::runtime_error {};
 
 int	socket_ex(int domain, int type, int protocol);
 int	bind_ex(int sockfd, const struct sockaddr *_Nullable addr, socklen_t addrlen);
