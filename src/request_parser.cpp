@@ -8,6 +8,38 @@
 #include <errno.h>
 #include <sys/socket.h>
 
+//HEADERS
+// allow
+// "authorization",
+// // can be ignored safely
+// "content-encoding",
+// // IMPLEMENT POST
+// "content-length",
+// // can be ignored safely server side
+// "content-type",
+// // can be ignored
+// "date"
+// // can be ignored without cache
+// "expires"
+// // can be ignored
+// "from"
+// // can be ignored
+// "if-modified-since"
+// // can be ignored
+// "last-modified",
+// // can be ignored
+// "location"
+// // can be ignored
+// "pragma"
+// // can be ignored
+// "referer"
+// //can be ignored
+// "user-agent"
+
+// RESPONSE
+// should be ignored
+// server
+// WWW-Authenticate
 
 Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 {
@@ -309,6 +341,9 @@ namespace _Request {
 		headers_t headers;
 		std::memset((void*)&headers, 0, sizeof(headers_t));
 		headers.keep_alive = parse_connection(raw_headers);
+		// headers.cookies = parse_cookies(raw_headers);
+		// if (request.method == get)
+		// 	headers.if_modified_since = parse_if_modified_since(raw_headers);
 		if (request.method == post)
 			headers.content_length = parse_content_length(raw_headers);
 		return (headers);
