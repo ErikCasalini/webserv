@@ -29,7 +29,14 @@ SRC_DIR := src
 LIB_DIR := src/lib
 vpath %.cpp $(SRC_DIR):$(LIB_DIR)
 SRC := request_parser.cpp \
-	   cctype_cast.cpp
+	   cctype_cast.cpp \
+	   c_network_exception_wrapper.cpp \
+	   ActiveRequests.cpp \
+	   ActiveResponses.cpp \
+	   EpollEvents.cpp \
+	   main_loop.cpp \
+	   main.cpp \
+	   Sockets.cpp \
 
 BUILD_DIR := build
 OBJ := $(SRC:%.cpp=$(BUILD_DIR)/%.o)

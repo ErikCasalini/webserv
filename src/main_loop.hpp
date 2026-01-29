@@ -4,6 +4,9 @@
 # include <vector>
 # include <utility>
 # include <string>
+# include <sys/epoll.h>
+
+typedef std::vector<epoll_event> vec_events;
 
 typedef struct	temp_config
 {
