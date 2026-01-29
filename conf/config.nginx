@@ -1,0 +1,42 @@
+# Comments '#' can be everywhere on the line, all subsequent chars will be ignored until '\n'.
+# Spaces are not semantic (outside of key value separators) and can be either SP ot HTAB.
+events {
+	# the max number of simultaneous connections (client + server conections)
+	# open sockets, Nginx use 2 connections at start
+	worker_connections 3;
+}
+
+http {
+	# include raw file content (must be structured)
+	include			mime.types; # fill 'types' block
+	default_type	application/octet-stream;
+
+	keepalive_timeout	10;
+
+	server {
+		listen 127.0.0.1:4242;
+		# server_name test_serv;
+		location / {
+			# root filesystem, absolute form or relative to server executable file
+			# (if symlink resolve to source)
+			root	/home/juportie/Documents/webserv/html;
+			# file to serve for '/' path
+			index	index.html;
+		}
+		# if call /src return redirect
+		# if call /src/ return index or list directory if autoindex on
+		location /src {
+			# root filesystem, absolute form or relative to server executable file
+			# (if symlink resolve to source)
+			root	/home/juportie/Documents/webserv;
+			# file to serve for '/' path
+			index	Config.h;
+			# list directory tree
+			autoindex on;
+			# limit location to methods
+			limit_except GET;
+		}
+        # redirect server error pages to the static page /404.html
+        error_page	404	/404.html;
+	}
+}
