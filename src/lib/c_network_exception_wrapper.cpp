@@ -38,7 +38,7 @@ int epoll_create_ex(int size)
 	return (ret);
 }
 
-int epoll_ctl_ex(int epfd, int op, int fd, struct epoll_event *_Nullable event)
+int epoll_ctl_ex(int epfd, int op, int fd, struct epoll_event *event)
 {
 	int ret = epoll_ctl(epfd, op, fd, event);
 	if (ret < 0)
