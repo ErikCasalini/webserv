@@ -293,13 +293,14 @@ namespace _Request {
 
 	bool parse_connection(const raw_headers_t& raw_headers)
 	{
-		std::string val = raw_headers.at("connection");
-		strtrim(val);
-		std::transform(val.begin(), val.end(), val.begin(), to_lower);
-		if (val.length() > 0 && val == "keep-alive")
-			return (true);
-		else
-			return (false);
+		try {
+			std::string val = raw_headers.at("connection");
+			strtrim(val);
+			std::transform(val.begin(), val.end(), val.begin(), to_lower);
+			if (val.length() > 0 && val == "keep-alive")
+				return (true);
+		} catch (const std::out_of_range& e) {}
+		return (false);
 	}
 
 	headers_t parse_headers(const std::string& buffer, size_t& pos, const request_t& request)
