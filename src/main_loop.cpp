@@ -142,7 +142,7 @@ void	accept_new_connections(int listen_fd, Sockets &sockets)
 
 void	close_connection(int sockfd, Sockets &sockets, ActiveRequests &requests, ActiveResponses &responses)
 {
-	epoll_ctl(sockets.epollInst(), EPOLL_CTL_DEL, sockfd, NULL); // a secure ??
+	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_DEL, sockfd, NULL); // throws
 	requests.clear(sockfd); // si present
 	responses.clear(sockfd); // si present
 	sockets.close(sockfd);
@@ -178,10 +178,9 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveRequests &req
 		requests.at(index).parse();
 		if (requests.at(index).get_request().status) {
 			event.events = EPOLLOUT;
-			if (epoll_ctl(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event) == -1) {
-				std::cout << "[SOCKET INTERNAL ERROR] " << sockets.info(sockfd) << " | [CLOSED]\n";
-				close_connection(sockfd, sockets, requests, responses); // call epoll_ctl again ??
-			}
+			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
+			std::cout << requests.at(index).get_request().target << '\n'; // DEBUG
+			// std::cout << "C'est bien nous\n";
 		}
 		// create_response(sockfd);
 	}
@@ -219,7 +218,7 @@ int	main_server_loop(temp_config &config)
 			else if (events.at(i).events & EPOLLHUP)
 				handle_client_disconnected(events.at(i), sockets, requests, responses);
 			// else if (events.at(i).events & EPOLLOUT)
-				// handle_write
+				// std::cout << "Il est ici\n";
 		}
 	}
 }

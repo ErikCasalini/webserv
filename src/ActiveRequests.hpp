@@ -9,7 +9,7 @@ class	ActiveRequests
 	public:
 
 								ActiveRequests(int socket_limit);
-								~ActiveRequests(void) {}
+								~ActiveRequests(void);
 		// int						add(int sockfd, int index);
 		int						add(int sockfd);
 		void					clear(int sockfd);
