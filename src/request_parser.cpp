@@ -94,7 +94,7 @@ int Request::read_socket()
 	char buf[m_recv_buf_size];
 	memset(buf, 0, m_recv_buf_size);
 	ssize_t ret = 0;
-	ret = recv(m_sockfd, &m_buffer, m_recv_buf_size, MSG_DONTWAIT);
+	ret = recv(m_sockfd, &buf, m_recv_buf_size, MSG_DONTWAIT);
 	if (ret > 0)
 		m_buffer.append(buf, static_cast<std::string::size_type>(ret));
 	return (ret);
@@ -131,7 +131,7 @@ namespace _Request {
 		protocols["1.1"] = one_one;
 		return (protocols);
 	}
-	
+
 	void consume_sp(const std::string& buffer, size_t& pos)
 	{
 		if (buffer.at(pos) == ' ')
