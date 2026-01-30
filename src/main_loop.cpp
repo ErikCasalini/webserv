@@ -1,8 +1,9 @@
 #include "main_loop.hpp"
 #include "Sockets.hpp"
 #include "EpollEvents.hpp"
-#include "ActiveRequests.hpp"
-#include "ActiveResponses.hpp"
+#include "ActiveMessages.hpp"
+#include "request_parser.h"
+#include "Response.hpp"
 #include "../include/c_network_exception.h"
 #include <unistd.h>
 #include <string.h>
@@ -104,43 +105,7 @@ void	accept_new_connections(int listen_fd, Sockets &sockets)
 	}
 }
 
-// void	handle_active_sockets(int &ready_fds, EpollEvents &events, Sockets &sockets, temp_config &config)
-// {
-// 	for (size_t i = 0; i < events.size() && ready_fds; i++) {
-// 		if ((EpollEvents::getSockType(events.at(i)) == active) &&
-// 			(events.at(i).events & EPOLLERR)) {
-// 			std::cout << "[SOCKET INTERNAL ERROR] " << sockets.info(events.getFd(events.at(i))) << " | [CLOSED]\n";
-// 			epoll_ctl(sockets.epollInst(), EPOLL_CTL_DEL, EpollEvents::getFd(events.at(i)), 0);
-// 			sockets.close(EpollEvents::getFd(events.at(i)));
-// 		}
-// 		else if ((EpollEvents::getSockType(events.at(i)) == active) &&
-// 				(events.at(i).events & EPOLLHUP)) {
-// 			std::cout << "[PEER CLOSED] " << sockets.info(events.getFd(events.at(i))) << " | [CLOSED]\n";
-// 			epoll_ctl(sockets.epollInst(), EPOLL_CTL_DEL, EpollEvents::getFd(events.at(i)), 0);
-// 			sockets.close(EpollEvents::getFd(events.at(i)));
-// 		}
-// 		/* Si EPOLLIN -> jules(events.at(i).data.fd, config) -> Si requete complete -> set flag "ready" ou flag "pas bon" si ca va pas | et epoll_ctl(Enleve EPOLLIN et met EPOLLOUT)
-// 		   Si EPOLLOUT -> traite la reponse et on ecrit une fois -> si tout est ecrit -> epoll_ctl(Enleve EPOLLOUT et met EPOLLIN)*/
-// 		else if ((EpollEvents::getSockType(events.at(i)) == active) &&
-// 				(events.at(i).events & EPOLLIN)) {
-// 			char	buf[1000];
-// 			int		ret;
-// 			std::memset(buf, 0, sizeof(buf));
-// 			ret = recv(EpollEvents::getFd(events.at(i)), buf, sizeof(buf), 0);
-// 			if (ret > 0)
-// 				std::cout << "FD: " << EpollEvents::getFd(events.at(i)) << " " << buf;
-// 			else {
-// 				epoll_ctl(sockets.epollInst(), EPOLL_CTL_DEL, EpollEvents::getFd(events.at(i)), 0);
-// 				sockets.close(EpollEvents::getFd(events.at(i)));
-// 				std::cout << "FD: " << EpollEvents::getFd(events.at(i)) << " CLOSED\n";
-// 			}
-// 			//jules(events.at(i).data.fd, config); --> consume le fd ou stop si read trop long et le conserve dans un buffer
-// 		}
-// 		ready_fds--;
-// 	}
-// }
-
-void	close_connection(int sockfd, Sockets &sockets, ActiveRequests &requests, ActiveResponses &responses)
+void	close_connection(int sockfd, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_DEL, sockfd, NULL); // throws
 	requests.clear(sockfd); // si present
@@ -148,7 +113,7 @@ void	close_connection(int sockfd, Sockets &sockets, ActiveRequests &requests, Ac
 	sockets.close(sockfd);
 }
 
-void	handle_error(epoll_event &event, Sockets &sockets, ActiveRequests &requests, ActiveResponses &responses)
+void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	int	sockfd;
 
@@ -160,7 +125,7 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveRequests &requests
 	close_connection(sockfd, sockets, requests, responses);
 }
 
-void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveRequests &requests, ActiveResponses &responses)
+void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	int	sockfd = EpollEvents::getFd(event);
 
@@ -168,25 +133,26 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveRequests &req
 		accept_new_connections(sockfd, sockets); // throws
 
 	else {
-		int	index = requests.search(sockfd);
-		if (index == -1)
-			index = requests.add(sockfd); // throws
-		if (requests.at(index).read_socket() == 0) { // throws
+		int	i = requests.search(sockfd);
+		if (i == -1)
+			i = requests.add(sockfd); // throws
+		if (requests.at(i).read_socket() == 0) { // throws
 			std::cout << "[PEER CLOSED] " << sockets.info(sockfd) << " | [CLOSED]\n"; // pour debug
 			close_connection(sockfd, sockets, requests, responses);
+			return ;
 		}
-		requests.at(index).parse();
-		if (requests.at(index).get_request().status) {
+		requests.at(i).parse();
+		if (requests.at(i).get_request().status) {
+			responses.add(sockfd, requests.at(i).get_request());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
 			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
-			std::cout << requests.at(index).get_request().target << '\n'; // DEBUG
-			// std::cout << "C'est bien nous\n";
+			std::cout << requests.at(i).get_request().target << '\n'; // DEBUG
+			// responses.at(i_resp).parse()
 		}
-		// create_response(sockfd);
 	}
 }
 
-void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveRequests &requests, ActiveResponses &responses)
+void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	int	sockfd = EpollEvents::getFd(event);
 
@@ -197,18 +163,29 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveRequ
 	close_connection(sockfd, sockets, requests, responses);
 }
 
+void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Response> &responses)
+{
+	int	sockfd = EpollEvents::getFd(event);
+	int	i = responses.search(sockfd);
+
+	// DEBUG
+	send(sockfd, responses.at(i).get_buf(), responses.at(i).get_buf_size(), SOCK_NONBLOCK);
+	event.events = EPOLLIN;
+	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event);
+	responses.at(i).clear(); // on eleve pour l'instant
+}
+
 int	main_server_loop(temp_config &config)
 {
-	int				ready_fds;
-	EpollEvents		events(config.socket_limit); // throws
-	ActiveRequests	requests(config.socket_limit); // throws
-	ActiveResponses	responses(config.socket_limit); // throws
-	Sockets			sockets(epoll_create_ex(1), config.socket_limit); // throws
+	int							ready_fds;
+	EpollEvents					events(config.socket_limit); // throws
+	ActiveMessages<Request>		requests(config.socket_limit); // throws
+	ActiveMessages<Response>	responses(config.socket_limit); // throws
+	Sockets						sockets(epoll_create_ex(1), config.socket_limit); // throws
 
 	init_listen_sockets(config.interfaces, sockets); // throws
 	while(1) {
 		errno = 0;
-		// std::cout << "MAIN LOOP\n";
 		ready_fds = epoll_wait_ex(sockets.epollInst(), events.addr(), events.size(), 0); // throws
 		for (int i = 0; i < ready_fds; i++) {
 			if (events.at(i).events & EPOLLERR)
@@ -217,8 +194,8 @@ int	main_server_loop(temp_config &config)
 				handle_read_event(events.at(i), sockets, requests, responses);
 			else if (events.at(i).events & EPOLLHUP)
 				handle_client_disconnected(events.at(i), sockets, requests, responses);
-			// else if (events.at(i).events & EPOLLOUT)
-				// std::cout << "Il est ici\n";
+			else if (events.at(i).events & EPOLLOUT)
+				handle_write_event(events.at(i), sockets, responses);
 		}
 	}
 }
