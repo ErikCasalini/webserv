@@ -158,28 +158,42 @@ namespace _Request {
 
 	void consume_sp(const string& buffer, size_t& pos)
 	{
-		if (buffer.at(pos) == ' ')
-			++pos;
-		else
-			throw Request::BadRequest("missing SP");
-		if (buffer.at(pos) == ' ')
-			throw Request::BadRequest("extraneous SP");
+		try {
+			if (buffer.at(pos) == ' ')
+				++pos;
+			else
+				throw Request::BadRequest("missing SP");
+			if (buffer.at(pos) == ' ')
+				throw Request::BadRequest("extraneous SP");
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in place of sp");
+		}
+
+
 	}
 
 	void consume_crlf(const string& buffer, size_t& pos)
 	{
-		if (buffer.substr(pos, 2) == CRLF)
-			pos += 2;
-		else
-			throw Request::BadRequest("missing CRLF");
+		try {
+			if (buffer.substr(pos, 2) == CRLF)
+				pos += 2;
+			else
+				throw Request::BadRequest("missing CRLF");
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in place of crlf");
+		}
 	}
 
 	void consume_ows_cr(const string& buffer, size_t& pos)
 	{
-		while (buffer.at(pos) == ' '
-				|| buffer.at(pos) == '\t'
-				|| (buffer.at(pos) == '\r' && buffer.substr(pos, 2) != CRLF))
-			++pos;
+		try {
+			while (buffer.at(pos) == ' '
+					|| buffer.at(pos) == '\t'
+					|| (buffer.at(pos) == '\r' && buffer.substr(pos, 2) != CRLF))
+				++pos;
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in place of ows/cr");
+		}
 	}
 
 	// The method (and the space following it) will be consumed from pos.
@@ -189,11 +203,15 @@ namespace _Request {
 		static const map<string, method_t> methods = build_method_map();
 		map<string, method_t>::const_iterator method = methods.begin();
 		map<string, method_t>::const_iterator end = methods.end();
-		for (; method != end; ++method) {
-			if (buffer.substr(pos, method->first.length()) == method->first) {
-				pos += method->first.length();
-				return (method->second);
+		try {
+			for (; method != end; ++method) {
+				if (buffer.substr(pos, method->first.length()) == method->first) {
+					pos += method->first.length();
+					return (method->second);
+				}
 			}
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in method");
 		}
 		// TODO: replace this exception by NotImplemented when the method is uppercase but not found in the map
 		throw Request::BadRequest("illformed method");
@@ -211,12 +229,12 @@ namespace _Request {
 			while (!is_space(buffer.at(pos))) {
 				++pos;
 			}
+			if (pos == start)
+				throw Request::BadRequest("missing target");
+			target = buffer.substr(start, pos - start);
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("non terminated target");
 		}
-		if (pos == start)
-			throw Request::BadRequest("missing target");
-		target = buffer.substr(start, pos - start);
 		return (target);
 	};
 
@@ -225,19 +243,23 @@ namespace _Request {
 	{
 		// Following rfc9112 the protocol name is case sensitive
 		const string http_name = "HTTP/";
-		if (buffer.substr(pos, http_name.length()) != http_name)
-			throw Request::BadRequest("invalid protocol name");
-		else
-			pos += http_name.length();
+		try {
+			if (buffer.substr(pos, http_name.length()) != http_name)
+				throw Request::BadRequest("invalid protocol name");
+			else
+				pos += http_name.length();
 
-		static const map<string, protocol_t> protocols = build_protocol_map();
-		map<string, protocol_t>::const_iterator protocol = protocols.begin();
-		map<string, protocol_t>::const_iterator end = protocols.end();
-		for (; protocol != end; ++protocol) {
-			if (buffer.substr(pos, protocol->first.length()) == protocol->first) {
-				pos += protocol->first.length();
-				return (protocol->second);
+			static const map<string, protocol_t> protocols = build_protocol_map();
+			map<string, protocol_t>::const_iterator protocol = protocols.begin();
+			map<string, protocol_t>::const_iterator end = protocols.end();
+			for (; protocol != end; ++protocol) {
+				if (buffer.substr(pos, protocol->first.length()) == protocol->first) {
+					pos += protocol->first.length();
+					return (protocol->second);
+				}
 			}
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in protocol");
 		}
 		throw Request::BadRequest("unknown protocol version");
 	}
@@ -261,7 +283,9 @@ namespace _Request {
 					throw Request::BadRequest("space between name and colon");
 				++pos;
 			}
-		} catch (const std::out_of_range& e) {}
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in header key");
+		}
 		throw Request::BadRequest("invalid header name");
 	}
 
@@ -287,31 +311,37 @@ namespace _Request {
 	{
 		raw_headers_t headers;
 
-		while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
-			string key = extract_key(buffer, pos);
-			headers[key] = extract_values(buffer, pos);
+		try {
+			while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
+				string key = extract_key(buffer, pos);
+				headers[key] = extract_values(buffer, pos);
+			}
+		} catch (const std::out_of_range& e) {
+			throw Request::BadRequest("unexpected EOL in headers");
 		}
 		return (headers);
 	}
 
 	unsigned long parse_content_length(const raw_headers_t& raw_headers)
 	{
-		string val = raw_headers.at("content-length");
-		if (val.length() > 0) {
-			strtrim(val);
-			if (val.at(0) == '-')
-				throw Request::BadRequest("content-length is negative");
-			char* end = NULL;
-			errno = 0;
-			unsigned long len = std::strtoul(val.c_str(), &end, 10);
-			// TODO: check for max specified length (in config file or default value)
-			// is it a specific status code?
-			if (*end || errno) {
+		try {
+			string val = raw_headers.at("content-length");
+			if (val.length() > 0) {
+				strtrim(val);
+				if (val.at(0) == '-')
+					throw Request::BadRequest("content-length is negative");
+				char* end = NULL;
 				errno = 0;
-				throw Request::BadRequest("invalid content-length");
+				unsigned long len = std::strtoul(val.c_str(), &end, 10);
+				// TODO: check for max specified length (in config file or default value)
+				// is it a specific status code?
+				if (*end || errno) {
+					errno = 0;
+					throw Request::BadRequest("invalid content-length");
+				}
+				return (len);
 			}
-			return (len);
-		}
+		} catch (const std::out_of_range& e) {}
 		throw Request::BadRequest("missing content-length value");
 	}
 
