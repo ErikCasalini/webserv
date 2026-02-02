@@ -117,7 +117,6 @@ void Request::parse()
 int Request::read_socket()
 {
 	char buf[m_recv_buf_size];
-	memset(buf, 0, m_recv_buf_size);
 	ssize_t ret = 0;
 	ret = recv(m_sockfd, &buf, m_recv_buf_size, MSG_DONTWAIT);
 	if (ret > 0)
