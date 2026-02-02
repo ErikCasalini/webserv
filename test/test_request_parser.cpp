@@ -250,6 +250,15 @@ void test_extract_headers()
 	assert((headers["empty_val"] == ""));
 	assert(pos == 12);
 
+	std::string multiple = "connection: keep-alive" CRLF
+		"anything: random" CRLF;
+	pos = 0;
+	headers.clear();
+	headers = extract_headers(multiple, pos);
+	assert((headers["connection"] == " keep-alive"));
+	assert((headers["anything"] == " random"));
+	assert(pos == 42);
+
 	// wrong inputs
 	std::string no_crlf = "host:123.0.0.1";
 	pos = 0;
