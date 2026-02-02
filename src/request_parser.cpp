@@ -44,16 +44,7 @@ using std::string;
 using std::map;
 
 Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
-{
-	// PERF: is this call necessary as an error is returned on failure?
-	// If an user try to read body while there isn't in this request:
-	// in any case it must be avoided and the unique solution
-	// is to use the struct with care.
-	// In this struct the objects will be zero initialized
-	// and only the structs will be filled with garbage
-	// moreover if any of this structs can't be parsed an exception must be thrown.
-	std::memset((void*)&m_request, 0, sizeof(m_request));
-}
+{}
 
 Request::Request(const Request& src)
 	: m_sockfd(src.m_sockfd)
@@ -77,7 +68,7 @@ Request& Request::operator=(const Request& src)
 void Request::clear()
 {
 	m_sockfd = -1;
-	std::memset((void*)&m_request, 0, sizeof(m_request));
+	m_request.clear();
 	m_buffer.clear();
 }
 
@@ -341,7 +332,6 @@ namespace _Request {
 	{
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
-		std::memset((void*)&headers, 0, sizeof(headers_t));
 		headers.keep_alive = parse_connection(raw_headers);
 		// headers.cookies = parse_cookies(raw_headers);
 		// if (request.method == get)

@@ -29,6 +29,11 @@ enum status_t {
 };
 
 struct headers_t {
+	headers_t();
+	headers_t(const headers_t& src);
+	headers_t& operator=(const headers_t& src);
+	void clear();
+
 	unsigned long content_length;
 	std::string cookies;
 	bool keep_alive;
@@ -37,6 +42,11 @@ struct headers_t {
 };
 
 struct request_t {
+	request_t();
+	request_t(const request_t& src);
+	request_t& operator=(const request_t& src);
+	void clear();
+
 	status_t status;
 	method_t method;
 	std::string target;
