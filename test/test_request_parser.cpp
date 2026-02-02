@@ -331,6 +331,12 @@ void test_parse_content_length()
 		parse_content_length(chars);
 		assert((false && "chars"));
 	} catch (const Request::BadRequest& e) {};
+
+	raw_headers_t empty;
+	try {
+		parse_content_length(empty);
+		assert((false && "empty"));
+	} catch (const Request::BadRequest& e) {};
 }
 
 void test_parse_connection()
@@ -357,7 +363,11 @@ void test_parse_connection()
 	assert((parse_connection(close_up) == false));
 
 	// wrong inputs
-	// no wrong inputs, just treated as default -> close
+	raw_headers_t empty;
+	try {
+		parse_content_length(empty);
+		assert((false && "empty"));
+	} catch (const Request::BadRequest& e) {};
 }
 
 int main(void)
