@@ -32,6 +32,17 @@ void headers_t::clear()
 	if_modified_since.clear();
 }
 
+std::ostream& operator<<(std::ostream& os, const headers_t& h)
+{
+	os
+		<< "headers: [\n"
+		<< "\tcontent_length: " << h.content_length << '\n'
+		<< "\tcookies: " << h.cookies << '\n'
+		<< "\tkeep_alive: " << (h.keep_alive ? "true\n" : "false\n")
+		<< "\tif_modified_since: " << h.if_modified_since << "\n\t]\n";
+	return (os);
+}
+
 // request_t struct
 request_t::request_t()
 	: status(parsing)
@@ -69,4 +80,77 @@ void request_t::clear()
 	protocol = zero_nine;
 	headers.clear();
 	body.clear();
+}
+
+std::ostream& operator<<(std::ostream& os, const method_t& m)
+{
+	os << "method: ";
+	switch (m) {
+	case del:
+		os << "del";
+		break ;
+	case get:
+		os << "get";
+		break ;
+	case post:
+		os << "post";
+		break ;
+	}
+	return (os);
+}
+
+std::ostream& operator<<(std::ostream& os, const protocol_t& p)
+{
+	os << "protocol: ";
+	switch (p) {
+	case zero_nine:
+		os << "zero_nine";
+		break ;
+	case one:
+		os << "one";
+		break ;
+	case one_one:
+		os << "one_one";
+		break ;
+	case two:
+		os << "two";
+		break ;
+	case three:
+		os << "three";
+		break ;
+	}
+	return (os);
+}
+
+std::ostream& operator<<(std::ostream& os, const status_t& s)
+{
+	os << "status: ";
+	switch (s) {
+	case parsing:
+		os << "parsing";
+		break ;
+	case ok:
+		os << "ok";
+		break ;
+	case bad_request:
+		os << "bad_request";
+		break ;
+	case not_implemented:
+		os << "not_implemented";
+		break ;
+	}
+	return (os);
+}
+
+std::ostream& operator<<(std::ostream& os, const request_t& r)
+{
+	os
+		<< "request:\n"
+		<< '\t' << r.status << '\n'
+		<< '\t' << r.method << '\n'
+		<< '\t' << r.target << '\n'
+		<< '\t' << r.protocol << '\n'
+		<< '\t' << r.headers << '\n'
+		<< '\t' << r.body << '\n';
+	return (os);
 }

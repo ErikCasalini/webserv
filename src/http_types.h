@@ -1,6 +1,7 @@
 #ifndef HTTP_TYPES_H
 # define HTTP_TYPES_H
 
+# include <iostream>
 # include <map>
 # include <string>
 # include <vector>
@@ -12,6 +13,7 @@ enum method_t {
 	get,
 	post
 };
+std::ostream& operator<<(std::ostream& os, const method_t& m);
 
 enum protocol_t {
 	zero_nine,
@@ -20,6 +22,7 @@ enum protocol_t {
 	two,
 	three
 };
+std::ostream& operator<<(std::ostream& os, const protocol_t& p);
 
 enum status_t {
 	parsing,
@@ -27,6 +30,7 @@ enum status_t {
 	bad_request, // 400
 	not_implemented // 501
 };
+std::ostream& operator<<(std::ostream& os, const status_t& s);
 
 struct headers_t {
 	headers_t();
@@ -40,6 +44,7 @@ struct headers_t {
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
 };
+std::ostream& operator<<(std::ostream& os, const headers_t& h);
 
 struct request_t {
 	request_t();
@@ -54,5 +59,6 @@ struct request_t {
 	headers_t headers;
 	std::string body;
 };
+std::ostream& operator<<(std::ostream& os, const request_t& r);
 
 #endif
