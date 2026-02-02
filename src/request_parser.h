@@ -36,23 +36,25 @@ private:
 
 // Helper functions namespace
 namespace _Request {
-	typedef std::map<std::string, std::string> raw_headers_t;
+	using std::string;
 
-	void consume_sp(const std::string& buffer, size_t& pos);
-	void consume_crlf(const std::string& buffer, size_t& pos);
-	void consume_ows_cr(const std::string& buffer, size_t& pos);
+	typedef std::map<string, string> raw_headers_t;
 
-	method_t parse_method(const std::string& buffer, size_t& pos);
-	std::string parse_target(const std::string& buffer, size_t& pos);
-	protocol_t parse_protocol(const std::string& buffer, size_t& pos);
+	void consume_sp(const string& buffer, size_t& pos);
+	void consume_crlf(const string& buffer, size_t& pos);
+	void consume_ows_cr(const string& buffer, size_t& pos);
 
-	std::string extract_key(const std::string& buffer, size_t& pos);
-	std::string extract_values(const std::string& buffer, size_t& pos);
-	raw_headers_t extract_headers(const std::string& m_buffer, size_t& pos);
+	method_t parse_method(const string& buffer, size_t& pos);
+	string parse_target(const string& buffer, size_t& pos);
+	protocol_t parse_protocol(const string& buffer, size_t& pos);
+
+	string extract_key(const string& buffer, size_t& pos);
+	string extract_values(const string& buffer, size_t& pos);
+	raw_headers_t extract_headers(const string& m_buffer, size_t& pos);
 	unsigned long parse_content_length(const raw_headers_t& raw_headers);
 	bool parse_connection(const raw_headers_t& raw_headers);
 	headers_t parse_headers(
-			const std::string& buffer,
+			const string& buffer,
 			size_t& pos,
 			const request_t& request);
 }

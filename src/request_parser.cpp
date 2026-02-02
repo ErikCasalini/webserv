@@ -40,6 +40,8 @@
 // should be ignored
 // server
 // WWW-Authenticate
+using std::string;
+using std::map;
 
 Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 {
@@ -128,7 +130,7 @@ int Request::read_socket()
 	ssize_t ret = 0;
 	ret = recv(m_sockfd, &buf, m_recv_buf_size, MSG_DONTWAIT);
 	if (ret > 0)
-		m_buffer.append(buf, static_cast<std::string::size_type>(ret));
+		m_buffer.append(buf, static_cast<string::size_type>(ret));
 	return (ret);
 }
 
@@ -145,9 +147,9 @@ Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(ms
 namespace _Request {
 
 	// TODO: call this function from an init one called from the main
-	static const std::map<std::string, method_t> build_method_map()
+	static const map<string, method_t> build_method_map()
 	{
-		std::map<std::string, method_t> methods;
+		map<string, method_t> methods;
 		// Following rfc9112 all the methods must be uppercase
 		methods["DELETE"] = del;
 		methods["GET"] = get;
@@ -156,15 +158,15 @@ namespace _Request {
 	}
 
 	// TODO: call this function from an init one called from the main
-	static const std::map<std::string, protocol_t> build_protocol_map()
+	static const map<string, protocol_t> build_protocol_map()
 	{
-		std::map<std::string, protocol_t> protocols;
+		map<string, protocol_t> protocols;
 		protocols["1.0"] = one;
 		protocols["1.1"] = one_one;
 		return (protocols);
 	}
 
-	void consume_sp(const std::string& buffer, size_t& pos)
+	void consume_sp(const string& buffer, size_t& pos)
 	{
 		if (buffer.at(pos) == ' ')
 			++pos;
@@ -174,7 +176,7 @@ namespace _Request {
 			throw Request::BadRequest("extraneous SP");
 	}
 
-	void consume_crlf(const std::string& buffer, size_t& pos)
+	void consume_crlf(const string& buffer, size_t& pos)
 	{
 		if (buffer.substr(pos, 2) == CRLF)
 			pos += 2;
@@ -182,7 +184,7 @@ namespace _Request {
 			throw Request::BadRequest("missing CRLF");
 	}
 
-	void consume_ows_cr(const std::string& buffer, size_t& pos)
+	void consume_ows_cr(const string& buffer, size_t& pos)
 	{
 		while (buffer.at(pos) == ' '
 				|| buffer.at(pos) == '\t'
@@ -192,11 +194,11 @@ namespace _Request {
 
 	// The method (and the space following it) will be consumed from pos.
 	// Throws on failure.
-	method_t parse_method(const std::string& buffer, size_t& pos)
+	method_t parse_method(const string& buffer, size_t& pos)
 	{
-		static const std::map<std::string, method_t> methods = build_method_map();
-		std::map<std::string, method_t>::const_iterator method = methods.begin();
-		std::map<std::string, method_t>::const_iterator end = methods.end();
+		static const map<string, method_t> methods = build_method_map();
+		map<string, method_t>::const_iterator method = methods.begin();
+		map<string, method_t>::const_iterator end = methods.end();
 		for (; method != end; ++method) {
 			if (buffer.substr(pos, method->first.length()) == method->first) {
 				pos += method->first.length();
@@ -210,9 +212,9 @@ namespace _Request {
 	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
 	// Only handles target as origin form (e.g /index.html)
 	// TODO: handle query strings (e.g /main?l=en/index.html?q=now/)
-	std::string parse_target(const std::string& buffer, size_t& pos)
+	string parse_target(const string& buffer, size_t& pos)
 	{
-		std::string target;
+		string target;
 		size_t start = pos;
 		// TODO: check for path format validity (but what is valid?)
 		try {
@@ -229,18 +231,18 @@ namespace _Request {
 	};
 
 	// Case sensitive protocol parsing (expect uppercase)
-	protocol_t parse_protocol(const std::string& buffer, size_t& pos)
+	protocol_t parse_protocol(const string& buffer, size_t& pos)
 	{
 		// Following rfc9112 the protocol name is case sensitive
-		const std::string http_name = "HTTP/";
+		const string http_name = "HTTP/";
 		if (buffer.substr(pos, http_name.length()) != http_name)
 			throw Request::BadRequest("invalid protocol name");
 		else
 			pos += http_name.length();
 
-		static const std::map<std::string, protocol_t> protocols = build_protocol_map();
-		std::map<std::string, protocol_t>::const_iterator protocol = protocols.begin();
-		std::map<std::string, protocol_t>::const_iterator end = protocols.end();
+		static const map<string, protocol_t> protocols = build_protocol_map();
+		map<string, protocol_t>::const_iterator protocol = protocols.begin();
+		map<string, protocol_t>::const_iterator end = protocols.end();
 		for (; protocol != end; ++protocol) {
 			if (buffer.substr(pos, protocol->first.length()) == protocol->first) {
 				pos += protocol->first.length();
@@ -250,9 +252,9 @@ namespace _Request {
 		throw Request::BadRequest("unknown protocol version");
 	}
 
-	std::string extract_key(const std::string& buffer, size_t& pos)
+	string extract_key(const string& buffer, size_t& pos)
 	{
-		std::string key;
+		string key;
 		size_t start = pos;
 		// Catch out-of-range exceptions if at end of string
 		try {
@@ -260,7 +262,7 @@ namespace _Request {
 				if (buffer.at(pos) == ':') {
 					if (pos == start)
 						throw Request::BadRequest("missing header name");
-					std::string key = buffer.substr(start, pos);
+					string key = buffer.substr(start, pos);
 					std::transform(key.begin(), key.end(), key.begin(), to_lower);
 					++pos;
 					return (key);
@@ -274,9 +276,9 @@ namespace _Request {
 	}
 
 	// TODO: handle quoted strings: "asdsda" or quoted pairs: \n
-	std::string extract_values(const std::string& buffer, size_t& pos)
+	string extract_values(const string& buffer, size_t& pos)
 	{
-		std::string val;
+		string val;
 		try {
 			size_t start = pos;
 			while (buffer.substr(pos, 2) != CRLF)
@@ -291,12 +293,12 @@ namespace _Request {
 		}
 	}
 
-	raw_headers_t extract_headers(const std::string& buffer, size_t& pos)
+	raw_headers_t extract_headers(const string& buffer, size_t& pos)
 	{
 		raw_headers_t headers;
 
 		while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
-			std::string key = extract_key(buffer, pos);
+			string key = extract_key(buffer, pos);
 			headers[key] = extract_values(buffer, pos);
 		}
 		return (headers);
@@ -304,7 +306,7 @@ namespace _Request {
 
 	unsigned long parse_content_length(const raw_headers_t& raw_headers)
 	{
-		std::string val = raw_headers.at("content-length");
+		string val = raw_headers.at("content-length");
 		if (val.length() > 0) {
 			strtrim(val);
 			if (val.at(0) == '-')
@@ -326,7 +328,7 @@ namespace _Request {
 	bool parse_connection(const raw_headers_t& raw_headers)
 	{
 		try {
-			std::string val = raw_headers.at("connection");
+			string val = raw_headers.at("connection");
 			strtrim(val);
 			std::transform(val.begin(), val.end(), val.begin(), to_lower);
 			if (val.length() > 0 && val == "keep-alive")
@@ -335,7 +337,7 @@ namespace _Request {
 		return (false);
 	}
 
-	headers_t parse_headers(const std::string& buffer, size_t& pos, const request_t& request)
+	headers_t parse_headers(const string& buffer, size_t& pos, const request_t& request)
 	{
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
