@@ -7,15 +7,13 @@
 
 # define CRLF "\r\n"
 
-enum method_t
-{
+enum method_t {
 	del,
 	get,
 	post
 };
 
-enum protocol_t
-{
+enum protocol_t {
 	zero_nine,
 	one,
 	one_one,
@@ -23,16 +21,14 @@ enum protocol_t
 	three
 };
 
-enum status_t
-{
+enum status_t {
 	parsing,
 	ok,
 	bad_request, // 400
 	not_implemented // 501
 };
 
-struct headers_t
-{
+struct headers_t {
 	unsigned long content_length;
 	std::string cookies;
 	bool keep_alive;
@@ -40,8 +36,7 @@ struct headers_t
 	std::string if_modified_since;
 };
 
-struct request_t
-{
+struct request_t {
 	status_t status;
 	method_t method;
 	std::string target;

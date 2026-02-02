@@ -6,8 +6,7 @@
 # include <string>
 
 // TODO: add an init function that creates the method and protocol maps
-class Request
-{
+class Request {
 public:
 	Request();
 	Request(const Request& src);
