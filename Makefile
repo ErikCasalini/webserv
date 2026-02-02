@@ -57,7 +57,7 @@ noerr: CXXFLAGS = $(CXXFLAGS_NE)
 noerr: all
 
 test:
-	./test/test_runner.sh
+	make run -C test/
 
 asan: CXXFLAGS = $(CXXFLAGS_AS)
 asan: CXX = clang++
