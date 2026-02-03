@@ -114,9 +114,14 @@ void Request::parse()
 
 		// headers
 		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
+		// TODO: is it one or two CRLF to skip?
 		_Request::consume_crlf(m_buffer, pos);
-		// TODO: store body
-		m_request.status = ok;
+
+		// body
+		if (m_request.method == post)
+			m_request.body = _Request::extract_body(m_buffer, pos, m_request);
+		else
+			m_request.status = ok;
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
 	} catch (const Request::NotImplemented& e) {
@@ -379,21 +384,30 @@ namespace _Request {
 			headers.content_length = parse_content_length(raw_headers);
 		return (headers);
 	}
+
+	string extract_body(const string& buffer, size_t& pos, request_t& request)
+	{
+		string body;
+		try {
+			if (request.headers.content_length > 0) {
+				// Check if the full body is in the recv buffer
+				// if it isn't the status must stay in "parsing".
+				if (buffer.length() - pos >= request.headers.content_length + 2) {
+					request.status = ok;
+					body = buffer.substr(pos, request.headers.content_length);
+					pos += request.headers.content_length;
+					consume_crlf(buffer, pos);
+				}
+				else {
+					body = buffer.substr(pos);
+					pos += buffer.length() - pos;
+				}
+			}
+		} catch (const std::out_of_range& e) {
+			request.status = bad_request;
+		} catch (const Request::BadRequest& e) {
+			request.status = bad_request;
+		}
+		return (body);
+	}
 }
-//
-// #include <iostream>
-// int main(void)
-// {
-// 	try {
-// 		Request test;
-// 		test.read_socket();
-// 		test.parse();
-// 		std::cout << test.get_request().method << '\n';
-// 	}
-// 	catch (const std::exception& e) {
-// 		// TODO: create a function to automatically print exception messages
-// 		std::cerr << e.what() << '\n';
-// 	}
-//
-// 	return (0);
-// }

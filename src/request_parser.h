@@ -59,6 +59,7 @@ namespace _Request {
 			const string& buffer,
 			size_t& pos,
 			const request_t& request);
+	string extract_body(const string& buffer, size_t& pos, request_t& request);
 }
 
 #endif
