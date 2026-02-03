@@ -10,4 +10,8 @@
 
 void test(void (*func)(), const std::string& test_name);
 
+// Permit to call test() without giving redundant args:
+// e.g. test(funcname, "funcname") => TEST(funcname)
+# define TEST(F) test(F, #F)
+
 #endif

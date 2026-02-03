@@ -480,15 +480,15 @@ void test_parse_headers()
 int main(void)
 {
 	// start line
-	test(test_parse_method, "test_parse_method");
-	test(test_parse_target, "test_parse_target");
-	test(test_parse_protocol, "test_parse_protocol");
+	TEST(test_parse_method);
+	TEST(test_parse_target);
+	TEST(test_parse_protocol);
 	// headers
-	test(test_extract_key, "test_extract_key");
-	test(test_extract_values, "test_extract_values");
-	test(test_extract_headers, "test_extract_headers");
-	test(test_parse_content_length, "test_parse_content_length");
-	test(test_parse_connection, "test_parse_connection");
-	test(test_parse_headers, "test_parse_headers");
+	TEST(test_extract_key);
+	TEST(test_extract_values);
+	TEST(test_extract_headers);
+	TEST(test_parse_content_length);
+	TEST(test_parse_connection);
+	TEST(test_parse_headers);
 	return (0);
 }
