@@ -9,8 +9,10 @@
 int to_lower(char c);
 int is_graph(char c);
 int is_space(char c);
+int is_digit(char c);
 
 // Extensions for http parsing
+int is_token(char c);
 void strltrim(std::string& str, int (*func)(char));
 void strrtrim(std::string& str, int (*func)(char));
 void strtrim(std::string& str, int (*func)(char) = is_space);

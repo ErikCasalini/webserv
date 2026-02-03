@@ -34,7 +34,10 @@ http {
 			# list directory tree
 			autoindex on;
 			# limit location to methods
-			limit_except GET;
+			limit_except GET {
+				allow 127.0.0.1;
+				deny all;
+			}
 		}
         # redirect server error pages to the static page /404.html
         error_page	404	/404.html;

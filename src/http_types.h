@@ -1,47 +1,57 @@
 #ifndef HTTP_TYPES_H
 # define HTTP_TYPES_H
 
+# include <iostream>
 # include <map>
 # include <string>
 # include <vector>
 
 # define CRLF "\r\n"
 
-enum method_t
-{
+enum method_t {
 	del,
 	get,
 	post
 };
+std::ostream& operator<<(std::ostream& os, const method_t& m);
 
-enum protocol_t
-{
+enum protocol_t {
 	zero_nine,
 	one,
 	one_one,
 	two,
 	three
 };
+std::ostream& operator<<(std::ostream& os, const protocol_t& p);
 
-enum status_t
-{
+enum status_t {
 	parsing,
 	ok,
 	bad_request, // 400
 	not_implemented // 501
 };
+std::ostream& operator<<(std::ostream& os, const status_t& s);
 
-struct headers_t
-{
+struct headers_t {
+	headers_t();
+	headers_t(const headers_t& src);
+	headers_t& operator=(const headers_t& src);
+	void clear();
+
 	unsigned long content_length;
 	std::string cookies;
 	bool keep_alive;
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
 };
+std::ostream& operator<<(std::ostream& os, const headers_t& h);
 
-struct request_t
-{
+struct request_t {
+	request_t();
+	request_t(const request_t& src);
+	request_t& operator=(const request_t& src);
+	void clear();
+
 	status_t status;
 	method_t method;
 	std::string target;
@@ -49,5 +59,6 @@ struct request_t
 	headers_t headers;
 	std::string body;
 };
+std::ostream& operator<<(std::ostream& os, const request_t& r);
 
 #endif

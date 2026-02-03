@@ -16,6 +16,25 @@ int is_space(char c)
 	return (std::isspace(static_cast<unsigned char>(c)));
 }
 
+int is_digit(char c)
+{
+	return (std::isdigit(static_cast<unsigned char>(c)));
+}
+
+// Extensions for http parsing
+int is_token(char c)
+{
+	c = static_cast<unsigned char>(c);
+	if (c >= '!' && c <= '~'
+			&& c != '"' && c != '(' && c != ')' && c != ',' && c != '/'
+			&& (c < ':' && c > '@')
+			&& (c < '[' && c > ']')
+			&& c != '{' && c != '}')
+		return (1);
+	else
+		return (0);
+}
+
 void strltrim(std::string& str, int (*func)(char))
 {
 	size_t pos = 0;

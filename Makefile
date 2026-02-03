@@ -18,6 +18,7 @@ CXXFLAGS_AS :=	$(STD_FLAGS) $(WARNINGS) -g3 \
 				-fsanitize=address
 CXXFLAGS_US :=	$(STD_FLAGS) $(WARNINGS) -g3 \
 				-fsanitize=undefined
+CXXFLAGS_GDB :=	$(STD_FLAGS) -ggdb -Wall -Wextra -Wconversion -Wsign-conversion
 DEP_FLAGS := 	-MMD
 
 #########
@@ -29,6 +30,7 @@ SRC_DIR := src
 LIB_DIR := src/lib
 vpath %.cpp $(SRC_DIR):$(LIB_DIR)
 SRC := request_parser.cpp \
+	   http_types.cpp \
 	   cctype_cast.cpp \
 	   c_network_exception_wrapper.cpp \
 	   ActiveRequests.cpp \
@@ -46,31 +48,37 @@ DEP_FILES := $(OBJ:.o=.d)
 ###########
 # TARGETS #
 ###########
-.PHONY: all clean fclean re dbg noerr test asan usan
+.PHONY: all clean fclean re dbg noerr test asan usan gdb
 
 all: $(BUILD_DIR) $(NAME)
 
-dbg: CXXFLAGS = $(CXXFLAGS_DB)
+dbg: CXXFLAGS := $(CXXFLAGS_DB)
 dbg: all
-noerr: CXXFLAGS = $(CXXFLAGS_NE)
+noerr: CXXFLAGS := $(CXXFLAGS_NE)
 noerr: all
 
 test:
-	./test/test_runner.sh
+	make run -C test/
 
-asan: CXXFLAGS = $(CXXFLAGS_AS)
-asan: CXX = clang++
+asan: CXXFLAGS := $(CXXFLAGS_AS)
+asan: CXX := clang++
 asan: all
-usan: CXXFLAGS = $(CXXFLAGS_US)
-usan: CXX = clang++
+usan: CXXFLAGS := $(CXXFLAGS_US)
+usan: CXX := clang++
 usan: all
+gdb: CXX := g++
+gdb: CXXFLAGS := $(CXXFLAGS_GDB)
+gdb: all
+	make gdb -C test/
 
 # Only print a message if actually removing files/folders
 rm_wrapper = rm -r $(1) 2>/dev/null && echo $(2) || true
 clean:
 	@$(call rm_wrapper,$(BUILD_DIR),"remove $(BUILD_DIR)/")
+	make clean -C test/
 fclean: clean
 	@$(call rm_wrapper,$(NAME),"remove $(NAME)")
+	make fclean -C test/
 
 re: fclean all
 
