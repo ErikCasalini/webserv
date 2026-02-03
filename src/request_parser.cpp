@@ -126,7 +126,7 @@ void Request::parse()
 }
 
 // TODO: check with a file if the crlf is translated to a single \n
-int Request::read_socket()
+ssize_t Request::read_socket()
 {
 	char buf[m_recv_buf_size];
 	ssize_t ret = 0;

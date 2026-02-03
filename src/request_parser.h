@@ -4,6 +4,7 @@
 # include "http_types.h"
 # include <stdexcept>
 # include <string>
+# include <sys/types.h>
 
 // TODO: add an init function that creates the method and protocol maps
 class Request {
@@ -13,7 +14,7 @@ public:
 	Request(const Request& src);
 	Request& operator=(const Request& src);
 
-	int read_socket();
+	ssize_t read_socket();
 	void clear();
 	void clear_request();
 	void parse();
