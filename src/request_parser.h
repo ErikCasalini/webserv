@@ -9,6 +9,7 @@
 class Request {
 public:
 	Request();
+	Request(std::string buffer); // For testing purposes
 	Request(const Request& src);
 	Request& operator=(const Request& src);
 

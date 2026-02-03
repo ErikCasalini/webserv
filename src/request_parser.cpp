@@ -46,6 +46,13 @@ using std::map;
 Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
 {}
 
+// For testing purposes
+Request::Request(string buffer)
+	: m_sockfd(-1)
+	, m_buffer(buffer)
+	, m_recv_buf_size(50000)
+{}
+ 
 Request::Request(const Request& src)
 	: m_sockfd(src.m_sockfd)
 	, m_request(src.m_request)

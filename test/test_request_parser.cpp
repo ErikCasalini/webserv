@@ -477,6 +477,99 @@ void test_parse_headers()
 	catch (const Request::BadRequest& e) {}
 }
 
+void test_parse()
+{
+	// correct inputs
+	Request s_l("GET / HTTP/1.0" CRLF CRLF);
+	s_l.parse();
+	request_t start_line = s_l.get_request();
+	assert((start_line.method == get));
+	assert((start_line.target == "/"));
+	assert((start_line.protocol == one));
+	assert((start_line.status == ok));
+
+	Request l_crlf(CRLF CRLF CRLF "GET / HTTP/1.0" CRLF CRLF);
+	l_crlf.parse();
+	request_t leading_crlf = l_crlf.get_request();
+	assert((leading_crlf.method == get));
+	assert((leading_crlf.target == "/"));
+	assert((leading_crlf.protocol == one));
+	assert((leading_crlf.status == ok));
+
+	// TODO: is it ok to give that the "ok" status?
+	Request o_o("GET / HTTP/1.1" CRLF CRLF);
+	o_o.parse();
+	request_t oneone = o_o.get_request();
+	assert((oneone.method == get));
+	assert((oneone.target == "/"));
+	assert((oneone.protocol == one_one));
+	assert((oneone.status == ok));
+
+	Request c_l("POST / HTTP/1.0" CRLF
+				"content-length: 123" CRLF CRLF);
+	c_l.parse();
+	request_t content_length = c_l.get_request();
+	assert((content_length.method == post));
+	assert((content_length.target == "/"));
+	assert((content_length.protocol == one));
+	assert((content_length.status == ok));
+	assert((content_length.headers.content_length == 123));
+
+	Request r_h("POST / HTTP/1.0" CRLF
+				"rand0: asd" CRLF
+				"rand1: asd" CRLF
+				"rand2:" CRLF
+				"content-length: 123" CRLF
+				"rand3:" CRLF CRLF);
+	r_h.parse();
+	request_t random_headers = r_h.get_request();
+	assert((random_headers.method == post));
+	assert((random_headers.target == "/"));
+	assert((random_headers.protocol == one));
+	assert((random_headers.status == ok));
+	assert((random_headers.headers.content_length == 123));
+
+	Request d_r("POST / HTTP/1.0" CRLF
+				"content-length: 123" CRLF CRLF
+				"GET / HTTP/1.0" CRLF CRLF);
+	d_r.parse();
+	request_t double_request = d_r.get_request();
+	assert((double_request.method == post));
+	assert((double_request.target == "/"));
+	assert((double_request.protocol == one));
+	assert((double_request.status == ok));
+	assert((double_request.headers.content_length == 123));
+
+	// wrong inputs (expected, no exceptions)
+	Request o_cl("GET / HTTP/1.0" CRLF);
+	o_cl.parse();
+	request_t one_crlf = o_cl.get_request();
+	assert((one_crlf.method == get));
+	assert((one_crlf.target == "/"));
+	assert((one_crlf.protocol == one));
+	assert((one_crlf.status == bad_request));
+
+	Request o_n("GET /" CRLF CRLF);
+	o_n.parse();
+	request_t o_nine = o_n.get_request();
+	assert((o_nine.method == get));
+	assert((o_nine.target == "/"));
+	assert((o_nine.protocol == zero_nine));
+	assert((o_nine.status == not_implemented));
+
+	Request j_t_c("" CRLF CRLF);
+	j_t_c.parse();
+	request_t just_two_crlf = j_t_c.get_request();
+	assert((just_two_crlf.status == bad_request));
+
+	// wrong inputs
+	// Request just_two_crlf("" CRLF CRLF);
+	// try {
+	// 	just_two_crlf.parse();
+	// 	assert((false && "just_two_crlf"));
+	// } catch (const Request::BadRequest& e) {}
+}
+
 int main(void)
 {
 	// start line
@@ -490,5 +583,7 @@ int main(void)
 	TEST(test_parse_content_length);
 	TEST(test_parse_connection);
 	TEST(test_parse_headers);
+	// class methods
+	TEST(test_parse);
 	return (0);
 }
