@@ -477,6 +477,56 @@ void test_parse_headers()
 	catch (const Request::BadRequest& e) {}
 }
 
+void test_extract_body()
+{
+	// correct inputs
+	string simple_b = "123456789" CRLF;
+	request_t simple_r;
+	simple_r.headers.content_length = 9;
+	size_t pos = 0;
+	string simple = extract_body(simple_b, pos, simple_r);
+	assert((simple == "123456789"));
+	assert((pos == 11));
+	assert((simple_b[pos] == '\0'));
+	assert((simple_r.status = ok));
+
+	string more_b = "123456789" CRLF 
+					"GET / HTTP/1.0" CRLF;
+	request_t more_r;
+	more_r.headers.content_length = 9;
+	pos = 0;
+	string more = extract_body(more_b, pos, more_r);
+	assert((more == "123456789"));
+	assert((pos == 11));
+	assert((more_b[pos] == 'G'));
+	assert((more_r.status = ok));
+
+	string less_b = "123";
+	request_t less_r;
+	less_r.headers.content_length = 9;
+	pos = 0;
+	string less = extract_body(less_b, pos, less_r);
+	assert((less == "123"));
+	assert((pos == 3));
+	assert((less_b[pos] == '\0'));
+	assert((less_r.status == parsing));
+
+	// TODO: is it the thing to do to wait for the ending CRLF even when
+	// the body is fully read? Do we even have to wait for an ending CRLF
+	// with a specified "content-length"?
+	string no_crlf_b = "123456789";
+	request_t no_crlf_r;
+	no_crlf_r.headers.content_length = 9;
+	pos = 0;
+	string no_crlf = extract_body(no_crlf_b, pos, no_crlf_r);
+	assert((no_crlf == "123456789"));
+	assert((pos == 9));
+	assert((no_crlf_b[pos] == '\0'));
+	assert((no_crlf_r.status == parsing));
+
+	// wrong inputs (expected, no exceptions)
+}
+
 void test_parse()
 {
 	// correct inputs
@@ -506,39 +556,62 @@ void test_parse()
 	assert((oneone.status == ok));
 
 	Request c_l("POST / HTTP/1.0" CRLF
-				"content-length: 123" CRLF CRLF);
+				"content-length: 2" CRLF
+				CRLF
+				"ok" CRLF);
 	c_l.parse();
 	request_t content_length = c_l.get_request();
 	assert((content_length.method == post));
 	assert((content_length.target == "/"));
 	assert((content_length.protocol == one));
 	assert((content_length.status == ok));
-	assert((content_length.headers.content_length == 123));
+	assert((content_length.headers.content_length == 2));
+	assert((content_length.body == "ok"));
 
 	Request r_h("POST / HTTP/1.0" CRLF
 				"rand0: asd" CRLF
 				"rand1: asd" CRLF
 				"rand2:" CRLF
-				"content-length: 123" CRLF
-				"rand3:" CRLF CRLF);
+				"content-length: 2" CRLF
+				"rand3:" CRLF
+				CRLF
+				"ok" CRLF);
 	r_h.parse();
 	request_t random_headers = r_h.get_request();
 	assert((random_headers.method == post));
 	assert((random_headers.target == "/"));
 	assert((random_headers.protocol == one));
 	assert((random_headers.status == ok));
-	assert((random_headers.headers.content_length == 123));
+	assert((random_headers.headers.content_length == 2));
+	assert((content_length.body == "ok"));
 
 	Request d_r("POST / HTTP/1.0" CRLF
-				"content-length: 123" CRLF CRLF
-				"GET / HTTP/1.0" CRLF CRLF);
+				"content-length: 2" CRLF
+				CRLF
+				"ok" CRLF
+				"GET / HTTP/1.0" CRLF);
 	d_r.parse();
 	request_t double_request = d_r.get_request();
 	assert((double_request.method == post));
 	assert((double_request.target == "/"));
 	assert((double_request.protocol == one));
 	assert((double_request.status == ok));
-	assert((double_request.headers.content_length == 123));
+	assert((double_request.headers.content_length == 2));
+	assert((content_length.body == "ok"));
+
+	Request p_b("POST / HTTP/1.0" CRLF
+				"content-length: 123" CRLF
+				CRLF
+				"ok");
+	p_b.parse();
+	request_t partial_body = p_b.get_request();
+	assert((partial_body.method == post));
+	assert((partial_body.target == "/"));
+	assert((partial_body.protocol == one));
+	assert((partial_body.status == parsing));
+	// TODO: store the residual content-lenght to parse
+	assert((partial_body.headers.content_length == 123));
+	assert((content_length.body == "ok"));
 
 	// wrong inputs (expected, no exceptions)
 	Request o_cl("GET / HTTP/1.0" CRLF);
@@ -583,6 +656,8 @@ int main(void)
 	TEST(test_parse_content_length);
 	TEST(test_parse_connection);
 	TEST(test_parse_headers);
+	// body
+	TEST(test_extract_body);
 	// class methods
 	TEST(test_parse);
 	return (0);

@@ -114,7 +114,6 @@ void Request::parse()
 
 		// headers
 		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
-		// TODO: is it one or two CRLF to skip?
 		_Request::consume_crlf(m_buffer, pos);
 
 		// body
