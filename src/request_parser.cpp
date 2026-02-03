@@ -93,7 +93,6 @@ void Request::parse()
 			pos += 2;
 
 		// request line
-		// TODO: handle simple requests in the form `METHOD TARGET`
 		m_request.method = _Request::parse_method(m_buffer, pos);
 		_Request::consume_sp(m_buffer, pos);
 		m_request.target = _Request::parse_target(m_buffer, pos);
@@ -109,6 +108,7 @@ void Request::parse()
 		// headers
 		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
 		_Request::consume_crlf(m_buffer, pos);
+		// TODO: store body
 		m_request.status = ok;
 	} catch (const Request::BadRequest& e) {
 		m_request.status = bad_request;
@@ -224,12 +224,10 @@ namespace _Request {
 
 	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
 	// Only handles target as origin form (e.g /index.html)
-	// TODO: handle query strings (e.g /main?l=en/index.html?q=now/)
 	string parse_target(const string& buffer, size_t& pos)
 	{
 		string target;
 		size_t start = pos;
-		// TODO: check for path format validity (but what is valid?)
 		try {
 			while (!is_space(buffer.at(pos))) {
 				++pos;
