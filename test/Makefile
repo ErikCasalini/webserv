@@ -2,7 +2,7 @@
 # ALIASES/FLAGS #
 #################
 CXX := c++
-CXXFLAGS := -std=c++98 -Wall -Werror -Wextra -MMD
+CXXFLAGS := -std=c++98 -g3 -Wall -Werror -Wextra -MMD
 # -Wconversion -Wsign-conversion
 
 #########
@@ -48,6 +48,7 @@ run: all
 	@$(call run_all,$(RUNNERS))
 
 gdb: CXX := g++
+gdb: CXXFLAGS := -std=c++98 -ggdb -Wall -Werror -Wextra -MMD
 gdb: all
 
 # Only print a message if actually removing files/folders
