@@ -9,6 +9,13 @@ void	test_extract_uri_elem(void)
 	extract_uri_elem(uri, path, querry);
 	assert((path == "/src"));
 	assert((querry == "querry"));
+
+	uri = "/src?querry#";
+	path.clear();
+	querry.clear();
+	extract_uri_elem(uri, path, querry);
+	assert((path == "/src"));
+	assert((querry == "querry"));
 }
 
 int	main(void)
