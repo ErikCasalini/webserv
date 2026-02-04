@@ -14,10 +14,9 @@ public:
 	Request(const Request& src);
 	Request& operator=(const Request& src);
 
-	ssize_t read_socket();
 	void clear();
 	void clear_request();
-	void parse();
+	ssize_t parse();
 	const request_t& get_request() const;
 
 	class BadRequest : public std::runtime_error {
@@ -34,6 +33,7 @@ private:
 	request_t m_request;
 	std::string m_buffer;
 	size_t m_recv_buf_size;
+	bool m_extracting_body;
 };
 
 // Helper functions namespace
@@ -41,6 +41,8 @@ namespace _Request {
 	using std::string;
 
 	typedef std::map<string, string> raw_headers_t;
+
+	ssize_t read_socket(int sockfd, string& buffer, size_t read_size);
 
 	void consume_sp(const string& buffer, size_t& pos);
 	void consume_crlf(const string& buffer, size_t& pos);
@@ -59,7 +61,11 @@ namespace _Request {
 			const string& buffer,
 			size_t& pos,
 			const request_t& request);
-	string extract_body(const string& buffer, size_t& pos, request_t& request);
+	string extract_body(
+			const string& buffer,
+			size_t& pos,
+			request_t& request,
+			bool& extracting_body);
 }
 
 #endif

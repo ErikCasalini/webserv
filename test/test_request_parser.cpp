@@ -480,50 +480,44 @@ void test_parse_headers()
 void test_extract_body()
 {
 	// correct inputs
-	string simple_b = "123456789" CRLF;
+	string simple_b = "123456789";
 	request_t simple_r;
 	simple_r.headers.content_length = 9;
 	size_t pos = 0;
-	string simple = extract_body(simple_b, pos, simple_r);
+	bool extracting_body = false;
+	string simple = extract_body(simple_b, pos, simple_r, extracting_body);
 	assert((simple == "123456789"));
-	assert((pos == 11));
+	assert((pos == 9));
 	assert((simple_b[pos] == '\0'));
-	assert((simple_r.status = ok));
+	assert((simple_r.status == ok));
+	assert((extracting_body == false && "simple"));
 
-	string more_b = "123456789" CRLF 
-					"GET / HTTP/1.0" CRLF;
+	string more_b = "123456789" 
+					"GET / HTTP/1.0";
 	request_t more_r;
 	more_r.headers.content_length = 9;
 	pos = 0;
-	string more = extract_body(more_b, pos, more_r);
+	extracting_body = false;
+	string more = extract_body(more_b, pos, more_r, extracting_body);
 	assert((more == "123456789"));
-	assert((pos == 11));
+	assert((pos == 9));
 	assert((more_b[pos] == 'G'));
-	assert((more_r.status = ok));
+	assert((more_r.status == ok));
+	assert((extracting_body == false && "more"));
 
 	string less_b = "123";
 	request_t less_r;
 	less_r.headers.content_length = 9;
 	pos = 0;
-	string less = extract_body(less_b, pos, less_r);
+	extracting_body = false;
+	string less = extract_body(less_b, pos, less_r, extracting_body);
 	assert((less == "123"));
 	assert((pos == 3));
 	assert((less_b[pos] == '\0'));
 	assert((less_r.status == parsing));
+	assert((extracting_body == true && "less"));
 
-	// TODO: is it the thing to do to wait for the ending CRLF even when
-	// the body is fully read? Do we even have to wait for an ending CRLF
-	// with a specified "content-length"?
-	string no_crlf_b = "123456789";
-	request_t no_crlf_r;
-	no_crlf_r.headers.content_length = 9;
-	pos = 0;
-	string no_crlf = extract_body(no_crlf_b, pos, no_crlf_r);
-	assert((no_crlf == "123456789"));
-	assert((pos == 9));
-	assert((no_crlf_b[pos] == '\0'));
-	assert((no_crlf_r.status == parsing));
-
+	// TODO: test parsing beginning in "extracting_body" mode
 	// wrong inputs (expected, no exceptions)
 }
 
@@ -614,13 +608,11 @@ void test_parse()
 	assert((content_length.body == "ok"));
 
 	// wrong inputs (expected, no exceptions)
+	// buffer filling in progress
 	Request o_cl("GET / HTTP/1.0" CRLF);
 	o_cl.parse();
 	request_t one_crlf = o_cl.get_request();
-	assert((one_crlf.method == get));
-	assert((one_crlf.target == "/"));
-	assert((one_crlf.protocol == one));
-	assert((one_crlf.status == bad_request));
+	assert((one_crlf.status == parsing));
 
 	Request o_n("GET /" CRLF CRLF);
 	o_n.parse();

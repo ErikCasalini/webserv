@@ -78,8 +78,10 @@ run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
 run_test_Response: $(OBJ_RESPONSE)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+# TESTING:
+# - skip the call to read_socket() in Request::parse()
 $(BUILD_DIR)/%.o: %.cpp Makefile
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -DTESTING -c $< -o $@
 
 $(BUILD_DIR):
 	mkdir $@
