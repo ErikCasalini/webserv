@@ -133,22 +133,22 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		accept_new_connections(sockfd, sockets); // throws
 
 	else {
-		int	i = requests.search(sockfd);
-		if (i == -1)
-			i = requests.add(sockfd); // throws
-		if (requests.at(i).read_socket() == 0) { // throws
+		int	i_req = requests.search(sockfd);
+		if (i_req == -1)
+			i_req = requests.add(sockfd); // throws
+		if (requests.at(i_req).read_socket() == 0) { // throws
 			std::cout << "[PEER CLOSED] " << sockets.info(sockfd) << " | [CLOSED]\n"; // pour debug
 			close_connection(sockfd, sockets, requests, responses);
 			return ;
 		}
-		requests.at(i).parse();
-		if (requests.at(i).get_request().status) {
-			responses.add(sockfd, requests.at(i).get_request());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+		requests.at(i_req).parse();
+		if (requests.at(i_req).get_request().status) {
+			int i_resp = responses.add(sockfd, requests.at(i_req).get_request());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
 			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
-			std::cout << requests.at(i).get_request().target << '\n'; // DEBUG
-			// responses.at(i_resp).parse()
+			std::cout << requests.at(i_req).get_request() << '\n'; // DEBUG
 			requests.at(i_req).clear_request();
+			responses.at(i_resp).parse_uri();
 		}
 	}
 }
@@ -168,12 +168,13 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Res
 {
 	int	sockfd = EpollEvents::getFd(event);
 	int	i = responses.search(sockfd);
+	std::string content(responses.at(i).get_path() + " " + responses.at(i).get_querry());
 
 	// DEBUG
-	send(sockfd, responses.at(i).get_buf(), responses.at(i).get_buf_size(), SOCK_NONBLOCK);
+	send(sockfd, content.c_str(), content.size(), SOCK_NONBLOCK);
 	event.events = EPOLLIN;
 	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event);
-	responses.at(i).clear(); // on eleve pour l'instant
+	responses.at(i).clear(); // on enleve pour l'instant
 }
 
 int	main_server_loop(temp_config &config)

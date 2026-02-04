@@ -18,11 +18,13 @@ public:
 	void				set_request(const request_t &request);
 	void				clear(void);
 	const char			*get_buf(void) const;
+	const std::string	&get_path(void) const;
+	const std::string	&get_querry(void) const;
 	size_t				get_buf_size(void) const;
 	void				parse_uri(void);
 
 	int					m_sockfd;
-	static std::string	authorized_chars;
+	static const char	authorized_chars[];
 
 private:
 

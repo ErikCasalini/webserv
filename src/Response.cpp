@@ -2,10 +2,10 @@
 #include <cstring>
 #include "http_types.h"
 
-std::string	authorized_chars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~" // Unreserved
+const char	Response::authorized_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~" // Unreserved
 							":/?[]@#" // Reserved gen-delims
 							"!$&'()*+,;=" // Reserved sub-delims
-							"%"); // Url encoding
+							"%"; // Url encoding
 
 Response::Response(void)
 : m_sockfd(-1)
@@ -29,6 +29,16 @@ const char	*Response::get_buf(void) const
 	return (m_buffer.c_str());
 }
 
+const std::string	&Response::get_path(void) const
+{
+	return (m_path);
+}
+
+const std::string &Response::get_querry(void) const
+{
+	return(m_querry);
+}
+
 size_t	Response::get_buf_size(void) const
 {
 	return (m_buffer.size());
@@ -39,6 +49,8 @@ void	Response::clear(void)
 	m_sockfd = -1;
 	m_request.clear();
 	m_buffer.clear();
+	m_path.clear();
+	m_querry.clear();
 }
 
 void	extract_uri_elem(std::string&uri, std::string &path, std::string &querry)
@@ -57,14 +69,15 @@ void	extract_uri_elem(std::string&uri, std::string &path, std::string &querry)
 	}
 }
 
-// void	Response::parse_uri(void)
-// {
-// 	if (!m_request.target.size()
-// 		|| m_request.target[0] != '/'
-// 		|| m_request.target.find_first_not_of(authorized_chars) != std::string::npos) {
-// 		m_request.status = bad_request;
-// 		return ;
-// 	}
+void	Response::parse_uri(void)
+{
+	if (!m_request.target.size()
+		|| m_request.target[0] != '/'
+		|| m_request.target.find_first_not_of(authorized_chars) != std::string::npos) {
+		m_request.status = bad_request;
+		return ;
+	}
+	extract_uri_elem(m_request.target, m_path, m_querry);
+	
 
-
-// }
+}
