@@ -148,6 +148,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
 			std::cout << requests.at(i).get_request().target << '\n'; // DEBUG
 			// responses.at(i_resp).parse()
+			requests.at(i_req).clear_request();
 		}
 	}
 }
