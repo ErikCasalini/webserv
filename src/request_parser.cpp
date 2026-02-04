@@ -72,6 +72,11 @@ void Request::clear()
 	m_buffer.clear();
 }
 
+void Request::clear_request()
+{
+	m_request.clear();
+}
+
 /**
  * @brief Parse the raw request
  *

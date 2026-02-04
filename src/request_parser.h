@@ -14,6 +14,7 @@ public:
 
 	int read_socket();
 	void clear();
+	void clear_request();
 	void parse();
 	const request_t& get_request() const;
 
