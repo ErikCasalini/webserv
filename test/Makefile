@@ -21,20 +21,26 @@ SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  request_parser.cpp \
 					  http_types.cpp \
 					  cctype_cast.cpp
-# $(info SRC_REQUEST_PARSER: $(SRC_REQUEST_PARSER))
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
-# $(info OBJ_REQUEST_PARSER: $(OBJ_REQUEST_PARSER))
 
 SRC_LIB_CCTYPE_CAST := $(SRC_COMMON) \
 					  test_lib_cctype_cast.cpp \
 					  cctype_cast.cpp
 OBJ_LIB_CCTYPE_CAST := $(SRC_LIB_CCTYPE_CAST:%.cpp=$(BUILD_DIR)/%.o)
 
+SRC_RESPONSE := $(SRC_COMMON) \
+				test_Response.cpp \
+				Response.cpp \
+				http_types.cpp
+OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
+
 RUNNERS := run_test_request_parser \
-		   run_test_lib_cctype_cast
+		   run_test_lib_cctype_cast \
+		   run_test_Response
 
 DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
-			 $(OBJ_LIB_CCTYPE_CAST:.o=.d)
+			 $(OBJ_LIB_CCTYPE_CAST:.o=.d) \
+			 $(OBJ_RESPONSE:.o=.d)
 
 ###########
 # TARGETS #
@@ -44,7 +50,7 @@ DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 all: $(BUILD_DIR) $(RUNNERS)
 
 run_all = @for i in $(1); do ./$$i; done
-run: all 
+run: all
 	@$(call run_all,$(RUNNERS))
 
 gdb: CXX := g++
@@ -68,6 +74,8 @@ re: fclean all
 run_test_request_parser: $(OBJ_REQUEST_PARSER)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+run_test_Response: $(OBJ_RESPONSE)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(BUILD_DIR)/%.o: %.cpp Makefile
