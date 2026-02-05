@@ -4,6 +4,7 @@
 # include "request_parser.h"
 # include "http_types.h"
 # include <string>
+# include <list>
 
 class Response
 {
@@ -35,6 +36,10 @@ private:
 	status_t		m_status;
 };
 
-void	extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
+namespace _Response
+{
+	void						extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
+	std::list<std::string>		split_path(const std::string &path);
+}
 
 #endif
