@@ -7,3 +7,4 @@ webserv
 # bear output
 compile_commands.json
 .cache/
+gdb.conf
