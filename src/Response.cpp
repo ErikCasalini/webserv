@@ -1,5 +1,6 @@
 #include "Response.hpp"
 #include <cstring>
+#include <cstdlib>
 #include "http_types.h"
 #include <list>
 
@@ -58,6 +59,65 @@ namespace _Response
 		}
 		return (segments);
 	}
+
+	unsigned char	url_decode(const std::string &url_code)
+	{
+		if (!isxdigit(url_code[0])
+			|| !isxdigit(url_code[1]))
+			throw std::invalid_argument("Wrong url encoding format");
+
+		int tmp = std::strtol(url_code.c_str(), NULL, 16);
+		if (tmp == 0x0 || tmp == 0x2F || tmp == 0x5C)
+			throw std::invalid_argument("Url expands to forbidden symbol");
+		return (static_cast<unsigned char>(tmp));
+	}
+
+	void	decode_segments(std::list<std::string> &segments)
+	{
+		std::list<std::string>::iterator	it_list = segments.begin();
+		size_t								pos;
+
+		for (size_t i = 0; i < segments.size(); i++, it_list++) {
+			std::string				decoded; // new decoded string
+			std::string::iterator	it_seg = it_list->begin(); // original string iterator
+
+			decoded.reserve(it_list->size());
+			pos = 0;
+			while ((pos = it_list->find('%', pos)) != std::string::npos) {
+				if (it_list->begin() + pos >= it_list->end() - 2) // if '%' is one of the 2 last chars --> bad URL encoding (%A or %)
+					throw std::invalid_argument("Wrong url encoding format");
+				decoded.append(*it_list, it_seg - it_list->begin(), pos - (it_seg - it_list->begin()));
+				decoded.append(1, url_decode(it_list->substr(pos + 1, 2)));
+				pos += 3;
+				it_seg = it_list->begin() + pos;
+			}
+			decoded.append(*it_list, it_seg - it_list->begin());
+			*it_list = decoded;
+		}
+	}
+
+	std::string	create_path(std::list<std::string> &segments)
+	{
+		std::list<std::string>::reverse_iterator	it = segments.rbegin();
+		std::string									path("/");
+		int											lvl = 0;
+		bool										is_dir = false;
+
+		if (*it == "")
+			is_dir = true;
+
+		for (; it < segments.rend(); it++) {
+			if (*it == "." || *it == "") {
+				segments.pop_back();
+				continue ;
+			}
+			if (*it == "..") {
+				lvl--;
+				continue;
+			}
+
+		}
+	}
 }
 
 Response::Response(void)
@@ -111,10 +171,19 @@ void	Response::parse_uri(void)
 	if (!m_request.target.size()
 		|| m_request.target[0] != '/'
 		|| m_request.target.find_first_not_of(authorized_chars) != std::string::npos) {
-		m_request.status = bad_request;
+		m_status = bad_request;
 		return ;
 	}
+
 	_Response::extract_uri_elem(m_request.target, m_path, m_querry);
+	std::list<std::string>	segments(_Response::split_path(m_path));
+	try {
+		_Response::decode_segments(segments);
+	}
+	catch (std::invalid_argument &e) {
+		m_status = bad_request;
+		return ;
+	}
 
 
 }
