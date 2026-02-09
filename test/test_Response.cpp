@@ -75,7 +75,6 @@ void	test_extract_uri_elem(void)
 	extract_uri_elem(uri, path, querry);
 	assert((path == "/oui"));
 	assert((querry == "???"));
-
 }
 
 void	test_split_path(void)
@@ -124,7 +123,6 @@ void	test_split_path(void)
 	assert((*(++it) == ""));
 	assert((*(++it) == ""));
 	assert((*(++it) == ""));
-
 }
 
 void	test_url_decode(void)
@@ -172,7 +170,6 @@ void	test_url_decode(void)
 		url_decode(url_code);
 		assert((false));
 	} catch (std::invalid_argument &e) {}
-
 }
 
 void	test_decode_segments(void)
@@ -257,11 +254,190 @@ void	test_decode_segments(void)
 	} catch (std::invalid_argument &e) {}
 }
 
+void	test_create_path(void)
+{
+	std::list<std::string>	segments;
+	std::string				ret;
+
+	segments.push_back("src");
+	ret = create_path(segments);
+	assert((ret == "/src"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("");
+	segments.push_back(".");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("");
+	segments.push_back("ok");
+	ret = create_path(segments);
+	assert((ret == "/src/test/ok"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("");
+	segments.push_back("ok");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/src/test/ok/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("..");
+	segments.push_back("test");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/src/test/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("..");
+	segments.push_back("test");
+	ret = create_path(segments);
+	assert((ret == "/src/test"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("..");
+	segments.push_back("");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+
+	segments.clear();
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("");
+	segments.push_back(".");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("src");
+	ret = create_path(segments);
+	assert((ret == "/src"));
+
+	segments.clear();
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("");
+	segments.push_back(".");
+	segments.push_back("..");
+	segments.push_back("..");
+	segments.push_back("src");
+	segments.push_back(".");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+
+	segments.clear();
+	segments.push_back("src");
+	segments.push_back("test");
+	segments.push_back("");
+	segments.push_back("..");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+}
+
+void	test_parse_uri(void)
+{
+	request_t	req;
+	Response	resp;
+
+	req.target = "//src/test//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_path() == "/src/test/src/1/"));
+	assert((resp.get_querry() == "%00omg"));
+	assert((resp.get_status() == ok));
+
+	resp.clear();
+	req.target = "//src/%00test//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/%5Ctest//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/%5ctest//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/%2Ftest//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/%/test//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/test//src//%31/%2e%2E/%2e/%2E%2E?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_path() == "/src/test/"));
+	assert((resp.get_querry() == "%00omg"));
+	assert((resp.get_status() == ok));
+
+	resp.clear();
+	req.target = "//src/test//src/%2500?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_path() == "/src/test/src/%00"));
+	assert((resp.get_querry() == "%00omg"));
+	assert((resp.get_status() == ok));
+}
+
 int	main(void)
 {
 	test(test_extract_uri_elem, "test_extract_uri_elem");
 	test(test_split_path, "test_split_path");
 	test(test_url_decode, "test_url_decode");
 	test(test_decode_segments, "test_decode_segments");
+	test(test_create_path, "test_create_path");
+	test(test_parse_uri, "test_parse_uri");
 	return (0);
 }
