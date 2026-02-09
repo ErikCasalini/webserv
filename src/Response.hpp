@@ -23,6 +23,7 @@ public:
 	const std::string	&get_querry(void) const;
 	size_t				get_buf_size(void) const;
 	void				parse_uri(void);
+	status_t			get_status(void);
 
 	int					m_sockfd;
 	static const char	authorized_chars[];

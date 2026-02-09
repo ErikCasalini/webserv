@@ -98,30 +98,45 @@ namespace _Response
 
 	std::string	create_path(std::list<std::string> &segments)
 	{
-		std::list<std::string>::reverse_iterator	it = segments.rbegin();
-		std::string									path("/");
-		int											lvl = 0;
-		bool										is_dir = false;
+		std::string				ret;
+		bool					is_dir = false;
+		std::list<std::string>	new_path;
 
-		if (*it == "")
+		if (segments.back() == ""
+			|| segments.back() == "."
+			|| segments.back() == "..")
 			is_dir = true;
 
-		for (; it < segments.rend(); it++) {
-			if (*it == "." || *it == "") {
-				segments.pop_back();
-				continue ;
+		while (segments.size()) {
+			if (segments.front() == "" || segments.front() == ".")
+				segments.pop_front();
+			else if (segments.front() == "..") {
+				if (new_path.size() > 0)
+					new_path.pop_back();
+				segments.pop_front();
 			}
-			if (*it == "..") {
-				lvl--;
-				continue;
+			else {
+				new_path.push_back(segments.front());
+				segments.pop_front();
 			}
-
 		}
+
+		for (std::list<std::string>::iterator it = new_path.begin(); it != new_path.end(); it++) {
+			ret.append("/");
+			ret.append(*it);
+		}
+
+		if ((is_dir && new_path.size() > 0)
+			|| ret.size() == 0)
+			ret.append("/");
+
+		return (ret);
 	}
 }
 
 Response::Response(void)
-: m_sockfd(-1)
+: m_sockfd(-1),
+  m_status(ok)
 {}
 
 Response::~Response(void)
@@ -157,6 +172,11 @@ size_t	Response::get_buf_size(void) const
 	return (m_buffer.size());
 }
 
+status_t	Response::get_status(void)
+{
+	return (m_status);
+}
+
 void	Response::clear(void)
 {
 	m_sockfd = -1;
@@ -164,6 +184,7 @@ void	Response::clear(void)
 	m_buffer.clear();
 	m_path.clear();
 	m_querry.clear();
+	m_status = ok;
 }
 
 void	Response::parse_uri(void)
@@ -184,6 +205,5 @@ void	Response::parse_uri(void)
 		m_status = bad_request;
 		return ;
 	}
-
-
+	m_path = _Response::create_path(segments);
 }
