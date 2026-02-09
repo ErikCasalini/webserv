@@ -484,38 +484,32 @@ void test_extract_body()
 	request_t simple_r;
 	simple_r.headers.content_length = 9;
 	size_t pos = 0;
-	bool extracting_body = false;
-	string simple = extract_body(simple_b, pos, simple_r, extracting_body);
+	string simple = extract_body(simple_b, pos, simple_r);
 	assert((simple == "123456789"));
 	assert((pos == 9));
 	assert((simple_b[pos] == '\0'));
 	assert((simple_r.status == ok));
-	assert((extracting_body == false && "simple"));
 
 	string more_b = "123456789" 
 					"GET / HTTP/1.0";
 	request_t more_r;
 	more_r.headers.content_length = 9;
 	pos = 0;
-	extracting_body = false;
-	string more = extract_body(more_b, pos, more_r, extracting_body);
+	string more = extract_body(more_b, pos, more_r);
 	assert((more == "123456789"));
 	assert((pos == 9));
 	assert((more_b[pos] == 'G'));
 	assert((more_r.status == ok));
-	assert((extracting_body == false && "more"));
 
 	string less_b = "123";
 	request_t less_r;
 	less_r.headers.content_length = 9;
 	pos = 0;
-	extracting_body = false;
-	string less = extract_body(less_b, pos, less_r, extracting_body);
+	string less = extract_body(less_b, pos, less_r);
 	assert((less == "123"));
 	assert((pos == 3));
 	assert((less_b[pos] == '\0'));
 	assert((less_r.status == parsing));
-	assert((extracting_body == true && "less"));
 
 	// TODO: test parsing beginning in "extracting_body" mode
 	// wrong inputs (expected, no exceptions)
@@ -526,7 +520,7 @@ void test_parse()
 	// correct inputs
 	Request s_l("GET / HTTP/1.0" CRLF CRLF);
 	s_l.parse();
-	request_t start_line = s_l.get_request();
+	request_t start_line = s_l.get_infos();
 	assert((start_line.method == get));
 	assert((start_line.target == "/"));
 	assert((start_line.protocol == one));
@@ -534,7 +528,7 @@ void test_parse()
 
 	Request l_crlf(CRLF CRLF CRLF "GET / HTTP/1.0" CRLF CRLF);
 	l_crlf.parse();
-	request_t leading_crlf = l_crlf.get_request();
+	request_t leading_crlf = l_crlf.get_infos();
 	assert((leading_crlf.method == get));
 	assert((leading_crlf.target == "/"));
 	assert((leading_crlf.protocol == one));
@@ -543,7 +537,7 @@ void test_parse()
 	// TODO: is it ok to give that the "ok" status?
 	Request o_o("GET / HTTP/1.1" CRLF CRLF);
 	o_o.parse();
-	request_t oneone = o_o.get_request();
+	request_t oneone = o_o.get_infos();
 	assert((oneone.method == get));
 	assert((oneone.target == "/"));
 	assert((oneone.protocol == one_one));
@@ -554,7 +548,7 @@ void test_parse()
 				CRLF
 				"ok" CRLF);
 	c_l.parse();
-	request_t content_length = c_l.get_request();
+	request_t content_length = c_l.get_infos();
 	assert((content_length.method == post));
 	assert((content_length.target == "/"));
 	assert((content_length.protocol == one));
@@ -571,7 +565,7 @@ void test_parse()
 				CRLF
 				"ok" CRLF);
 	r_h.parse();
-	request_t random_headers = r_h.get_request();
+	request_t random_headers = r_h.get_infos();
 	assert((random_headers.method == post));
 	assert((random_headers.target == "/"));
 	assert((random_headers.protocol == one));
@@ -585,7 +579,7 @@ void test_parse()
 				"ok" CRLF
 				"GET / HTTP/1.0" CRLF);
 	d_r.parse();
-	request_t double_request = d_r.get_request();
+	request_t double_request = d_r.get_infos();
 	assert((double_request.method == post));
 	assert((double_request.target == "/"));
 	assert((double_request.protocol == one));
@@ -598,7 +592,7 @@ void test_parse()
 				CRLF
 				"ok");
 	p_b.parse();
-	request_t partial_body = p_b.get_request();
+	request_t partial_body = p_b.get_infos();
 	assert((partial_body.method == post));
 	assert((partial_body.target == "/"));
 	assert((partial_body.protocol == one));
@@ -611,12 +605,12 @@ void test_parse()
 	// buffer filling in progress
 	Request o_cl("GET / HTTP/1.0" CRLF);
 	o_cl.parse();
-	request_t one_crlf = o_cl.get_request();
+	request_t one_crlf = o_cl.get_infos();
 	assert((one_crlf.status == parsing));
 
 	Request o_n("GET /" CRLF CRLF);
 	o_n.parse();
-	request_t o_nine = o_n.get_request();
+	request_t o_nine = o_n.get_infos();
 	assert((o_nine.method == get));
 	assert((o_nine.target == "/"));
 	assert((o_nine.protocol == zero_nine));
@@ -624,7 +618,7 @@ void test_parse()
 
 	Request j_t_c("" CRLF CRLF);
 	j_t_c.parse();
-	request_t just_two_crlf = j_t_c.get_request();
+	request_t just_two_crlf = j_t_c.get_infos();
 	assert((just_two_crlf.status == bad_request));
 
 	// wrong inputs

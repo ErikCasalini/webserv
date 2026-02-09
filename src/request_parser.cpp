@@ -43,7 +43,11 @@
 using std::string;
 using std::map;
 
-Request::Request() : m_sockfd(-1), m_recv_buf_size(50000), m_extracting_body(false)
+Request::Request()
+	: m_sockfd(-1)
+	, m_recv_buf_size(50000)
+	, m_pos(0)
+	, m_state(RequestStates::Init::get_instance())
 {}
 
 // For testing purposes
@@ -51,15 +55,17 @@ Request::Request(string buffer)
 	: m_sockfd(-1)
 	, m_buffer(buffer)
 	, m_recv_buf_size(50000)
-	, m_extracting_body(false)
+	, m_pos(0)
+	, m_state(RequestStates::Init::get_instance())
 {}
  
 Request::Request(const Request& src)
 	: m_sockfd(src.m_sockfd)
-	, m_request(src.m_request)
+	, m_infos(src.m_infos)
 	, m_buffer(src.m_buffer)
 	, m_recv_buf_size(src.m_recv_buf_size)
-	, m_extracting_body(src.m_extracting_body)
+	, m_pos(src.m_pos)
+	, m_state(src.m_state)
 {
 }
 
@@ -67,35 +73,42 @@ Request& Request::operator=(const Request& src)
 {
 	if (&src != this) {
 		m_sockfd = src.m_sockfd;
-		m_request = src.m_request;
+		m_infos = src.m_infos;
 		m_buffer = src.m_buffer;
 		m_recv_buf_size = src.m_recv_buf_size;
-		m_extracting_body = src.m_extracting_body;
+		m_pos = src.m_pos;
+		m_state = src.m_state;
 	}
 	return (*this);
 }
 
 void Request::clear()
 {
-	m_sockfd = -1;
-	m_request.clear();
-	m_buffer.clear();
-	m_extracting_body = false;
+	m_state->clear(this);
 }
 
-ssize_t read_socket(int sockfd, string& buffer, size_t read_size)
+void Request::_clear()
 {
-	char buf[read_size];
-	ssize_t ret = 0;
-	ret = recv(sockfd, &buf, read_size, MSG_DONTWAIT);
-	if (ret > 0)
-		buffer.append(buf, static_cast<string::size_type>(ret));
-	return (ret);
+	m_sockfd = -1;
+	m_infos.clear();
+	m_buffer.clear();
+	m_pos = 0;
+	m_state = RequestStates::Init::get_instance();
 }
 
 void Request::clear_request()
 {
-	m_request.clear();
+	m_state->clear_request(this);
+}
+
+void Request::_clear_request()
+{
+	m_infos.clear();
+}
+
+const request_t& Request::get_infos() const
+{
+	return (m_infos);
 }
 
 /**
@@ -103,73 +116,41 @@ void Request::clear_request()
  *
  * Fill the m_request struct with parsed data.
  * 
- * @return nbr of char read from the socket
  * @throws exception on error
+ * @throws ConnectionClosed exception on closed connection (recv() == 0)
  */
-ssize_t Request::parse()
+void Request::parse()
 {
-// Permit to test with an artificially filled buffer and not trying to read an inexistant socket.
-#ifndef TESTING
-	ssize_t ret = read_socket(m_sockfd, m_buffer, m_recv_buf_size);
-#else
-	// Arbitrary, must be > 0 to avoid triggering sockets error/close handling.
-	ssize_t ret = 1;
-#endif
-	if (ret < 1)
-		return (ret);
-	// Wait for the two consecutive spaces to actually parse the input
-	if (!m_extracting_body && m_buffer.find(CRLF CRLF) == string::npos)
-		return (ret);
-	size_t pos = 0;
-	try {
-		if (!m_extracting_body) {
-			// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
-			while (m_buffer.substr(pos, 2) == CRLF)
-				pos += 2;
-
-			// request line
-			m_request.method = _Request::parse_method(m_buffer, pos);
-			_Request::consume_sp(m_buffer, pos);
-			m_request.target = _Request::parse_target(m_buffer, pos);
-			// Start line for 0.9 don't have the PROTOCOL field
-			if (m_buffer.substr(pos, 2) == CRLF) {
-				m_request.protocol = zero_nine;
-				throw Request::NotImplemented("HTTP 0.9 is not handled");
-			}
-			_Request::consume_sp(m_buffer, pos);
-			m_request.protocol = _Request::parse_protocol(m_buffer, pos);
-			_Request::consume_crlf(m_buffer, pos);
-
-			// headers
-			m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
-			_Request::consume_crlf(m_buffer, pos);
-		}
-
-		// body
-		if (m_request.method == post)
-			m_request.body = _Request::extract_body(m_buffer, pos, m_request, m_extracting_body);
-		else
-			m_request.status = ok;
-	} catch (const Request::BadRequest& e) {
-		m_request.status = bad_request;
-	} catch (const Request::NotImplemented& e) {
-		m_request.status = not_implemented;
-	}
-	m_buffer.erase(0, pos);
-	return (ret);
+	m_state->parse(this);
 }
 
-const request_t& Request::get_request() const
+void Request::set_state(RequestState* state)
 {
-	return (m_request);
+	m_state = state;
+}
+
+void Request::erase_parsed()
+{
+	m_buffer.erase(0, m_pos);
+	m_pos = 0;
 }
 
 Request::BadRequest::BadRequest(const char* msg) : std::runtime_error(msg) {};
 
 Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(msg) {};
 
-// Helper functions
+Request::ConnectionClosed::ConnectionClosed(const char* msg) : std::runtime_error(msg) {};
+
 namespace _Request {
+	ssize_t read_socket(int sockfd, string& buffer, size_t read_size)
+	{
+		char buf[read_size];
+		ssize_t ret = 0;
+		ret = recv(sockfd, &buf, read_size, MSG_DONTWAIT);
+		if (ret > 0)
+			buffer.append(buf, static_cast<string::size_type>(ret));
+		return (ret);
+	}
 
 	// TODO: call this function from an init one called from the main
 	static const map<string, method_t> build_method_map()
@@ -390,7 +371,10 @@ namespace _Request {
 		return (false);
 	}
 
-	headers_t parse_headers(const string& buffer, size_t& pos, const request_t& request)
+	headers_t parse_headers(
+				const string& buffer,
+				size_t& pos,
+				const request_t& request)
 	{
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
@@ -403,11 +387,7 @@ namespace _Request {
 		return (headers);
 	}
 
-	string extract_body(
-			const string& buffer,
-			size_t& pos,
-			request_t& request,
-			bool& extracting_body)
+	string extract_body(const string& buffer, size_t& pos, request_t& request)
 	{
 		string body;
 		try {
@@ -418,12 +398,10 @@ namespace _Request {
 					request.status = ok;
 					body = buffer.substr(pos, request.headers.content_length);
 					pos += request.headers.content_length;
-					extracting_body = false;
 				}
 				else {
 					body = buffer.substr(pos);
 					pos += buffer.length() - pos;
-					extracting_body = true;
 				}
 			}
 		} catch (const std::out_of_range& e) {

@@ -2,6 +2,7 @@
 # define REQUEST_PARSER_H
 
 # include "http_types.h"
+# include "request_parser_states.h"
 # include <stdexcept>
 # include <string>
 # include <sys/types.h>
@@ -16,8 +17,8 @@ public:
 
 	void clear();
 	void clear_request();
-	ssize_t parse();
-	const request_t& get_request() const;
+	void parse();
+	const request_t& get_infos() const;
 
 	class BadRequest : public std::runtime_error {
 	public:
@@ -27,13 +28,31 @@ public:
 	public:
 		NotImplemented(const char* msg);
 	};
+	class ConnectionClosed : public std::runtime_error {
+	public:
+		ConnectionClosed(const char* msg);
+	};
 
 	int m_sockfd;
+
+	// Give the state machine access to the private members of Request.
+	// TODO: rename Init to a better name
+	friend class RequestStates::Init;
+	friend class RequestStates::ReadingBuffer;
+	friend class RequestStates::ParsingHead;
+	friend class RequestStates::ExtractingBody;
+	friend class RequestStates::Done;
 private:
-	request_t m_request;
+	request_t m_infos;
 	std::string m_buffer;
 	size_t m_recv_buf_size;
-	bool m_extracting_body;
+	size_t m_pos;
+	// bool m_extracting_body;
+	RequestState* m_state;
+	void set_state(RequestState* state);
+	void erase_parsed();
+	void _clear();
+	void _clear_request();
 };
 
 // Helper functions namespace
@@ -64,8 +83,7 @@ namespace _Request {
 	string extract_body(
 			const string& buffer,
 			size_t& pos,
-			request_t& request,
-			bool& extracting_body);
+			request_t& request);
 }
 
 #endif

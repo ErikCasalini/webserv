@@ -19,6 +19,7 @@ vpath %.cpp $(SRC_DIR):$(LIB_DIR)
 SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  test_request_parser.cpp \
 					  request_parser.cpp \
+					  request_parser_states.cpp \
 					  http_types.cpp \
 					  cctype_cast.cpp
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
