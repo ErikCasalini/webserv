@@ -394,18 +394,21 @@ namespace _Request {
 
 	string extract_body(const string& buffer, size_t& pos, request_t& request)
 	{
+		static size_t len;
+		if (request.body.length() == 0)
+			len = request.headers.content_length;
 		string body;
 		try {
 			if (request.headers.content_length > 0) {
 				// Check if the full body is in the recv buffer
 				// if it isn't the status must stay in "parsing".
-				if (buffer.length() - pos >= request.headers.content_length) {
+				if (buffer.length() - pos >= len) {
 					request.status = ok;
-					body = buffer.substr(pos, request.headers.content_length);
-					pos += request.headers.content_length;
-				}
-				else {
+					body = buffer.substr(pos, len);
+					pos += len;
+				} else {
 					body = buffer.substr(pos);
+					len -= buffer.length() - pos;
 					pos += buffer.length() - pos;
 				}
 			}

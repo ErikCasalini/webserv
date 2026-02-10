@@ -158,9 +158,9 @@ void RequestStates::ExtractingBody::clear_request(Request* request)
 
 void RequestStates::ExtractingBody::parse(Request* request)
 {
-	request->m_infos.body = _Request::extract_body(request->m_buffer,
-													request->m_pos,
-													request->m_infos);
+	request->m_infos.body.append(_Request::extract_body(request->m_buffer,
+														request->m_pos,
+														request->m_infos));
 	if (request->m_infos.status == parsing) {
 		request->set_state(RequestStates::ReadingBuffer::get_instance());
 	} else {
