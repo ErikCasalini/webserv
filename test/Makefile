@@ -19,6 +19,7 @@ vpath %.cpp $(SRC_DIR):$(LIB_DIR)
 SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  test_request_parser.cpp \
 					  request_parser.cpp \
+					  request_parser_states.cpp \
 					  http_types.cpp \
 					  cctype_cast.cpp
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
@@ -49,8 +50,8 @@ DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 
 all: $(BUILD_DIR) $(RUNNERS)
 
-run_all = @for i in $(1); do ./$$i; done
-run: all
+run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; ./$$i; done
+run: all 
 	@$(call run_all,$(RUNNERS))
 
 gdb: CXX := g++
@@ -78,8 +79,10 @@ run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
 run_test_Response: $(OBJ_RESPONSE)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
+# TESTING:
+# - skip the call to read_socket() in Request::parse()
 $(BUILD_DIR)/%.o: %.cpp Makefile
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -DTESTING -c $< -o $@
 
 $(BUILD_DIR):
 	mkdir $@

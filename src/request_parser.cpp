@@ -43,14 +43,29 @@
 using std::string;
 using std::map;
 
-Request::Request() : m_sockfd(-1), m_recv_buf_size(50000)
+Request::Request()
+	: m_sockfd(-1)
+	, m_recv_buf_size(50000)
+	, m_pos(0)
+	, m_state(RequestStates::Init::get_instance())
 {}
 
+// For testing purposes
+Request::Request(string buffer)
+	: m_sockfd(-1)
+	, m_buffer(buffer)
+	, m_recv_buf_size(50000)
+	, m_pos(0)
+	, m_state(RequestStates::Init::get_instance())
+{}
+ 
 Request::Request(const Request& src)
 	: m_sockfd(src.m_sockfd)
-	, m_request(src.m_request)
+	, m_infos(src.m_infos)
 	, m_buffer(src.m_buffer)
 	, m_recv_buf_size(src.m_recv_buf_size)
+	, m_pos(src.m_pos)
+	, m_state(src.m_state)
 {
 }
 
@@ -58,88 +73,89 @@ Request& Request::operator=(const Request& src)
 {
 	if (&src != this) {
 		m_sockfd = src.m_sockfd;
-		m_request = src.m_request;
+		m_infos = src.m_infos;
 		m_buffer = src.m_buffer;
 		m_recv_buf_size = src.m_recv_buf_size;
+		m_pos = src.m_pos;
+		m_state = src.m_state;
 	}
 	return (*this);
 }
 
 void Request::clear()
 {
-	m_sockfd = -1;
-	m_request.clear();
-	m_buffer.clear();
+	m_state->clear(this);
 }
 
-void Request::clear_request()
+void Request::_clear()
 {
-	m_request.clear();
+	m_sockfd = -1;
+	m_infos.clear();
+	m_buffer.clear();
+	m_pos = 0;
+	m_state = RequestStates::Init::get_instance();
+}
+
+void Request::clear_infos()
+{
+	m_state->clear_request(this);
+}
+
+void Request::_clear_infos()
+{
+	m_infos.clear();
+}
+
+const request_t& Request::get_infos() const
+{
+	return (m_infos);
 }
 
 /**
  * @brief Parse the raw request
  *
  * Fill the m_request struct with parsed data.
- *
+ * 
  * @throws exception on error
+ * @throws ConnectionClosed exception on closed connection (recv() == 0)
  */
 void Request::parse()
 {
-	size_t pos = 0;
-	try {
-		// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
-		while (m_buffer.substr(pos, 2) == CRLF)
-			pos += 2;
-
-		// request line
-		// TODO: handle simple requests in the form `METHOD TARGET`
-		m_request.method = _Request::parse_method(m_buffer, pos);
-		_Request::consume_sp(m_buffer, pos);
-		m_request.target = _Request::parse_target(m_buffer, pos);
-		// Start line for 0.9 don't have the PROTOCOL field
-		if (m_buffer.substr(pos, 2) == CRLF) {
-			m_request.protocol = zero_nine;
-			throw Request::NotImplemented("HTTP 0.9 is not handled");
-		}
-		_Request::consume_sp(m_buffer, pos);
-		m_request.protocol = _Request::parse_protocol(m_buffer, pos);
-		_Request::consume_crlf(m_buffer, pos);
-
-		// headers
-		m_request.headers = _Request::parse_headers(m_buffer, pos, m_request);
-		_Request::consume_crlf(m_buffer, pos);
-		m_request.status = ok;
-	} catch (const Request::BadRequest& e) {
-		m_request.status = bad_request;
-	} catch (const Request::NotImplemented& e) {
-		m_request.status = not_implemented;
-	}
-	m_buffer.erase(0, pos);
+	m_state->parse(this);
 }
 
-// TODO: check with a file if the crlf is translated to a single \n
-int Request::read_socket()
+void Request::set_state(RequestState* state)
 {
-	char buf[m_recv_buf_size];
-	ssize_t ret = 0;
-	ret = recv(m_sockfd, &buf, m_recv_buf_size, MSG_DONTWAIT);
-	if (ret > 0)
-		m_buffer.append(buf, static_cast<string::size_type>(ret));
-	return (ret);
+	m_state = state;
 }
 
-const request_t& Request::get_request() const
+void Request::erase_parsed()
 {
-	return (m_request);
+	m_buffer.erase(0, m_pos);
+	m_pos = 0;
+}
+
+void Request::_append_buffer(const char* str)
+{
+	m_buffer.append(str);
 }
 
 Request::BadRequest::BadRequest(const char* msg) : std::runtime_error(msg) {};
 
 Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(msg) {};
 
-// Helper functions
+Request::ConnectionClosed::ConnectionClosed(const char* msg) : std::runtime_error(msg) {};
+
 namespace _Request {
+	ssize_t read_socket(int sockfd, string& buffer, size_t read_size)
+	{
+		char buf[read_size];
+		ssize_t ret = 0;
+		ret = recv(sockfd, &buf, read_size, MSG_DONTWAIT);
+		if (ret > 0)
+			buffer.append(buf, static_cast<string::size_type>(ret));
+		return (ret);
+	}
 
 	// TODO: call this function from an init one called from the main
 	static const map<string, method_t> build_method_map()
@@ -224,12 +240,10 @@ namespace _Request {
 
 	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
 	// Only handles target as origin form (e.g /index.html)
-	// TODO: handle query strings (e.g /main?l=en/index.html?q=now/)
 	string parse_target(const string& buffer, size_t& pos)
 	{
 		string target;
 		size_t start = pos;
-		// TODO: check for path format validity (but what is valid?)
 		try {
 			while (!is_space(buffer.at(pos))) {
 				++pos;
@@ -362,7 +376,10 @@ namespace _Request {
 		return (false);
 	}
 
-	headers_t parse_headers(const string& buffer, size_t& pos, const request_t& request)
+	headers_t parse_headers(
+				const string& buffer,
+				size_t& pos,
+				const request_t& request)
 	{
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
@@ -374,21 +391,30 @@ namespace _Request {
 			headers.content_length = parse_content_length(raw_headers);
 		return (headers);
 	}
+
+	string extract_body(const string& buffer, size_t& pos, request_t& request)
+	{
+		static size_t len;
+		if (request.body.length() == 0)
+			len = request.headers.content_length;
+		string body;
+		try {
+			if (request.headers.content_length > 0) {
+				// Check if the full body is in the recv buffer
+				// if it isn't the status must stay in "parsing".
+				if (buffer.length() - pos >= len) {
+					request.status = ok;
+					body = buffer.substr(pos, len);
+					pos += len;
+				} else {
+					body = buffer.substr(pos);
+					len -= buffer.length() - pos;
+					pos += buffer.length() - pos;
+				}
+			}
+		} catch (const std::out_of_range& e) {
+			request.status = bad_request;
+		}
+		return (body);
+	}
 }
-//
-// #include <iostream>
-// int main(void)
-// {
-// 	try {
-// 		Request test;
-// 		test.read_socket();
-// 		test.parse();
-// 		std::cout << test.get_request().method << '\n';
-// 	}
-// 	catch (const std::exception& e) {
-// 		// TODO: create a function to automatically print exception messages
-// 		std::cerr << e.what() << '\n';
-// 	}
-//
-// 	return (0);
-// }

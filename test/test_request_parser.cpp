@@ -477,18 +477,212 @@ void test_parse_headers()
 	catch (const Request::BadRequest& e) {}
 }
 
+void test_extract_body()
+{
+	// correct inputs
+	string simple_b = "123456789";
+	request_t simple_r;
+	simple_r.headers.content_length = 9;
+	size_t pos = 0;
+	string simple = extract_body(simple_b, pos, simple_r);
+	assert((simple == "123456789"));
+	assert((pos == 9));
+	assert((simple_b[pos] == '\0'));
+	assert((simple_r.status == ok));
+
+	string more_b = "123456789" 
+					"GET / HTTP/1.0";
+	request_t more_r;
+	more_r.headers.content_length = 9;
+	pos = 0;
+	string more = extract_body(more_b, pos, more_r);
+	assert((more == "123456789"));
+	assert((pos == 9));
+	assert((more_b[pos] == 'G'));
+	assert((more_r.status == ok));
+
+	string less_b = "123";
+	request_t less_r;
+	less_r.headers.content_length = 9;
+	pos = 0;
+	string less = extract_body(less_b, pos, less_r);
+	assert((less == "123"));
+	assert((pos == 3));
+	assert((less_b[pos] == '\0'));
+	assert((less_r.status == parsing));
+
+	// TODO: test parsing beginning in "extracting_body" mode
+	// wrong inputs (expected, no exceptions)
+}
+
+void test_parse()
+{
+	// correct inputs
+	Request s_l("GET / HTTP/1.0" CRLF CRLF);
+	s_l.parse();
+	request_t start_line = s_l.get_infos();
+	assert((start_line.method == get));
+	assert((start_line.target == "/"));
+	assert((start_line.protocol == one));
+	assert((start_line.status == ok));
+
+	Request l_crlf(CRLF CRLF CRLF "GET / HTTP/1.0" CRLF CRLF);
+	l_crlf.parse();
+	request_t leading_crlf = l_crlf.get_infos();
+	assert((leading_crlf.method == get));
+	assert((leading_crlf.target == "/"));
+	assert((leading_crlf.protocol == one));
+	assert((leading_crlf.status == ok));
+
+	// TODO: is it ok to give that the "ok" status?
+	Request o_o("GET / HTTP/1.1" CRLF CRLF);
+	o_o.parse();
+	request_t oneone = o_o.get_infos();
+	assert((oneone.method == get));
+	assert((oneone.target == "/"));
+	assert((oneone.protocol == one_one));
+	assert((oneone.status == ok));
+
+	Request c_l("POST / HTTP/1.0" CRLF
+				"content-length: 2" CRLF
+				CRLF
+				"ok");
+	c_l.parse();
+	request_t content_length = c_l.get_infos();
+	assert((content_length.method == post));
+	assert((content_length.target == "/"));
+	assert((content_length.protocol == one));
+	assert((content_length.status == ok));
+	assert((content_length.headers.content_length == 2));
+	assert((content_length.body == "ok"));
+
+	Request r_h("POST / HTTP/1.0" CRLF
+				"rand0: asd" CRLF
+				"rand1: asd" CRLF
+				"rand2:" CRLF
+				"content-length: 2" CRLF
+				"rand3:" CRLF
+				CRLF
+				"ok");
+	r_h.parse();
+	request_t random_headers = r_h.get_infos();
+	assert((random_headers.method == post));
+	assert((random_headers.target == "/"));
+	assert((random_headers.protocol == one));
+	assert((random_headers.status == ok));
+	assert((random_headers.headers.content_length == 2));
+	assert((content_length.body == "ok"));
+
+	Request d_r("POST / HTTP/1.0" CRLF
+				"content-length: 2" CRLF
+				CRLF
+				"ok"
+				"GET / HTTP/1.0" CRLF);
+	d_r.parse();
+	request_t double_request = d_r.get_infos();
+	assert((double_request.method == post));
+	assert((double_request.target == "/"));
+	assert((double_request.protocol == one));
+	assert((double_request.status == ok));
+	assert((double_request.headers.content_length == 2));
+	assert((content_length.body == "ok"));
+
+	Request p_b("POST / HTTP/1.0" CRLF
+				"content-length: 123" CRLF
+				CRLF
+				"ok");
+	p_b.parse();
+	request_t partial_body = p_b.get_infos();
+	assert((partial_body.method == post));
+	assert((partial_body.target == "/"));
+	assert((partial_body.protocol == one));
+	assert((partial_body.status == parsing));
+	// TODO: store the residual content-lenght to parse
+	assert((partial_body.headers.content_length == 123));
+	assert((content_length.body == "ok"));
+
+	// wrong inputs (expected, no exceptions)
+	// buffer filling in progress
+	Request o_cl("GET / HTTP/1.0" CRLF);
+	o_cl.parse();
+	request_t one_crlf = o_cl.get_infos();
+	assert((one_crlf.status == parsing));
+
+	Request o_n("GET /" CRLF CRLF);
+	o_n.parse();
+	request_t o_nine = o_n.get_infos();
+	assert((o_nine.method == get));
+	assert((o_nine.target == "/"));
+	assert((o_nine.protocol == zero_nine));
+	assert((o_nine.status == not_implemented));
+
+	Request j_t_c("" CRLF CRLF);
+	j_t_c.parse();
+	request_t just_two_crlf = j_t_c.get_infos();
+	assert((just_two_crlf.status == bad_request));
+
+	// Multiple recv requests
+	Request m("GET / HTTP/1.0" CRLF);
+	m.parse();
+	request_t multiple = m.get_infos();
+	assert((multiple.status == parsing));
+	m._append_buffer(CRLF);
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == get));
+	assert((multiple.target == "/"));
+	assert((multiple.protocol == one));
+	assert((multiple.status == ok));
+	m.clear_infos();
+	m._append_buffer("POST /post HTTP/1.0" CRLF
+						"content-length: 3" CRLF
+						CRLF
+						"ok");
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == post));
+	assert((multiple.target == "/post"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 3));
+	assert((multiple.body == "ok"));
+	assert((multiple.status == parsing));
+	m._append_buffer("!DELETE /del HTTP/1.0" CRLF
+						CRLF);
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == post));
+	assert((multiple.target == "/post"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 3));
+	assert((multiple.body == "ok!"));
+	assert((multiple.status == ok));
+	m.clear_infos();
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == del));
+	assert((multiple.target == "/del"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 0));
+	assert((multiple.body == ""));
+	assert((multiple.status == ok));
+}
+
 int main(void)
 {
 	// start line
-	test(test_parse_method, "test_parse_method");
-	test(test_parse_target, "test_parse_target");
-	test(test_parse_protocol, "test_parse_protocol");
+	TEST(test_parse_method);
+	TEST(test_parse_target);
+	TEST(test_parse_protocol);
 	// headers
-	test(test_extract_key, "test_extract_key");
-	test(test_extract_values, "test_extract_values");
-	test(test_extract_headers, "test_extract_headers");
-	test(test_parse_content_length, "test_parse_content_length");
-	test(test_parse_connection, "test_parse_connection");
-	test(test_parse_headers, "test_parse_headers");
+	TEST(test_extract_key);
+	TEST(test_extract_values);
+	TEST(test_extract_headers);
+	TEST(test_parse_content_length);
+	TEST(test_parse_connection);
+	TEST(test_parse_headers);
+	// body
+	TEST(test_extract_body);
+	// class methods
+	TEST(test_parse);
 	return (0);
 }
