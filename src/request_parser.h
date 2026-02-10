@@ -15,6 +15,7 @@ public:
 	Request(const Request& src);
 	Request& operator=(const Request& src);
 
+	void _append_buffer(const char* str); // For testing
 	void clear();
 	void clear_request();
 	void parse();

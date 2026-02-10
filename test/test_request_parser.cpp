@@ -546,7 +546,7 @@ void test_parse()
 	Request c_l("POST / HTTP/1.0" CRLF
 				"content-length: 2" CRLF
 				CRLF
-				"ok" CRLF);
+				"ok");
 	c_l.parse();
 	request_t content_length = c_l.get_infos();
 	assert((content_length.method == post));
@@ -563,7 +563,7 @@ void test_parse()
 				"content-length: 2" CRLF
 				"rand3:" CRLF
 				CRLF
-				"ok" CRLF);
+				"ok");
 	r_h.parse();
 	request_t random_headers = r_h.get_infos();
 	assert((random_headers.method == post));
@@ -576,7 +576,7 @@ void test_parse()
 	Request d_r("POST / HTTP/1.0" CRLF
 				"content-length: 2" CRLF
 				CRLF
-				"ok" CRLF
+				"ok"
 				"GET / HTTP/1.0" CRLF);
 	d_r.parse();
 	request_t double_request = d_r.get_infos();
@@ -621,12 +621,50 @@ void test_parse()
 	request_t just_two_crlf = j_t_c.get_infos();
 	assert((just_two_crlf.status == bad_request));
 
-	// wrong inputs
-	// Request just_two_crlf("" CRLF CRLF);
-	// try {
-	// 	just_two_crlf.parse();
-	// 	assert((false && "just_two_crlf"));
-	// } catch (const Request::BadRequest& e) {}
+	// Multiple recv requests
+	Request m("GET / HTTP/1.0" CRLF);
+	m.parse();
+	request_t multiple = m.get_infos();
+	assert((multiple.status == parsing));
+	m._append_buffer(CRLF);
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == get));
+	assert((multiple.target == "/"));
+	assert((multiple.protocol == one));
+	assert((multiple.status == ok));
+	m.clear_request();
+	m._append_buffer("POST /post HTTP/1.0" CRLF
+						"content-length: 3" CRLF
+						CRLF
+						"ok");
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == post));
+	assert((multiple.target == "/post"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 3));
+	assert((multiple.body == "ok"));
+	assert((multiple.status == parsing));
+	m._append_buffer("!DELETE /del HTTP/1.0" CRLF
+						CRLF);
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == post));
+	assert((multiple.target == "/post"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 3));
+	assert((multiple.body == "ok!"));
+	assert((multiple.status == ok));
+	m.clear_request();
+	m.parse();
+	multiple = m.get_infos();
+	assert((multiple.method == del));
+	assert((multiple.target == "/del"));
+	assert((multiple.protocol == one));
+	assert((multiple.headers.content_length == 0));
+	assert((multiple.body == ""));
+	assert((multiple.status == ok));
 }
 
 int main(void)

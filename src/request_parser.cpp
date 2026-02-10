@@ -135,6 +135,11 @@ void Request::erase_parsed()
 	m_pos = 0;
 }
 
+void Request::_append_buffer(const char* str)
+{
+	m_buffer.append(str);
+}
+
 Request::BadRequest::BadRequest(const char* msg) : std::runtime_error(msg) {};
 
 Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(msg) {};
