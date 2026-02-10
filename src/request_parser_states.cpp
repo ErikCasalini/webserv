@@ -22,7 +22,7 @@ void RequestStates::Init::clear(Request* request)
 
 void RequestStates::Init::clear_request(Request* request)
 {
-	request->_clear_request();
+	request->_clear_infos();
 }
 
 void RequestStates::Init::parse(Request* request)
@@ -183,7 +183,7 @@ void RequestStates::Done::clear(Request* request)
 
 void RequestStates::Done::clear_request(Request* request)
 {
-	request->_clear_request();
+	request->_clear_infos();
 	request->set_state(RequestStates::Init::get_instance());
 }
 

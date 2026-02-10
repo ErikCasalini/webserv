@@ -96,12 +96,12 @@ void Request::_clear()
 	m_state = RequestStates::Init::get_instance();
 }
 
-void Request::clear_request()
+void Request::clear_infos()
 {
 	m_state->clear_request(this);
 }
 
-void Request::_clear_request()
+void Request::_clear_infos()
 {
 	m_infos.clear();
 }

@@ -17,7 +17,7 @@ public:
 
 	void _append_buffer(const char* str); // For testing
 	void clear();
-	void clear_request();
+	void clear_infos();
 	void parse();
 	const request_t& get_infos() const;
 
@@ -53,7 +53,7 @@ private:
 	void set_state(RequestState* state);
 	void erase_parsed();
 	void _clear();
-	void _clear_request();
+	void _clear_infos();
 };
 
 // Helper functions namespace

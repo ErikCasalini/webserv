@@ -633,7 +633,7 @@ void test_parse()
 	assert((multiple.target == "/"));
 	assert((multiple.protocol == one));
 	assert((multiple.status == ok));
-	m.clear_request();
+	m.clear_infos();
 	m._append_buffer("POST /post HTTP/1.0" CRLF
 						"content-length: 3" CRLF
 						CRLF
@@ -656,7 +656,7 @@ void test_parse()
 	assert((multiple.headers.content_length == 3));
 	assert((multiple.body == "ok!"));
 	assert((multiple.status == ok));
-	m.clear_request();
+	m.clear_infos();
 	m.parse();
 	multiple = m.get_infos();
 	assert((multiple.method == del));
