@@ -136,18 +136,20 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		int	i_req = requests.search(sockfd);
 		if (i_req == -1)
 			i_req = requests.add(sockfd); // throws
-		if (requests.at(i_req).read_socket() == 0) { // throws
+		try {
+			requests.at(i_req).parse();
+			}
+		catch (Request::ConnectionClosed &e) {
 			std::cout << "[PEER CLOSED] " << sockets.info(sockfd) << " | [CLOSED]\n"; // pour debug
 			close_connection(sockfd, sockets, requests, responses);
 			return ;
 		}
-		requests.at(i_req).parse();
-		if (requests.at(i_req).get_request().status) {
-			int i_resp = responses.add(sockfd, requests.at(i_req).get_request());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+		if (requests.at(i_req).get_infos().status) {
+			int i_resp = responses.add(sockfd, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
 			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
-			std::cout << requests.at(i_req).get_request() << '\n'; // DEBUG
-			requests.at(i_req).clear_request();
+			std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
+			requests.at(i_req).clear_infos();
 			responses.at(i_resp).parse_uri();
 		}
 	}

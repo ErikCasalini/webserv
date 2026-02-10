@@ -30,6 +30,7 @@ SRC_DIR := src
 LIB_DIR := src/lib
 vpath %.cpp $(SRC_DIR):$(LIB_DIR)
 SRC := request_parser.cpp \
+	   request_parser_states.cpp \
 	   http_types.cpp \
 	   cctype_cast.cpp \
 	   c_network_exception_wrapper.cpp \
