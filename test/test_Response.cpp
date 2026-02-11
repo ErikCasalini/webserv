@@ -409,6 +409,18 @@ void	test_parse_uri(void)
 	assert((resp.get_status() == bad_request));
 
 	resp.clear();
+	req.target = "//src/te	st//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
+	req.target = "//src/te st//src//%31/.?%00omg#ok";
+	resp.set_request(req);
+	resp.parse_uri();
+	assert((resp.get_status() == bad_request));
+
+	resp.clear();
 	req.target = "//src/%/test//src//%31/.?%00omg#ok";
 	resp.set_request(req);
 	resp.parse_uri();
