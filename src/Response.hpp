@@ -4,6 +4,7 @@
 # include "request_parser.h"
 # include "http_types.h"
 # include <string>
+# include <list>
 
 class Response
 {
@@ -22,6 +23,7 @@ public:
 	const std::string	&get_querry(void) const;
 	size_t				get_buf_size(void) const;
 	void				parse_uri(void);
+	status_t			get_status(void);
 
 	int					m_sockfd;
 	static const char	authorized_chars[];
@@ -35,6 +37,13 @@ private:
 	status_t		m_status;
 };
 
-void	extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
+namespace _Response
+{
+	void					extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
+	std::list<std::string>	split_path(const std::string &path);
+	unsigned char			url_decode(const std::string &url_code);
+	void					decode_segments(std::list<std::string> &segments);
+	std::string				create_path(std::list<std::string> &segments);
+}
 
 #endif
