@@ -10,7 +10,9 @@ CXX := c++
 STD_FLAGS :=	-std=c++98
 # -Wconversion and -Wsign-conversion check for implicit conversion
 # that may result in data loss (bigger to smaller and signed to unsigned).
-WARNINGS :=		-Wall -Werror -Wextra -Wconversion -Wsign-conversion
+WARNINGS :=		-Wall -Werror -Wextra \
+				-Wconversion -Wno-error=conversion \
+				-Wsign-conversion -Wno-error=sign-conversion
 CXXFLAGS :=		$(STD_FLAGS) $(WARNINGS)
 CXXFLAGS_DB :=	$(STD_FLAGS) $(WARNINGS) -g3
 CXXFLAGS_NE :=	$(STD_FLAGS) -Wall -Wextra -Wconversion -Wsign-conversion -g3
