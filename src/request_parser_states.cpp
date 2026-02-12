@@ -25,7 +25,7 @@ void RequestStates::Init::clear(Request* request)
 	request->_clear();
 }
 
-void RequestStates::Init::clear_request(Request* request)
+void RequestStates::Init::clear_infos(Request* request)
 {
 	request->_clear_infos();
 }
@@ -49,7 +49,7 @@ void RequestStates::ReadingBuffer::clear(Request* request)
 	(void)request;
 }
 
-void RequestStates::ReadingBuffer::clear_request(Request* request)
+void RequestStates::ReadingBuffer::clear_infos(Request* request)
 {
 	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ReadingBuffer' state");
@@ -97,7 +97,7 @@ void RequestStates::ParsingHead::clear(Request* request)
 	(void)request;
 }
 
-void RequestStates::ParsingHead::clear_request(Request* request)
+void RequestStates::ParsingHead::clear_infos(Request* request)
 {
 	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ParsingHead' state");
@@ -164,7 +164,7 @@ void RequestStates::ExtractingBody::clear(Request* request)
 	(void)request;
 }
 
-void RequestStates::ExtractingBody::clear_request(Request* request)
+void RequestStates::ExtractingBody::clear_infos(Request* request)
 {
 	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ExtractingBody' state");
@@ -201,7 +201,7 @@ void RequestStates::Done::clear(Request* request)
 	request->set_state(RequestStates::Init::get_instance());
 }
 
-void RequestStates::Done::clear_request(Request* request)
+void RequestStates::Done::clear_infos(Request* request)
 {
 	request->_clear_infos();
 	request->set_state(RequestStates::Init::get_instance());
@@ -226,7 +226,7 @@ void RequestStates::Invalid::clear(Request* request)
 	request->set_state(RequestStates::Init::get_instance());
 }
 
-void RequestStates::Invalid::clear_request(Request* request)
+void RequestStates::Invalid::clear_infos(Request* request)
 {
 	throw RequestState::InvalidState("Must call clear() in 'Invalid' state");
 	(void)request;

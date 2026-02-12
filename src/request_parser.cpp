@@ -98,7 +98,7 @@ void Request::_clear()
 
 void Request::clear_infos()
 {
-	m_state->clear_request(this);
+	m_state->clear_infos(this);
 }
 
 void Request::_clear_infos()
