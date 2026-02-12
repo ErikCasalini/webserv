@@ -75,11 +75,13 @@ struct socket_t {
 	socket_t();
 	void clear();
 	std::string str_peer_data(void) const;
+	std::string str_data(void) const;
 	bool operator==(socket_t &rhs) const;
 
 	int fd;
 	sock_type type;
 	sockaddr_in peer_data;
+	sockaddr_in data;
 	int server_id;
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);

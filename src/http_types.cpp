@@ -161,6 +161,7 @@ socket_t::socket_t()
   type(passive)
 {
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
+	std::memset(&(this->data), 0, sizeof(this->data));
 }
 
 bool socket_t::operator==(socket_t &rhs) const
@@ -176,9 +177,30 @@ void socket_t::clear()
 	this->server_id = 0;
 	this->type = passive;
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
+	std::memset(&(this->data), 0, sizeof(this->data));
 }
 
 std::string	socket_t::str_peer_data(void) const
+{
+	std::ostringstream	ret;
+	uint32_t			ip;
+	uint16_t			port;
+
+	ip = ntohl(this->peer_data.sin_addr.s_addr); // convert ip to system endian (little)
+	port = ntohs(this->peer_data.sin_port); // convert port to system endian (little)
+		ret << ((ip >> 24) & 0XFF)
+		<< '.'
+		<< ((ip >> 16) & 0XFF)
+		<< '.'
+		<< ((ip >> 8) & 0XFF)
+		<< '.'
+		<< (ip & 0XFF)
+		<< ":"
+		<< port;
+	return (ret.str());
+}
+
+std::string	socket_t::str_data(void) const
 {
 	std::ostringstream	ret;
 	uint32_t			ip;
@@ -203,6 +225,7 @@ std::ostream& operator<<(std::ostream& os, const socket_t& s)
 	os << "Socket FD: " << s.fd
 	   << " | Type: " << s.type
 	   << " | Server ID: " << s.server_id
-	   << " | Peer data: " << s.str_peer_data() << '\n';
+	   << " | Peer data: " << s.str_peer_data()
+	   << " | Local data: " << s.str_data() << '\n';
 	return (os);
 }
