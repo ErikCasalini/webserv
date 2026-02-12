@@ -81,6 +81,18 @@ namespace RequestStates {
 		Done(const Done& src);
 		Done& operator=(const Done& src);
 	};
+
+	class Invalid : public RequestState {
+	public:
+		static RequestState* get_instance();
+		void clear(Request* request);
+		void clear_request(Request* request);
+		void parse(Request* request);
+	private:
+		Invalid() {};
+		Invalid(const Invalid& src);
+		Invalid& operator=(const Invalid& src);
+	};
 }
 
 #endif

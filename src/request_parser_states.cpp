@@ -17,6 +17,11 @@ RequestState* RequestStates::Init::get_instance()
 
 void RequestStates::Init::clear(Request* request)
 {
+	if (request->m_buffer.length() > 0) {
+		request->set_state(RequestStates::Invalid::get_instance());
+		throw RequestState::InvalidState(
+			"Can't call clear() in 'Init' state with a non empty buffer");
+	}
 	request->_clear();
 }
 
@@ -39,12 +44,14 @@ RequestState* RequestStates::ReadingBuffer::get_instance()
 
 void RequestStates::ReadingBuffer::clear(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ReadingBuffer' state");
 	(void)request;
 }
 
 void RequestStates::ReadingBuffer::clear_request(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ReadingBuffer' state");
 	(void)request;
 }
@@ -57,11 +64,15 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 #else
 	ssize_t ret = 1;
 #endif
-	if (ret == 0)
-		throw (Request::ConnectionClosed("socket closed"));
+	if (ret == 0) {
+		request->set_state(RequestStates::Invalid::get_instance());
+		throw Request::ConnectionClosed("socket closed");
+	}
 	// TODO replace this exception by an io exception (check for Erik's exceptions)
-	if (ret == -1)
-		throw (std::runtime_error("recv failed"));
+	if (ret == -1) {
+		request->set_state(RequestStates::Invalid::get_instance());
+		throw std::runtime_error("recv failed");
+	}
 	// Wait for the two consecutive spaces to actually parse the input
 	if (request->m_infos.method == post && request->m_infos.headers.content_length > 0) {
 		request->set_state(RequestStates::ExtractingBody::get_instance());
@@ -81,12 +92,14 @@ RequestState* RequestStates::ParsingHead::get_instance()
 
 void RequestStates::ParsingHead::clear(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ParsingHead' state");
 	(void)request;
 }
 
 void RequestStates::ParsingHead::clear_request(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ParsingHead' state");
 	(void)request;
 }
@@ -146,12 +159,14 @@ RequestState* RequestStates::ExtractingBody::get_instance()
 
 void RequestStates::ExtractingBody::clear(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ExtractingBody' state");
 	(void)request;
 }
 
 void RequestStates::ExtractingBody::clear_request(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call clear() in 'ExtractingBody' state");
 	(void)request;
 }
@@ -177,6 +192,11 @@ RequestState* RequestStates::Done::get_instance()
 
 void RequestStates::Done::clear(Request* request)
 {
+	if (request->m_buffer.length() > 0) {
+		request->set_state(RequestStates::Invalid::get_instance());
+		throw RequestState::InvalidState(
+			"Can't call clear() in 'Done' state with a non empty buffer");
+	}
 	request->_clear();
 	request->set_state(RequestStates::Init::get_instance());
 }
@@ -189,6 +209,31 @@ void RequestStates::Done::clear_request(Request* request)
 
 void RequestStates::Done::parse(Request* request)
 {
+	request->set_state(RequestStates::Invalid::get_instance());
 	throw RequestState::InvalidState("Can't call parse() in 'Done' state");
+	(void)request;
+}
+
+RequestState* RequestStates::Invalid::get_instance()
+{
+	static RequestStates::Invalid singleton;
+	return (&singleton);
+};
+
+void RequestStates::Invalid::clear(Request* request)
+{
+	request->_clear();
+	request->set_state(RequestStates::Init::get_instance());
+}
+
+void RequestStates::Invalid::clear_request(Request* request)
+{
+	throw RequestState::InvalidState("Must call clear() in 'Invalid' state");
+	(void)request;
+}
+
+void RequestStates::Invalid::parse(Request* request)
+{
+	throw RequestState::InvalidState("Can't call parse() in 'Invalid' state");
 	(void)request;
 }
