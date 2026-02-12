@@ -3,6 +3,8 @@
 
 # include <sys/epoll.h>
 # include "main_loop.hpp"
+# include "http_types.h"
+
 
 class EpollEvents
 {
@@ -15,15 +17,11 @@ public:
 	epoll_event			&at(int i);
 	size_t				size(void) const;
 
-	static int			getFd(const epoll_event &event);
-	static sock_type	getSockType(const epoll_event &event);
-	static void			setFd(int fd, epoll_event &event);
-	static void			setSockType(sock_type type, epoll_event &event);
-	static epoll_event	create(uint32_t events, int fd, sock_type type);
+	static epoll_event	create(socket_t &socket, uint32_t events);
 
 private:
 
-	vec_events			m_events;
+	std::vector<epoll_event>	m_events;
 
 };
 

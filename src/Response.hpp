@@ -2,6 +2,7 @@
 # define RESPONSE_HPP
 
 # include "request_parser.h"
+# include "Config.h"
 # include "http_types.h"
 # include <string>
 # include <list>
@@ -24,8 +25,9 @@ public:
 	size_t				get_buf_size(void) const;
 	void				parse_uri(void);
 	status_t			get_status(void);
+	void				generate(config_t &config);
 
-	int					m_sockfd;
+	socket_t			*m_socket;
 	static const char	authorized_chars[];
 
 private:

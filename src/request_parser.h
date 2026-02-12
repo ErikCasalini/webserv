@@ -34,7 +34,7 @@ public:
 		ConnectionClosed(const char* msg);
 	};
 
-	int m_sockfd;
+	socket_t* m_socket;
 
 	// Give the state machine access to the private members of Request.
 	// TODO: rename Init to a better name
