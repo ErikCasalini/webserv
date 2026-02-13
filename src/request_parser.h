@@ -43,6 +43,7 @@ public:
 	friend class RequestStates::ParsingHead;
 	friend class RequestStates::ExtractingBody;
 	friend class RequestStates::Done;
+	friend class RequestStates::Invalid;
 private:
 	request_t m_infos;
 	std::string m_buffer;

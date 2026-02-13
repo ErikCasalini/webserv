@@ -9,7 +9,7 @@ class RequestState {
 public:
 	// virtual ~RequestState();
 	virtual void clear(Request* request) = 0;
-	virtual void clear_request(Request* request) = 0;
+	virtual void clear_infos(Request* request) = 0;
 	virtual void parse(Request* request) = 0;
 
 	class InvalidState : public std::runtime_error {
@@ -24,7 +24,7 @@ namespace RequestStates {
 		// Singleton access
 		static RequestState* get_instance();
 		void clear(Request* request);
-		void clear_request(Request* request);
+		void clear_infos(Request* request);
 		void parse(Request* request);
 	private:
 		// Empty implemetation to dissmiss
@@ -38,7 +38,7 @@ namespace RequestStates {
 	public:
 		static RequestState* get_instance();
 		void clear(Request* request);
-		void clear_request(Request* request);
+		void clear_infos(Request* request);
 		void parse(Request* request);
 	private:
 		ReadingBuffer() {};
@@ -50,7 +50,7 @@ namespace RequestStates {
 	public:
 		static RequestState* get_instance();
 		void clear(Request* request);
-		void clear_request(Request* request);
+		void clear_infos(Request* request);
 		void parse(Request* request);
 	private:
 		ParsingHead() {};
@@ -62,7 +62,7 @@ namespace RequestStates {
 	public:
 		static RequestState* get_instance();
 		void clear(Request* request);
-		void clear_request(Request* request);
+		void clear_infos(Request* request);
 		void parse(Request* request);
 	private:
 		ExtractingBody() {};
@@ -74,12 +74,24 @@ namespace RequestStates {
 	public:
 		static RequestState* get_instance();
 		void clear(Request* request);
-		void clear_request(Request* request);
+		void clear_infos(Request* request);
 		void parse(Request* request);
 	private:
 		Done() {};
 		Done(const Done& src);
 		Done& operator=(const Done& src);
+	};
+
+	class Invalid : public RequestState {
+	public:
+		static RequestState* get_instance();
+		void clear(Request* request);
+		void clear_infos(Request* request);
+		void parse(Request* request);
+	private:
+		Invalid() {};
+		Invalid(const Invalid& src);
+		Invalid& operator=(const Invalid& src);
 	};
 }
 
