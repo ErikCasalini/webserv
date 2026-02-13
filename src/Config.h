@@ -24,12 +24,18 @@ struct limit_except_t {
 	vector<string> methods;
 };
 
+struct cgi_t {
+	vector<string> allow_paths;
+	map<string, string> extensions;
+};
+
 struct location_params_t {
 	limit_except_t limit_except;
 	bool autoindex;
 	error_page_t error_page;
+	string root;
 	string index;
-	redirection_t redirection;
+	redirection_t redirection; // 'return' in nginx's syntax
 };
 
 typedef std::multimap<string, location_params_t> location_t;
