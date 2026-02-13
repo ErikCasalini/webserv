@@ -5,6 +5,11 @@
 # include <map>
 # include <string>
 # include <vector>
+# include <sys/socket.h>
+# include <sstream>
+# include <netinet/in.h>
+# include <cstring>
+# include <unistd.h>
 
 # define CRLF "\r\n"
 
@@ -60,5 +65,27 @@ struct request_t {
 	std::string body;
 };
 std::ostream& operator<<(std::ostream& os, const request_t& r);
+
+enum sock_type {
+	active,
+	passive
+};
+
+struct socket_t {
+	socket_t();
+	void clear();
+	std::string str_peer_data(void) const;
+	std::string str_data(void) const;
+	bool operator==(socket_t &rhs) const;
+
+	int fd;
+	sock_type type;
+	int server_id;
+	sockaddr_in peer_data;
+	sockaddr_in data;
+	socklen_t data_len;
+	socklen_t peer_data_len;
+};
+std::ostream& operator<<(std::ostream& os, const socket_t& s);
 
 #endif

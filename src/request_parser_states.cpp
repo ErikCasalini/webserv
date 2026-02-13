@@ -60,7 +60,9 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 {
 // We fill artificially the buffer with a special ctor for testing.
 #ifndef TESTING
-	ssize_t ret = _Request::read_socket(request->m_sockfd, request->m_buffer, request->m_recv_buf_size);
+	if (request->m_socket == NULL)
+		throw (std::logic_error("attempt to read unset socket"));
+	ssize_t ret = _Request::read_socket(request->m_socket->fd, request->m_buffer, request->m_recv_buf_size);
 #else
 	ssize_t ret = 1;
 #endif
@@ -114,7 +116,7 @@ void RequestStates::ParsingHead::parse(Request* request)
 	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
 	while (buffer.substr(pos, 2) == CRLF)
 		pos += 2;
-	
+
 	try {
 		// request line
 		infos.method = _Request::parse_method(buffer, pos);
@@ -128,7 +130,7 @@ void RequestStates::ParsingHead::parse(Request* request)
 		_Request::consume_sp(buffer, pos);
 		infos.protocol = _Request::parse_protocol(buffer, pos);
 		_Request::consume_crlf(buffer, pos);
-		
+
 		// headers
 		infos.headers = _Request::parse_headers(buffer, pos, infos);
 		_Request::consume_crlf(buffer, pos);

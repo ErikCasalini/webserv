@@ -13,50 +13,58 @@
 #include <iostream>
 #include <cstring>
 #include <cerrno>
+#include "Config.h"
 
-void	init_listen_sockets(std::vector<std::pair<const std::string, const short> > &interfaces, Sockets &sockets)
+void	init_listen_sockets(std::vector<server_t> &servers, Sockets &sockets)
 {
-	sockaddr_in	sock_data;
-	epoll_event	event;
-	int			sockfd;
+	std::vector<server_t>::const_iterator	serv_it = servers.begin();
+	epoll_event								event;
+	int										server_id = 0;
 
-	std::memset(&sock_data, 0, sizeof(sock_data));
+	while (serv_it < servers.end() && sockets.size() < sockets.limit()) {
+		std::vector<listen_t>::const_iterator lis_it = serv_it->listen.begin(); // empecher de lancer si serveur n'a aucun listen (ou pas des serv)
 
-	for (size_t i = 0; i < interfaces.size() && sockets.size() < sockets.limit(); i++) {
-		sockfd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0); // throws
-		sockets.add(sockfd, sock_data); // throws || Sock_data useless, make it nullable ?
+		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
+			socket_t socket;
+			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0); // throws
+			socket.data.sin_family = AF_INET;
+			socket.data.sin_addr.s_addr = htonl(lis_it->ip);
+			socket.data.sin_port = htons(lis_it->port);
+			socket.server_id = server_id;
+			socket.type = passive;
 
-		sock_data.sin_family = AF_INET;
-		sock_data.sin_port = htons(interfaces[i].second);
-		sock_data.sin_addr.s_addr = INADDR_ANY; // peut etre limiter a ce qui est indiqué dans config
+			// REUSE SOCKET AFTER SHUTDOWN
+			int opt = 1;
+			setsockopt(socket.fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-		// REUSE SOCKET AFTER SHUTDOWN
-		int opt = 1;
-		setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+			bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.data), sizeof(socket.data)); // throws
+			listen_ex(socket.fd, 1024); // throws
 
-		bind_ex(sockfd, reinterpret_cast<struct sockaddr*>(&sock_data), sizeof(sock_data)); // throws
-		listen_ex(sockfd, 1024); // throws
-
-		event = EpollEvents::create(EPOLLIN, sockfd, passive);
-		epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_ADD, sockfd, &event); // throws
+			int i = sockets.add(socket);
+			event = EpollEvents::create(&sockets.at(i), EPOLLIN);
+			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_ADD, socket.fd, &event); // throws
+			lis_it++;
+		}
+		serv_it++;
+		server_id++;
 	}
 }
 
-void	set_active_socket(int sockfd, Sockets &sockets, sockaddr_in &peer_data)
+void	set_active_socket(socket_t &new_socket, Sockets &sockets)
 {
-	epoll_event	event = EpollEvents::create(EPOLLIN, sockfd, active);
+	int			i = sockets.add(new_socket); // Le check de socket.size() est fait avant, on ne peut pas etre ici si sockets est full
+	epoll_event	event = EpollEvents::create(&sockets.at(i), EPOLLIN);
 
 	errno = 0;
-	epoll_ctl(sockets.epollInst(), EPOLL_CTL_ADD, sockfd, &event);
+	epoll_ctl(sockets.epollInst(), EPOLL_CTL_ADD, new_socket.fd, &event);
 	switch (errno) {
 		case 0:
-			sockets.add(sockfd, peer_data); // Le check de socket.size() est fait avant, on ne peut pas etre ici si sockets est full
-			std::cout << "[NEW CONNECTION] " << sockets.info(sockfd) << '\n';
+			std::cout << "[NEW CONNECTION] " << new_socket << '\n';
 			break;
 		case ENOMEM:
 		case ENOSPC:
-			std::cout << "[SOCKET ERROR] " << strerror(errno) << " | " << sockets.info(sockfd) << " | [CLOSED]\n";
-			close(sockfd); // --> silenlty close unhandlable socket and continue draining.
+			std::cout << "[SOCKET ERROR] " << strerror(errno) << " | " << new_socket << " | [CLOSED]\n";
+			sockets.close(new_socket); // --> silenlty close unhandlable socket and continue draining.
 			errno = 0;
 			break;
 		default:
@@ -64,21 +72,23 @@ void	set_active_socket(int sockfd, Sockets &sockets, sockaddr_in &peer_data)
 	}
 }
 
-void	accept_new_connections(int listen_fd, Sockets &sockets)
+void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 {
-	int			new_sockfd;
+	socket_t	new_socket;
 	bool		stop_draining = false;
-	sockaddr_in	peer_data;
-	socklen_t	data_len;
+
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
 
 	while (!stop_draining && sockets.size() < sockets.limit()) {
-		std::memset(&peer_data, 0, sizeof(peer_data));
-		data_len = sizeof(peer_data);
 		errno = 0;
-		new_sockfd = accept(listen_fd, reinterpret_cast<sockaddr*>(&peer_data), &data_len);
+		new_socket.fd = accept(listen_socket->fd, reinterpret_cast<sockaddr*>(&new_socket.peer_data), &new_socket.peer_data_len);
 		switch (errno) {
 			case 0:
-				set_active_socket(new_sockfd, sockets, peer_data); // throws
+				new_socket.type = active;
+				new_socket.server_id = listen_socket->server_id;
+				getsockname(new_socket.fd, reinterpret_cast<sockaddr*>(&new_socket.data), &new_socket.peer_data_len);
+				set_active_socket(new_socket, sockets); // throws
 				break;
 			case ECONNABORTED:
 			case EPERM:
@@ -105,89 +115,107 @@ void	accept_new_connections(int listen_fd, Sockets &sockets)
 	}
 }
 
-void	close_connection(int sockfd, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
+void	close_connection(socket_t *socket, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_DEL, sockfd, NULL); // throws
-	requests.clear(sockfd); // si present
-	responses.clear(sockfd); // si present
-	sockets.close(sockfd);
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
+
+	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_DEL, socket->fd, NULL); // throws
+	requests.clear(socket); // if address is present
+	responses.clear(socket); // if address is present
+	sockets.close(*socket);
 }
 
 void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	int	sockfd;
+	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
 
-	if (EpollEvents::getSockType(event) == passive)
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
+
+	if (socket->type == passive)
 		throw std::runtime_error("[FATAL ERROR] Listen Socket corrupted");
 
-	sockfd = EpollEvents::getFd(event);
-	std::cout << "[SOCKET INTERNAL ERROR] " << sockets.info(sockfd) << " | [CLOSED]\n";
-	close_connection(sockfd, sockets, requests, responses);
+	std::cout << "[SOCKET INTERNAL ERROR] " << *socket << " | [CLOSED]\n";
+	close_connection(socket, sockets, requests, responses);
 }
 
 void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	int	sockfd = EpollEvents::getFd(event);
+	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
 
-	if (EpollEvents::getSockType(event) == passive)
-		accept_new_connections(sockfd, sockets); // throws
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
+
+	if (socket->type == passive)
+		accept_new_connections(socket, sockets); // throws
 
 	else {
-		int	i_req = requests.search(sockfd);
+		int	i_req = requests.search(socket);
 		if (i_req == -1)
-			i_req = requests.add(sockfd); // throws
+			i_req = requests.add(socket); // throws
 		try {
 			requests.at(i_req).parse();
 			}
 		catch (Request::ConnectionClosed &e) {
-			std::cout << "[PEER CLOSED] " << sockets.info(sockfd) << " | [CLOSED]\n"; // pour debug
-			close_connection(sockfd, sockets, requests, responses);
+			std::cout << "[PEER CLOSED] " << *socket << " | [CLOSED]\n"; // pour debug
+			close_connection(socket, sockets, requests, responses);
 			return ;
 		}
 		if (requests.at(i_req).get_infos().status) {
-			int i_resp = responses.add(sockfd, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+			int i_resp = responses.add(socket, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
-			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event); // throws
+			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event); // throws
 			std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
 			requests.at(i_req).clear_infos();
 			responses.at(i_resp).parse_uri();
+			// if (responses.at(i_resp).get_status() == bad_request)
+				// on ecrit l'html correspondant dans le buffer
+			// else on genere la reponse et on la met dans le buffer
 		}
 	}
 }
 
 void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	int	sockfd = EpollEvents::getFd(event);
+	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
 
-	if (EpollEvents::getSockType(event) == passive)
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
+
+	if (socket->type == passive)
 		throw std::runtime_error("[FATAL ERROR] Listen Socket corrupted");
 
-	std::cout << "[PEER CLOSED] " << sockets.info(sockfd) << " | [CLOSED]\n"; // pour debug
-	close_connection(sockfd, sockets, requests, responses);
+	std::cout << "[PEER CLOSED] " << *socket << " | [CLOSED]\n"; // pour debug
+	close_connection(socket, sockets, requests, responses);
 }
 
 void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Response> &responses)
 {
-	int	sockfd = EpollEvents::getFd(event);
-	int	i = responses.search(sockfd);
+	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
+
+	if (socket == NULL)
+		throw std::logic_error("Invalid socket address");
+
+	int	i = responses.search(socket);
 	std::string content(responses.at(i).get_path() + " " + responses.at(i).get_querry());
 
 	// DEBUG
-	send(sockfd, content.c_str(), content.size(), SOCK_NONBLOCK);
+	send(socket->fd, content.c_str(), content.size(), SOCK_NONBLOCK);
 	event.events = EPOLLIN;
-	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, sockfd, &event);
+	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event);
 	responses.at(i).clear(); // on enleve pour l'instant
 }
 
-int	main_server_loop(temp_config &config)
+int	main_server_loop(config_t &config)
 {
 	int							ready_fds;
-	EpollEvents					events(config.socket_limit); // throws
-	ActiveMessages<Request>		requests(config.socket_limit); // throws
-	ActiveMessages<Response>	responses(config.socket_limit); // throws
-	Sockets						sockets(epoll_create_ex(1), config.socket_limit); // throws
+	EpollEvents					events(config.events.max_connections); // throws
+	ActiveMessages<Request>		requests(config.events.max_connections); // throws
+	ActiveMessages<Response>	responses(config.events.max_connections); // throws
+	Sockets						sockets(epoll_create_ex(1), config.events.max_connections); // throws
 
-	init_listen_sockets(config.interfaces, sockets); // throws
+	init_listen_sockets(config.http.server, sockets); // throws
 	while(1) {
 		errno = 0;
 		ready_fds = epoll_wait_ex(sockets.epollInst(), events.addr(), events.size(), 0); // throws

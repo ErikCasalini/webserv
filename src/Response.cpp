@@ -1,4 +1,5 @@
 #include "Response.hpp"
+#include "Config.h"
 #include <cstring>
 #include <cstdlib>
 #include "http_types.h"
@@ -31,11 +32,11 @@ namespace _Response
 
 	std::list<std::string>	split_path(const std::string &path) // assumes path starts with '/'
 	{
-		std::list<std::string>	segments;
+		std::list<std::string>		segments;
 		bool						is_dir = false;
 		size_t						pos;
-		std::string::const_iterator		seg_end;
-		std::string::const_iterator		seg_beg;
+		std::string::const_iterator	seg_end;
+		std::string::const_iterator	seg_beg;
 
 		if (*(path.end() - 1) == '/')
 			is_dir = true;
@@ -135,7 +136,7 @@ namespace _Response
 }
 
 Response::Response(void)
-: m_sockfd(-1),
+: m_socket(NULL),
   m_status(ok)
 {}
 
@@ -179,7 +180,7 @@ status_t	Response::get_status(void)
 
 void	Response::clear(void)
 {
-	m_sockfd = -1;
+	m_socket = NULL;
 	m_request.clear();
 	m_buffer.clear();
 	m_path.clear();
@@ -207,3 +208,10 @@ void	Response::parse_uri(void)
 	}
 	m_path = _Response::create_path(segments);
 }
+
+// void	Response::generate(config_t &config)
+// {
+	//chercher m_path dans config
+		//si pas present on remplit avec fichier 404
+		//si present
+// }

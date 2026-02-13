@@ -18,22 +18,26 @@ class	ActiveMessages
 		~ActiveMessages(void)
 		{}
 
-		int	add(int sockfd)
+		int	add(socket_t *socket) // Must be the socket_t present in Sockets (for correct address)
 		{
+			if (socket == NULL)
+				throw std::logic_error("Attempt to add invalid socket");
 			for (int i = 0; i < m_socket_limit; i++) {
-				if (m_messages_lst.at(i).m_sockfd == -1) {
-					m_messages_lst.at(i).m_sockfd = sockfd;
+				if (m_messages_lst.at(i).m_socket == NULL) {
+					m_messages_lst.at(i).m_socket = socket;
 					return (i);
 				}
 			}
 			throw std::logic_error("Attempt to add Message while ActiveMessage is full");
 		}
 
-		int	add(int sockfd, const request_t &request) // for Responses only
+		int	add(socket_t *socket, const request_t &request) // for Responses only
 		{
+			if (socket == NULL)
+				throw std::logic_error("Attempt to add invalid socket");
 			for (int i = 0; i < m_socket_limit; i++) {
-				if (m_messages_lst.at(i).m_sockfd == -1) {
-					m_messages_lst.at(i).m_sockfd = sockfd;
+				if (m_messages_lst.at(i).m_socket == NULL) {
+					m_messages_lst.at(i).m_socket = socket;
 					m_messages_lst.at(i).set_request(request);
 					return (i);
 				}
@@ -41,19 +45,23 @@ class	ActiveMessages
 			throw std::logic_error("Attempt to add Message while ActiveMessage is full");
 		}
 
-		int	search(int sockfd) const
+		int	search(socket_t *socket) const
 		{
+			if (socket == NULL)
+				throw std::logic_error("Attempt to search invalid socket");
 			for (int i = 0; i < m_socket_limit; i++) {
-				if (m_messages_lst.at(i).m_sockfd == sockfd)
+				if (m_messages_lst.at(i).m_socket == socket)
 					return (i);
 			}
 			return (-1);
 		}
 
-		void	clear(int sockfd)
+		void	clear(socket_t *socket)
 		{
+			if (socket == NULL)
+				throw std::logic_error("Attempt to clear invalid socket");
 			for (int i = 0; i < m_socket_limit; i++) {
-				if (m_messages_lst.at(i).m_sockfd == sockfd) {
+				if (m_messages_lst.at(i).m_socket == socket) {
 					m_messages_lst.at(i).clear();
 					return ;
 				}

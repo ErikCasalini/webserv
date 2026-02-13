@@ -44,7 +44,7 @@ using std::string;
 using std::map;
 
 Request::Request()
-	: m_sockfd(-1)
+	: m_socket(NULL)
 	, m_recv_buf_size(50000)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
@@ -52,15 +52,15 @@ Request::Request()
 
 // For testing purposes
 Request::Request(string buffer)
-	: m_sockfd(-1)
+	: m_socket(NULL)
 	, m_buffer(buffer)
 	, m_recv_buf_size(50000)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
 {}
- 
+
 Request::Request(const Request& src)
-	: m_sockfd(src.m_sockfd)
+	: m_socket(src.m_socket)
 	, m_infos(src.m_infos)
 	, m_buffer(src.m_buffer)
 	, m_recv_buf_size(src.m_recv_buf_size)
@@ -72,7 +72,7 @@ Request::Request(const Request& src)
 Request& Request::operator=(const Request& src)
 {
 	if (&src != this) {
-		m_sockfd = src.m_sockfd;
+		m_socket = src.m_socket;
 		m_infos = src.m_infos;
 		m_buffer = src.m_buffer;
 		m_recv_buf_size = src.m_recv_buf_size;
@@ -89,7 +89,7 @@ void Request::clear()
 
 void Request::_clear()
 {
-	m_sockfd = -1;
+	m_socket = NULL;
 	m_infos.clear();
 	m_buffer.clear();
 	m_pos = 0;
@@ -115,7 +115,7 @@ const request_t& Request::get_infos() const
  * @brief Parse the raw request
  *
  * Fill the m_request struct with parsed data.
- * 
+ *
  * @throws exception on error
  * @throws ConnectionClosed exception on closed connection (recv() == 0)
  */
