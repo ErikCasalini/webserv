@@ -209,9 +209,9 @@ void	Response::parse_uri(void)
 	m_path = _Response::create_path(segments);
 }
 
-void	Response::generate(config_t &config)
-{
+// void	Response::generate(config_t &config)
+// {
 	//chercher m_path dans config
 		//si pas present on remplit avec fichier 404
 		//si present
-}
+// }

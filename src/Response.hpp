@@ -25,7 +25,7 @@ public:
 	size_t				get_buf_size(void) const;
 	void				parse_uri(void);
 	status_t			get_status(void);
-	void				generate(config_t &config);
+	// void				generate(config_t &config);
 
 	socket_t			*m_socket;
 	static const char	authorized_chars[];

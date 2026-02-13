@@ -15,13 +15,12 @@ class Sockets
 
 						Sockets(int epoll_instance, int socket_limit);
 						~Sockets(void);
-		socket_t		&add(socket_t &socket);
+		int				add(socket_t &socket);
 		void			close(socket_t &socket);
 		int				epollInst(void) const;
 		int				limit(void) const;
 		int				size(void) const;
-		// sockaddr_in		peerData(socket_t &socket) const;
-		// std::string		info(int fd) const;
+		socket_t		&at(int i);
 
 	private:
 

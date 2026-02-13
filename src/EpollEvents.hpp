@@ -17,7 +17,7 @@ public:
 	epoll_event			&at(int i);
 	size_t				size(void) const;
 
-	static epoll_event	create(socket_t &socket, uint32_t events);
+	static epoll_event	create(socket_t *socket, uint32_t events);
 
 private:
 
