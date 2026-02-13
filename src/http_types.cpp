@@ -157,8 +157,10 @@ std::ostream& operator<<(std::ostream& os, const request_t& r)
 
 socket_t::socket_t()
 : fd(-1),
-  server_id(0),
-  type(passive)
+  type(passive),
+  server_id(-1),
+  data_len(sizeof(data)),
+  peer_data_len(sizeof(peer_data))
 {
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
 	std::memset(&(this->data), 0, sizeof(this->data));
@@ -174,8 +176,10 @@ bool socket_t::operator==(socket_t &rhs) const
 void socket_t::clear()
 {
 	this->fd = -1;
-	this->server_id = 0;
+	this->server_id = -1;
 	this->type = passive;
+	this->data_len = sizeof(data);
+	this->peer_data_len = sizeof(peer_data);
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
 	std::memset(&(this->data), 0, sizeof(this->data));
 }
@@ -206,8 +210,8 @@ std::string	socket_t::str_data(void) const
 	uint32_t			ip;
 	uint16_t			port;
 
-	ip = ntohl(this->peer_data.sin_addr.s_addr); // convert ip to system endian (little)
-	port = ntohs(this->peer_data.sin_port); // convert port to system endian (little)
+	ip = ntohl(this->data.sin_addr.s_addr); // convert ip to system endian (little)
+	port = ntohs(this->data.sin_port); // convert port to system endian (little)
 		ret << ((ip >> 24) & 0XFF)
 		<< '.'
 		<< ((ip >> 16) & 0XFF)

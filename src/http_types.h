@@ -80,9 +80,11 @@ struct socket_t {
 
 	int fd;
 	sock_type type;
+	int server_id;
 	sockaddr_in peer_data;
 	sockaddr_in data;
-	int server_id;
+	socklen_t data_len;
+	socklen_t peer_data_len;
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);
 
