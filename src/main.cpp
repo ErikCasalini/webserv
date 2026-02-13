@@ -3,29 +3,41 @@
 #include <iostream>
 #include "main_loop.hpp"
 #include "EpollEvents.hpp"
+#include "Config.h"
 
 int	main(void)
 {
-	temp_config	config;
+	// Hardcode to simulate config file for interfaces
+	config_t			config;
+	server_t			server1, server2;
+	listen_t			serv1_listen1, serv1_listen2, serv2_listen1, serv2_listen2;
+	location_params_t	serv1_loc1, serv1_loc2, serv2_loc1, serv2_loc2;
+
+	serv1_listen1.ip = 0x7F000001; // 127.0.0.1 big endian endian ???
+	serv1_listen1.port = 4242;
+	serv1_listen2.ip = 0x7F000001;
+	serv1_listen2.port = 4343;
+
+	serv2_listen1.ip = 0x7F000001;
+	serv2_listen1.port = 5252;
+	serv2_listen2.ip = 0x7F000001;
+	serv2_listen2.port = 5353;
+
+	server1.listen.push_back(serv1_listen1); // 4242
+	server1.listen.push_back(serv1_listen2); // 4343
+	server2.listen.push_back(serv2_listen1); // 5252
+	server2.listen.push_back(serv2_listen2); // 5353
+
+	config.http.server.push_back(server1);
+	config.http.server.push_back(server2);
+	config.events.max_connections = 512;
 
 	try {
-		// Hardcode to simulate config file for interfaces
-		config.interfaces.push_back(std::pair<const std::string, const short>("127.0.0.1", 4242));
-		config.interfaces.push_back(std::pair<const std::string, const short>("127.0.0.1", 5252));
-		config.socket_limit = 10;
 		main_server_loop(config);
 	}
 	catch (std::exception &e) {
 		std::cerr << e.what();
 		return (1);
 	}
-
-	/* TEST FD ENCODING */
-	// epoll_event	test = EpollEvents::create(EPOLLIN | EPOLLOUT, 5, active);
-	// std::cout << "FD=" << EpollEvents::getFd(test) << " Type=" << EpollEvents::getSockType(test) << '\n';
-	// EpollEvents::setFd(12, test);
-	// std::cout << "FD=" << EpollEvents::getFd(test) << " Type=" << EpollEvents::getSockType(test) << '\n';
-	// EpollEvents::setSockType(passive, test);
-	// EpollEvents::setFd(100, test);
-	// std::cout << "FD=" << EpollEvents::getFd(test) << " Type=" << EpollEvents::getSockType(test) << '\n';
+	return (0);
 }
