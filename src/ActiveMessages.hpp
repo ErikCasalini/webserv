@@ -66,7 +66,6 @@ class	ActiveMessages
 					return ;
 				}
 			}
-			throw std::logic_error("Attempt to clear untracked socket");
 		}
 
 		T	&at(int index)
