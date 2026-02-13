@@ -60,6 +60,8 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 {
 // We fill artificially the buffer with a special ctor for testing.
 #ifndef TESTING
+	if (request->m_socket == NULL)
+		throw (std::logic_error("attempt to read unset socket"));
 	ssize_t ret = _Request::read_socket(request->m_socket->fd, request->m_buffer, request->m_recv_buf_size);
 #else
 	ssize_t ret = 1;
