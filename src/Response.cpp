@@ -133,6 +133,15 @@ namespace _Response
 
 		return (ret);
 	}
+
+	location_params_t	find_location(std::list<std::string> &path, vector<location_t> &locations)
+	{
+		vector<location_t>::const_iterator	loc_it = locations.begin();
+
+		for (; loc_it < locations.end(); loc_it++) {
+			
+		}
+	}
 }
 
 Response::Response(void)
@@ -209,9 +218,7 @@ void	Response::parse_uri(void)
 	m_path = _Response::create_path(segments);
 }
 
-// void	Response::generate(config_t &config)
-// {
-	//chercher m_path dans config
-		//si pas present on remplit avec fichier 404
-		//si present
-// }
+void	Response::generate(config_t &config)
+{
+	location_params_t	params = _Response::find_location(m_path, config.http.server.at(m_socket->server_id).locations);
+}
