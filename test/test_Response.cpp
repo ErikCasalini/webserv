@@ -1,6 +1,7 @@
 #include "../src/Response.hpp"
 #include "lib_test.h"
 #include <list>
+#include "../src/Config.h"
 
 using namespace _Response;
 
@@ -443,6 +444,182 @@ void	test_parse_uri(void)
 	assert((resp.get_status() == ok));
 }
 
+void	test_is_exact_match(void)
+{
+	std::list<std::string>	uri;
+	std::list<std::string>	location;
+
+	uri.push_back("test");
+	location.push_back("test");
+	assert((is_exact_match(uri, location) == true));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	uri.push_back("test2");
+	location.push_back("test");
+	assert((is_exact_match(uri, location) == false));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	location.push_back("test");
+	location.push_back("test2");
+	assert((is_exact_match(uri, location) == false));
+
+	uri.clear();
+	location.clear();
+	try {
+		is_exact_match(uri, location);
+		assert(false);
+	} catch (_Response::bad_location &e) {}
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	location.push_back("test2");
+	assert((is_exact_match(uri, location) == false));
+}
+
+void	test_evaluate_path_matchig(void)
+{
+	std::list<std::string>	uri;
+	std::list<std::string>	location;
+
+	uri.push_back("test");
+	location.push_back("test");
+	assert((evaluate_path_matching(uri, location) == 1));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("test3");
+	location.push_back("test");
+	location.push_back("test2");
+	assert((evaluate_path_matching(uri, location) == 2));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	location.push_back("test");
+	location.push_back("test2");
+	location.push_back("test3");
+	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	uri.push_back("test2");
+	location.push_back("test");
+	location.push_back("test2");
+	location.push_back("test3");
+	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("ok");
+	location.push_back("test");
+	location.push_back("test2");
+	location.push_back("test3");
+	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("ok");
+	uri.push_back("test");
+	location.push_back("test");
+	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	try {
+		evaluate_path_matching(uri, location);
+		assert(false);
+	} catch (bad_location &e) {}
+}
+
+void	test_find_location(void)
+{
+	std::vector<location_t>	locations;
+	std::list<std::string>	uri;
+	location_t				one, two, three, ret;
+
+	one.path.push_back("test");
+	one.path.push_back("test2");
+	one.path.push_back("test3");
+	two.path.push_back("");
+	three.path.push_back("test");
+	three.path.push_back("test2");
+	locations.push_back(one);
+	locations.push_back(two);
+	locations.push_back(three);
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("src");
+	ret = find_location(uri, locations);
+	assert((ret.path == three.path));
+
+	one.path.clear();
+	two.path.clear();
+	three.path.clear();
+	uri.clear();
+	locations.clear();
+	one.path.push_back("test");
+	one.path.push_back("test2");
+	one.exact_match = true;
+	two.path.push_back("");
+	three.path.push_back("test");
+	locations.push_back(one);
+	locations.push_back(two);
+	locations.push_back(three);
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("src");
+	ret = find_location(uri, locations);
+	assert((ret.path == three.path));
+
+	one.path.clear();
+	two.path.clear();
+	three.path.clear();
+	uri.clear();
+	locations.clear();
+	one.path.push_back("test");
+	two.path.push_back("test");
+	two.path.push_back("test2");
+	three.path.push_back("");
+	locations.push_back(one);
+	locations.push_back(two);
+	locations.push_back(three);
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("src");
+	ret = find_location(uri, locations);
+	assert((ret.path == two.path));
+
+	one.path.clear();
+	two.path.clear();
+	three.path.clear();
+	uri.clear();
+	locations.clear();
+	one.path.push_back("no");
+	two.path.push_back("test");
+	two.path.push_back("no");
+	three.path.push_back("no");
+	locations.push_back(one);
+	locations.push_back(two);
+	locations.push_back(three);
+	uri.push_back("test");
+	uri.push_back("test2");
+	uri.push_back("src");
+	try {
+		ret = find_location(uri, locations);
+		assert(false);
+	} catch (bad_location &e) {}
+}
+
 int	main(void)
 {
 	test(test_extract_uri_elem, "test_extract_uri_elem");
@@ -451,5 +628,9 @@ int	main(void)
 	test(test_decode_segments, "test_decode_segments");
 	test(test_create_path, "test_create_path");
 	test(test_parse_uri, "test_parse_uri");
+	test(test_is_exact_match, "test_is_exact_match");
+	test(test_evaluate_path_matchig, "test_evaluate_path_matching");
+	test(test_find_location, "test_find_location");
+
 	return (0);
 }
