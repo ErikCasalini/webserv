@@ -35,13 +35,22 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				http_types.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
+SRC_CGI := $(SRC_COMMON) \
+		   test_cgi.cpp \
+		   cgi.cpp \
+		   Response.cpp \
+		   http_types.cpp
+OBJ_CGI := $(SRC_CGI:%.cpp=$(BUILD_DIR)/%.o)
+
 RUNNERS := run_test_request_parser \
 		   run_test_lib_cctype_cast \
-		   run_test_Response
+		   run_test_Response \
+		   run_test_cgi
 
 DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 			 $(OBJ_LIB_CCTYPE_CAST:.o=.d) \
-			 $(OBJ_RESPONSE:.o=.d)
+			 $(OBJ_RESPONSE:.o=.d) \
+			 $(OBJ_CGI:.o=.d)
 
 ###########
 # TARGETS #
@@ -77,6 +86,8 @@ run_test_request_parser: $(OBJ_REQUEST_PARSER)
 run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 run_test_Response: $(OBJ_RESPONSE)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+run_test_cgi: $(OBJ_CGI)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 # TESTING:
