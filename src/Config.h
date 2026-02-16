@@ -3,6 +3,7 @@
 
 # include <map>
 # include <string>
+# include <list>
 # include <vector>
 
 # define DEFAULT_max_connECTIONS 512
@@ -10,6 +11,7 @@
 using std::string;
 using std::map;
 using std::vector;
+using std::list;
 
 typedef std::multimap<int, string> redirection_t;
 
@@ -24,7 +26,15 @@ struct limit_except_t {
 	vector<string> methods;
 };
 
-struct location_params_t {
+struct location_t {
+
+	location_t(void)
+	: exact_match(false),
+	  autoindex(false) {};
+
+	list<string> path;
+	bool exact_match;
+	string root;
 	limit_except_t limit_except;
 	bool autoindex;
 	error_page_t error_page;
@@ -32,11 +42,10 @@ struct location_params_t {
 	redirection_t redirection;
 };
 
-typedef std::multimap<string, location_params_t> location_t;
-
 struct server_t {
 	vector<listen_t> listen;
-	location_t location;
+	vector<location_t> locations;
+	string root;
 	error_page_t error_page;
 	bool autoindex;
 	redirection_t redirection;
@@ -46,6 +55,7 @@ struct http_t {
 	// map<string, string> types;
 	// string default_type;
 	vector<server_t> server;
+	string root;
 	bool autoindex;
 	error_page_t error_page;
 	unsigned int max_body;
