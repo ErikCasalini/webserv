@@ -131,7 +131,70 @@ namespace _Response
 			|| ret.size() == 0)
 			ret.append("/");
 
-		return (ret);
+		segments = new_path; // update m_path_segments
+		return (ret); // return string format path
+	}
+
+	bool	is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location)
+	{
+		std::list<std::string>::const_iterator	it_path = path.begin();
+		std::list<std::string>::const_iterator	it_loc = location.begin();
+
+		if (path.size() == 0 || location.size() == 0)
+			throw (bad_location("Empty path or location segments"));
+
+		if (path.size() != location.size())
+			return (false);
+
+		for (size_t i = 0; i < path.size(); i++, it_path++, it_loc++) {
+			if (*it_path != *it_loc)
+				return (false);
+		}
+		return (true);
+	}
+
+	int	evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location)
+	{
+		std::list<std::string>::const_iterator	it_path = path.begin();
+		std::list<std::string>::const_iterator	it_loc = location.begin();
+		std::list<std::string>::const_iterator	loc_end = location.end();
+		int										match_rate = 0;
+
+		if (path.size() == 0 || location.size() == 0)
+			throw (bad_location("Empty path or location segments"));
+		if (path.size() < location.size())
+			return (0);
+
+		for (; it_loc != loc_end; it_path++, it_loc++) {
+			if (*it_path != *it_loc)
+				return (0);
+			match_rate++;
+		}
+		return (match_rate);
+	}
+
+	const location_t	&find_location(const std::list<std::string> &path, const vector<location_t> &locations) // assume location path starts with '/'
+	{
+		vector<location_t>::const_iterator	it_loc = locations.begin();
+		vector<location_t>::const_iterator	ret = locations.end();
+
+		for (int best_match = 0, match_rate; it_loc < locations.end(); it_loc++) {
+			if (it_loc->exact_match) {
+				if (is_exact_match(path, it_loc->path))
+					return (*it_loc);
+			}
+			else {
+				match_rate = evaluate_path_matching(path, it_loc->path);
+				if (match_rate > best_match) {
+					best_match = match_rate;
+					ret = it_loc;
+				}
+			}
+		}
+		if (ret == locations.end())
+			throw (bad_location("Uri matchs no locations"));
+
+		return (*ret);
 	}
 }
 
@@ -198,20 +261,26 @@ void	Response::parse_uri(void)
 	}
 
 	_Response::extract_uri_elem(m_request.target, m_path, m_querry);
-	std::list<std::string>	segments(_Response::split_path(m_path));
+	m_path_segments = _Response::split_path(m_path);
 	try {
-		_Response::decode_segments(segments);
+		_Response::decode_segments(m_path_segments);
 	}
 	catch (std::invalid_argument &e) {
 		m_status = bad_request;
 		return ;
 	}
-	m_path = _Response::create_path(segments);
+	m_path = _Response::create_path(m_path_segments);
 }
 
-// void	Response::generate(config_t &config)
-// {
-	//chercher m_path dans config
-		//si pas present on remplit avec fichier 404
-		//si present
-// }
+void	Response::generate(const config_t &config)
+{
+	location_t	location;
+	try {
+		location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
+	}
+	catch (_Response::bad_location &e) {
+		(void)e;
+		//config.error_page
+	}
+	
+}
