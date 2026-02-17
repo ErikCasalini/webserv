@@ -11,7 +11,7 @@ int	main(void)
 	config_t			config;
 	server_t			server1, server2;
 	listen_t			serv1_listen1, serv1_listen2, serv2_listen1, serv2_listen2;
-	location_params_t	serv1_loc1, serv1_loc2, serv2_loc1, serv2_loc2;
+	location_t	serv1_loc1, serv1_loc2, serv2_loc1, serv2_loc2;
 
 	serv1_listen1.ip = 0x7F000001; // 127.0.0.1 big endian endian ???
 	serv1_listen1.port = 4242;
