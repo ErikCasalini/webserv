@@ -14,6 +14,7 @@ typedef std::multimap<int, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
 
 struct listen_t {
+	listen_t();
 	u_int32_t ip;
 	u_int16_t port;
 };
@@ -23,11 +24,7 @@ struct limit_except_t {
 };
 
 struct location_t {
-
-	location_t(void)
-	: exact_match(false),
-	  autoindex(false) {};
-
+	location_t();
 	std::list<std::string> path;
 	bool exact_match;
 	std::string root;
@@ -39,6 +36,7 @@ struct location_t {
 };
 
 struct server_t {
+	server_t();
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
 	std::string root;
@@ -48,6 +46,7 @@ struct server_t {
 };
 
 struct http_t {
+	http_t();
 	// map<std::string, std::string> types;
 	// std::string default_type;
 	std::vector<server_t> server;
@@ -59,6 +58,7 @@ struct http_t {
 };
 
 struct events_t {
+	events_t();
 	unsigned int max_connections;
 };
 

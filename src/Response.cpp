@@ -5,6 +5,8 @@
 #include "http_types.h"
 #include <list>
 
+using std::vector;
+
 const char	Response::authorized_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~" // Unreserved
 							":/?[]@#" // Reserved gen-delims
 							"!$&'()*+,;=" // Reserved sub-delims

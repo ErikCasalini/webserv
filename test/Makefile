@@ -32,7 +32,8 @@ OBJ_LIB_CCTYPE_CAST := $(SRC_LIB_CCTYPE_CAST:%.cpp=$(BUILD_DIR)/%.o)
 SRC_RESPONSE := $(SRC_COMMON) \
 				test_Response.cpp \
 				Response.cpp \
-				http_types.cpp
+				http_types.cpp \
+				Config.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 RUNNERS := run_test_request_parser \

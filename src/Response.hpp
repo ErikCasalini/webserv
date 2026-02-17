@@ -57,7 +57,7 @@ namespace _Response
 	std::string				create_path(std::list<std::string> &segments);
 	bool					is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location);
 	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
-	const location_t		&find_location(const std::list<std::string> &path, const vector<location_t> &locations);
+	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
 }
 
 #endif
