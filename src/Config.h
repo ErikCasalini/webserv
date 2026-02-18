@@ -29,6 +29,7 @@ struct location_t {
 	bool exact_match;
 	std::string root;
 	limit_except_t limit_except;
+	bool cgi;
 	bool autoindex;
 	error_page_t error_page;
 	std::string index;
@@ -43,6 +44,7 @@ struct server_t {
 	error_page_t error_page;
 	bool autoindex;
 	redirection_t redirection;
+	std::pair<std::string, std::string> upload; // check if not in cgi
 };
 
 struct http_t {

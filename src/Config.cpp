@@ -7,6 +7,7 @@ listen_t::listen_t()
 
 location_t::location_t()
 	: exact_match(false)
+	, cgi(false)
 	, autoindex(false)
 {};
 
