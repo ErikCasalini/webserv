@@ -1,61 +1,58 @@
 #ifndef CONFIG_H
 # define CONFIG_H
 
+# include <sys/types.h>
 # include <map>
 # include <string>
 # include <list>
 # include <vector>
 
-# define DEFAULT_max_connECTIONS 512
+# define DEFAULT_MAX_CONNECTIONS 512
 
-using std::string;
-using std::map;
-using std::vector;
-using std::list;
+typedef std::multimap<int, std::string> redirection_t;
 
-typedef std::multimap<int, string> redirection_t;
-
-typedef std::multimap<int, string> error_page_t;
+typedef std::map<int, std::string> error_page_t;
 
 struct listen_t {
+	listen_t();
 	u_int32_t ip;
 	u_int16_t port;
 };
 
 struct limit_except_t {
-	vector<string> methods;
+	std::vector<std::string> methods;
 };
 
 struct location_t {
-
-	location_t(void)
-	: exact_match(false),
-	  autoindex(false) {};
-
-	list<string> path;
+	location_t();
+	std::list<std::string> path;
 	bool exact_match;
-	string root;
+	std::string root;
 	limit_except_t limit_except;
+	bool cgi;
 	bool autoindex;
 	error_page_t error_page;
-	string index;
+	std::string index;
 	redirection_t redirection;
 };
 
 struct server_t {
-	vector<listen_t> listen;
-	vector<location_t> locations;
-	string root;
+	server_t();
+	std::vector<listen_t> listen;
+	std::vector<location_t> locations;
+	std::string root;
 	error_page_t error_page;
 	bool autoindex;
 	redirection_t redirection;
+	std::pair<std::string, std::string> upload; // check if not in cgi
 };
 
 struct http_t {
-	// map<string, string> types;
-	// string default_type;
-	vector<server_t> server;
-	string root;
+	http_t();
+	// map<std::string, std::string> types;
+	// std::string default_type;
+	std::vector<server_t> server;
+	std::string root;
 	bool autoindex;
 	error_page_t error_page;
 	unsigned int max_body;
@@ -63,6 +60,7 @@ struct http_t {
 };
 
 struct events_t {
+	events_t();
 	unsigned int max_connections;
 };
 
