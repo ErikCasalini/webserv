@@ -19,7 +19,7 @@ server_t::server_t()
 
 http_t::http_t()
 	: autoindex(false)
-	, max_body(5242880) // default 5Mo
+	, max_body(1048576) // default 1Mo
 	, keepalive_timeout(0)
 {};
 
