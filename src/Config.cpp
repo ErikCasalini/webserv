@@ -9,10 +9,12 @@ location_t::location_t()
 	: exact_match(false)
 	, cgi(false)
 	, autoindex(false)
+	, redirection(parsing, "")
 {};
 
 server_t::server_t()
 	: autoindex(false)
+	, redirection(parsing, "")
 {};
 
 http_t::http_t()
