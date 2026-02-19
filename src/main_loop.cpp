@@ -140,7 +140,7 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 	close_connection(socket, sockets, requests, responses);
 }
 
-void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
+void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
 {
 	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
 
@@ -169,9 +169,10 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
 			requests.at(i_req).clear_infos();
 			responses.at(i_resp).parse_uri();
-			// if (responses.at(i_resp).get_status() == bad_request)
-				// on ecrit l'html correspondant dans le buffer
-			// else on genere la reponse et on la met dans le buffer
+			responses.at(i_resp).process(config);
+			// After process, buffer is ready to be sent, or waiting to be filled by cgi
+			// Sending function must check for m_status --> if writing = continue | if cgi = continue waiting/receivng | else = send buffer
+			// This function will never be entered again for this request fd, untill the response is not fully sent and deleted
 		}
 	}
 }
@@ -190,21 +191,38 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 	close_connection(socket, sockets, requests, responses);
 }
 
-void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Response> &responses)
+void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
+	socket_t	*socket = static_cast<socket_t*>(event.data.ptr);
+	int			i;
+	int			ret;
 
 	if (socket == NULL)
 		throw std::logic_error("Invalid socket address");
 
-	int	i = responses.search(socket);
-	std::string content(responses.at(i).get_path() + " " + responses.at(i).get_querry());
+	i =responses.search(socket);
+	if (i == -1)
+		throw std::logic_error("Attempt to send inexisting Response");
 
-	// DEBUG
-	send(socket->fd, content.c_str(), content.size(), SOCK_NONBLOCK);
-	event.events = EPOLLIN;
-	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event);
-	responses.at(i).clear(); // on enleve pour l'instant
+	// if (responses.at(i).get_status() == waiting_cgi)
+		// wait cgi
+	// else
+	switch (responses.at(i).send_response()) {
+		case -1:
+			close_connection(socket, sockets, requests, responses);
+			break ;
+		default:
+			if (responses.at(i).get_status() == writing)
+				break ;
+			if (responses.at(i).get_request().headers.keep_alive == false)
+				close_connection(socket, sockets, requests, responses);
+			else {
+				event.events = EPOLLIN;
+				epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event);
+				responses.at(i).clear();
+			}
+			break ;
+	}
 }
 
 int	main_server_loop(config_t &config)
@@ -223,11 +241,11 @@ int	main_server_loop(config_t &config)
 			if (events.at(i).events & EPOLLERR)
 				handle_error(events.at(i), sockets, requests, responses);
 			else if (events.at(i).events & EPOLLIN)
-				handle_read_event(events.at(i), sockets, requests, responses);
+				handle_read_event(events.at(i), sockets, requests, responses, config);
 			else if (events.at(i).events & EPOLLHUP)
 				handle_client_disconnected(events.at(i), sockets, requests, responses);
 			else if (events.at(i).events & EPOLLOUT)
-				handle_write_event(events.at(i), sockets, responses);
+				handle_write_event(events.at(i), sockets, requests, responses);
 		}
 	}
 }
