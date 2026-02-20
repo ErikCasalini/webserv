@@ -4,6 +4,9 @@
 #include <cstdlib>
 #include "http_types.h"
 #include <list>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using std::vector;
 
@@ -133,6 +136,10 @@ namespace _Response
 			|| ret.size() == 0)
 			ret.append("/");
 
+		new_path.push_front("");
+		if (is_dir && new_path.size() > 1)
+			new_path.push_back("");
+
 		segments = new_path; // update m_path_segments
 		return (ret); // return string format path
 	}
@@ -198,11 +205,22 @@ namespace _Response
 
 		return (*ret);
 	}
+
+	bool	is_bad_method(method_t method, std::vector<method_t> &limit_except)
+	{
+		for (std::vector<method_t>::const_iterator it = limit_except.begin(); it != limit_except.end(); it++) {
+			if (method == *it)
+				return (false);
+		}
+		return (true);
+	}
+
 }
 
 Response::Response(void)
 : m_socket(NULL),
-  m_status(ok)
+  m_status(ok),
+  m_version("HTTP/1.0")
 {}
 
 Response::~Response(void)
@@ -250,6 +268,11 @@ void	Response::clear(void)
 	m_buffer.clear();
 	m_path.clear();
 	m_querry.clear();
+	m_path_segments.clear();
+	m_target.clear();
+	m_headers.clear();
+	m_version = "HTTP/1.0";
+	m_body.clear();
 	m_status = ok;
 }
 
@@ -274,15 +297,223 @@ void	Response::parse_uri(void)
 	m_path = _Response::create_path(m_path_segments);
 }
 
-void	Response::generate(const config_t &config)
+void	Response::generate_response(void)
+{
+	std::stringstream	buf;
+
+	buf << m_version << ' ' << static_cast<int>(m_status) << ' ' << Response::get_status_codes().at(m_status) << "\r\n";
+
+	switch (m_status) {
+		case no_content:
+			break ;
+		case created:
+		case moved_perm:
+		case moved_temp:
+			buf << "Location: " << m_headers.location << "\r\n";
+			break ;
+		default:
+			buf << "Content-Type: " << m_headers.content_type << "\r\n";
+			buf << "Content-Length: " << m_headers.content_length << "\r\n";
+			break ;
+	}
+	buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << "\r\n"
+		<< "Server: " << m_headers.server << "\r\n"
+		<< "Date:\r\n" // << _Response::get_date() << "\r\n"
+		<< "\r\n";
+
+	if (m_body.size())
+		buf << m_body;
+
+	m_buffer = buf.str();
+}
+
+void	Response::set_error(status_t status, std::string &error_body)
+{
+	m_status = status;
+	m_body = error_body;
+	m_headers.content_length = m_body.size();
+	m_headers.content_type = "text/html";
+}
+
+void	Response::fill_body(location_t &location)
+{
+	errno = 0;
+	std::ifstream	file(m_target.c_str());
+	std::string		temp;
+
+	switch (errno) {
+		case 0:
+			break ;
+		case ENOENT:
+			errno = 0;
+			set_error(not_found, location.error_page.at(not_found));
+			return ;
+		case EACCES:
+			errno = 0;
+			set_error(forbidden, location.error_page.at(forbidden));
+			return ;
+		default:
+			errno = 0;
+			set_error(internal_err, location.error_page.at(internal_err));
+			return ;
+	}
+	while (std::getline(file, temp))
+		m_body.append(temp);
+
+	if (file.bad())
+		set_error(internal_err, location.error_page.at(internal_err));
+	else
+		m_status = ok;
+}
+
+void	Response::set_body_headers(void)
+{
+	m_headers.content_length = m_body.size();
+	m_headers.content_type = "text/html"; // a changer
+}
+
+void	Response::handle_static_request(location_t &location)
+{
+	// index is already appended if present
+	if (m_request.method == post) {
+		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
+		return ;
+	}
+
+	// if (m_request.method == del) {
+	// 	if (m_target.back() == '/')
+	// 		set_error(forbidden, location.error_page.at(forbidden));
+	// 	else {
+	// 		m_status = remove_file();
+	// 		switch (m_status) {
+	// 			case forbidden:
+	// 			case not_found:
+	// 			case internal_err:
+	// 				set_error(m_status, location.error_page.at(m_status));
+	// 				break ;
+	// 			default:
+	// 				break ;
+	// 		}
+	// 	}
+	// 	return ;
+	// }
+
+	// if (m_target.back() == '/') { // si '/' alors aucun fichier index n'est spécifié
+	// 	if (location.autoindex) {
+	// 		try {
+	// 			m_body = generate_indexing(m_target);
+	// 		}
+	// 		catch (_Response::internal_error &e) {
+	// 			set_error(internal_err, location.error_page.at(internal_err));
+	// 			return ;
+	// 		}
+	// 		m_status = ok;
+	// 		set_body_headers();
+	// 	}
+	// 	else
+	// 		set_error(forbidden, location.error_page.at(forbidden)); // pas d'index, pas de dir indexing
+	// 	return ;
+	// }
+	fill_body(location);
+	set_body_headers();
+}
+
+void	Response::generate_target(location_t &location)
+{
+	// if (location.cgi) {
+	// 	// ??
+	// 	return ;
+	// }
+
+	m_target = location.root; // root doit commencer par '/'
+	if (m_target.at(m_target.size() - 1) == '/')
+		m_target.resize(m_target.size() - 1);
+	m_target.append(m_path);
+	if (m_target.at(m_target.size() - 1) != '/')
+		return ;
+	m_target.append(location.index); // index ne doit pas avoir de '/' ni '\'
+}
+
+void	Response::process(const config_t &config)
 {
 	location_t	location;
-	try {
-		location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
+
+	if (m_status == bad_request) {
+		set_error(bad_request, location.error_page.at(bad_request));
+		generate_response();
+		return ;
 	}
-	catch (_Response::bad_location &e) {
-		(void)e;
-		//config.error_page
+
+	// UPLOAD
+	// if (m_path_segments == config.http.server.at(m_socket->server_id).upload.first)
+	// 	handle_storage_request();
+
+	// NORMAL LOCATION PROCESSING
+	// else {
+		// try {
+			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
+		// }
+		// catch (_Response::bad_location &e) {
+		// 	(void)e;
+		// 	// find_err_page(config) recursive search
+		// 	set_error(not_found, ????);
+		// 	generate_response();
+		// 	return ; // m_buffer sera rempli et pret a send()
+		// }
+
+		if (_Response::is_bad_method(m_request.method, location.limit_except))
+			set_error(forbidden, location.error_page.at(forbidden));
+		else if (location.redirection.first) {
+			m_headers.location = location.redirection.second;
+			m_status = location.redirection.first;
+		}
+		else
+			generate_target(location);
+
+		// if (location.cgi)
+		// 	handle_cgi(); // check method
+		// else
+			handle_static_request(location);
+	// }
+	generate_response();
+}
+
+int	Response::send_response(void)
+{
+	int	ret;
+
+	if (m_socket == NULL)
+		throw std::logic_error("Attempt to send invalid socket");
+	ret = send(m_socket->fd, m_buffer.c_str(), (m_buffer.size() > 16000 ? 16000 : m_buffer.size()), 0);
+	if (ret == 16000) {
+		m_buffer.erase(m_buffer.begin(), m_buffer.begin() + 16000);
+		m_status = writing;
 	}
-	
+	else
+		m_status = ok;
+	return (ret);
+}
+
+std::map<int, std::string>	Response::init_status_codes(void)
+{
+	std::map<int, std::string> status_codes;
+
+	status_codes.insert(std::make_pair(200, std::string("Ok")));
+	status_codes.insert(std::make_pair(201, std::string("Created")));
+	status_codes.insert(std::make_pair(204, std::string("No content")));
+	status_codes.insert(std::make_pair(301, std::string("Moved permanently")));
+	status_codes.insert(std::make_pair(302, std::string("Moved temporarily")));
+	status_codes.insert(std::make_pair(400, std::string("Bad request")));
+	status_codes.insert(std::make_pair(403, std::string("Forbidden")));
+	status_codes.insert(std::make_pair(404, std::string("Not found")));
+	status_codes.insert(std::make_pair(500, std::string("Internal server error")));
+	status_codes.insert(std::make_pair(501, std::string("Not implemented")));
+	status_codes.insert(std::make_pair(502, std::string("Bad gateway")));
+	return (status_codes);
+}
+
+const std::map<int, std::string>	&Response::get_status_codes(void)
+{
+	static std::map<int, std::string> status_codes = init_status_codes();
+	return (status_codes);
 }

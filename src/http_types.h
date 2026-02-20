@@ -30,10 +30,21 @@ enum protocol_t {
 std::ostream& operator<<(std::ostream& os, const protocol_t& p);
 
 enum status_t {
-	parsing,
-	ok,
-	bad_request, // 400
-	not_implemented // 501
+	parsing = 0,
+	waiting_cgi = 1,
+	writing = 2,
+	ok = 200,
+	created = 201,
+	no_content = 204,
+	moved_perm = 301,
+	moved_temp = 302,
+	bad_request = 400,
+	forbidden = 403,
+	not_found = 404,
+	method_not_allowed = 405,
+	internal_err = 500,
+	not_implemented = 501,
+	bad_gateway = 502
 };
 std::ostream& operator<<(std::ostream& os, const status_t& s);
 
@@ -44,8 +55,12 @@ struct headers_t {
 	void clear();
 
 	unsigned long content_length;
+	std::string content_type;
 	std::string cookies;
 	bool keep_alive;
+	std::string date;
+	std::string location;
+	std::string server;
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
 };

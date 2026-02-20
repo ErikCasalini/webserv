@@ -4,12 +4,17 @@
 headers_t::headers_t()
 	: content_length(0)
 	, keep_alive(false)
+	, server("Webserver_2026")
 {}
 
 headers_t::headers_t(const headers_t& src)
 	: content_length(src.content_length)
+	, content_type(src.content_type)
 	, cookies(src.cookies)
 	, keep_alive(src.keep_alive)
+	, date(src.date)
+	, location(src.location)
+	, server(src.server)
 	, if_modified_since(src.if_modified_since)
 {}
 
@@ -17,8 +22,12 @@ headers_t& headers_t::operator=(const headers_t& src)
 {
 	if (this != &src) {
 		content_length = src.content_length;
+		content_type = src.content_type;
 		cookies = src.cookies;
 		keep_alive = src.keep_alive;
+		date = src.date;
+		location = src.location;
+		server = src.server;
 		if_modified_since = src.if_modified_since;
 	}
 	return (*this);
@@ -27,8 +36,12 @@ headers_t& headers_t::operator=(const headers_t& src)
 void headers_t::clear()
 {
 	content_length = 0;
+	content_type.clear();
 	cookies.clear();
 	keep_alive = false;
+	date.clear();
+	location.clear();
+	server = "Webserver_2026";
 	if_modified_since.clear();
 }
 
@@ -37,8 +50,12 @@ std::ostream& operator<<(std::ostream& os, const headers_t& h)
 	os
 		<< "headers: [\n"
 		<< "\tcontent_length: " << h.content_length << '\n'
+		<< "\tcontent_type: " << h.content_type << '\n'
 		<< "\tcookies: " << h.cookies << '\n'
 		<< "\tkeep_alive: " << (h.keep_alive ? "true\n" : "false\n")
+		<< "\tdate: " << h.date << '\n'
+		<< "\tlocation: " << h.location << '\n'
+		<< "\tserver: " << h.server << '\n'
 		<< "\tif_modified_since: " << h.if_modified_since << "\n\t]\n";
 	return (os);
 }
@@ -137,6 +154,39 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 		break ;
 	case not_implemented:
 		os << "not_implemented";
+		break ;
+	case waiting_cgi:
+		os << "waiting_cgi";
+		break ;
+	case writing:
+		os << "writing";
+		break ;
+	case created:
+		os << "created";
+		break ;
+	case no_content:
+		os << "no_content";
+		break ;
+	case moved_perm:
+		os << "moved_perm";
+		break ;
+	case moved_temp:
+		os << "moved_temp";
+		break ;
+	case forbidden:
+		os << "forbidden";
+		break ;
+	case not_found:
+		os << "not_found";
+		break ;
+	case method_not_allowed:
+		os << "method_not_allowed";
+		break ;
+	case internal_err:
+		os << "internal_err";
+		break ;
+	case bad_gateway:
+		os << "bad_gateway";
 		break ;
 	}
 	return (os);

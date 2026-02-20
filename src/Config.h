@@ -1,6 +1,7 @@
 #ifndef CONFIG_H
 # define CONFIG_H
 
+# include "http_types.h"
 # include <sys/types.h>
 # include <map>
 # include <string>
@@ -9,8 +10,7 @@
 
 # define DEFAULT_MAX_CONNECTIONS 512
 
-typedef std::multimap<int, std::string> redirection_t;
-
+typedef std::pair<status_t, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
 
 struct listen_t {
@@ -19,16 +19,12 @@ struct listen_t {
 	u_int16_t port;
 };
 
-struct limit_except_t {
-	std::vector<std::string> methods;
-};
-
 struct location_t {
 	location_t();
 	std::list<std::string> path;
 	bool exact_match;
 	std::string root;
-	limit_except_t limit_except;
+	std::vector<method_t> limit_except;
 	bool cgi;
 	bool autoindex;
 	error_page_t error_page;
@@ -44,7 +40,7 @@ struct server_t {
 	error_page_t error_page;
 	bool autoindex;
 	redirection_t redirection;
-	std::pair<std::string, std::string> upload; // check if not in cgi
+	std::pair<std::list<std::string>, std::string> upload; // check if not in cgi
 };
 
 struct http_t {
