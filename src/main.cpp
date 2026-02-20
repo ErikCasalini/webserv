@@ -35,8 +35,8 @@ int	main(void)
 	serv1_loc1.index = "index.html";
 	serv1_loc1.limit_except.push_back(get);
 	serv1_loc1.path = _Response::split_path("/src/"); // path doit toujours commencer et finir par '/'
-	serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
-	// serv1_loc1.root = "/home/erik/WEBSERV_FILES/";
+	// serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
+	serv1_loc1.root = "/home/erik/WEBSERV_FILES/";
 	serv1_loc1.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc1.error_page.insert(std::make_pair(403, std::string("<html>\n<head><title>403 Forbidden</title></head>\n<body>\n<center><h1>403 Forbidden</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc1.error_page.insert(std::make_pair(404, std::string("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
@@ -51,8 +51,8 @@ int	main(void)
 	serv1_loc2.index = "index.html";
 	serv1_loc2.limit_except.push_back(get);
 	serv1_loc2.path = _Response::split_path("/");
-	serv1_loc2.root = "/home/ecasalin/Documents/serv_files/4242/";
-	// serv1_loc2.root = "/home/erik/WEBSERV_FILES/";
+	// serv1_loc2.root = "/home/ecasalin/Documents/serv_files/4242/";
+	serv1_loc2.root = "/home/erik/WEBSERV_FILES/";
 	serv1_loc2.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc2.error_page.insert(std::make_pair(403, std::string("<html>\n<head><title>403 Forbidden</title></head>\n<body>\n<center><h1>403 Forbidden</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc2.error_page.insert(std::make_pair(404, std::string("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
@@ -63,6 +63,13 @@ int	main(void)
 
 	server1.locations.push_back(serv1_loc1);
 	server1.locations.push_back(serv1_loc2);
+	server1.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(403, std::string("<html>\n<head><title>403 Forbidden</title></head>\n<body>\n<center><h1>403 Forbidden</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(404, std::string("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(405, std::string("<html>\n<head><title>405 Method Not Allowed</title></head>\n<body>\n<center><h1>405 Method Not Allowed</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(500, std::string("<html>\n<head><title>500 Internal Error</title></head>\n<body>\n<center><h1>500 Internal Error</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(501, std::string("<html>\n<head><title>501 Not Implemented</title></head>\n<body>\n<center><h1>501 Not Implemented</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
+	server1.error_page.insert(std::make_pair(502, std::string("<html>\n<head><title>502 Bad Gateway</title></head>\n<body>\n<center><h1>502 Bad Gateway</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 
 	config.http.server.push_back(server1);
 	config.http.server.push_back(server2);

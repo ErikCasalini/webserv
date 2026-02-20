@@ -256,6 +256,11 @@ status_t	Response::get_status(void)
 	return (m_status);
 }
 
+void	Response::set_status(status_t status)
+{
+	m_status = status;
+}
+
 void	Response::clear(void)
 {
 	m_socket = NULL;
@@ -322,15 +327,16 @@ void	Response::generate_response(void)
 	m_buffer = buf.str();
 }
 
-void	Response::set_error(status_t status, std::string &error_body)
+void	Response::set_error(status_t status, const std::string &error_body)
 {
 	m_status = status;
 	m_body = error_body;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
+	m_headers.keep_alive = false;
 }
 
-void	Response::fill_body(location_t &location)
+void	Response::fill_body(const location_t &location)
 {
 	errno = 0;
 	std::ifstream	file(m_target.c_str());
@@ -367,7 +373,7 @@ void	Response::set_body_headers(void)
 	m_headers.content_type = "text/html"; // a changer
 }
 
-void	Response::handle_static_request(location_t &location)
+void	Response::handle_static_request(const location_t &location)
 {
 	// index is already appended if present
 	if (m_request.method == post) {
@@ -413,7 +419,7 @@ void	Response::handle_static_request(location_t &location)
 	set_body_headers();
 }
 
-void	Response::generate_target(location_t &location)
+void	Response::generate_target(const location_t &location)
 {
 	// if (location.cgi) {
 	// 	// ??
@@ -434,7 +440,7 @@ void	Response::process(const config_t &config)
 	location_t	location;
 
 	if (m_status == bad_request) {
-		set_error(bad_request, location.error_page.at(bad_request));
+		set_error(bad_request, config.http.server.at(m_socket->server_id).error_page.at(bad_request));
 		generate_response();
 		return ;
 	}
@@ -444,17 +450,16 @@ void	Response::process(const config_t &config)
 	// 	handle_storage_request();
 
 	// NORMAL LOCATION PROCESSING
-	// else {
-		// try {
+	else {
+		try {
 			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
-		// }
-		// catch (_Response::bad_location &e) {
-		// 	(void)e;
-		// 	// find_err_page(config) recursive search
-		// 	set_error(not_found, ????);
-		// 	generate_response();
-		// 	return ; // m_buffer sera rempli et pret a send()
-		// }
+		}
+		catch (_Response::bad_location &e) {
+			(void)e;
+			set_error(not_found, config.http.server.at(m_socket->server_id).error_page.at(not_found));
+			generate_response();
+			return ;
+		}
 
 		if (_Response::is_bad_method(m_request.method, location.limit_except))
 			set_error(forbidden, location.error_page.at(forbidden));
@@ -469,8 +474,9 @@ void	Response::process(const config_t &config)
 		// 	handle_cgi(); // check method
 		// else
 			handle_static_request(location);
-	// }
+	}
 	generate_response();
+
 }
 
 int	Response::send_response(void)
@@ -501,6 +507,7 @@ std::map<int, std::string>	Response::init_status_codes(void)
 	status_codes.insert(std::make_pair(400, std::string("Bad request")));
 	status_codes.insert(std::make_pair(403, std::string("Forbidden")));
 	status_codes.insert(std::make_pair(404, std::string("Not found")));
+	status_codes.insert(std::make_pair(405, std::string("Method not allowed")));
 	status_codes.insert(std::make_pair(500, std::string("Internal server error")));
 	status_codes.insert(std::make_pair(501, std::string("Not implemented")));
 	status_codes.insert(std::make_pair(502, std::string("Bad gateway")));

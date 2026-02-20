@@ -23,8 +23,9 @@ public:
 	const std::string						&get_path(void) const;
 	const std::string						&get_querry(void) const;
 	size_t									get_buf_size(void) const;
-	void									parse_uri(void);
 	status_t								get_status(void);
+	void									set_status(status_t status);
+	void									parse_uri(void);
 	void									process(const config_t &config);
 	int										send_response(void);
 
@@ -33,12 +34,12 @@ public:
 
 private:
 
-	void										generate_target(location_t &location);
+	void										generate_target(const location_t &location);
 	void										generate_response(void);
-	void										fill_body(location_t &location);
+	void										fill_body(const location_t &location);
 	void										set_body_headers(void);
-	void										set_error(status_t status, std::string &error_body);
-	void										handle_static_request(location_t &location);
+	void										set_error(status_t status, const std::string &error_body);
+	void										handle_static_request(const location_t &location);
 	static std::map<int, std::string>			init_status_codes(void);
 	static const std::map<int, std::string>		&get_status_codes(void);
 

@@ -142,7 +142,8 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 
 void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
 {
-	socket_t *socket = static_cast<socket_t*>(event.data.ptr);
+	socket_t	*socket = static_cast<socket_t*>(event.data.ptr);
+	status_t	req_status;
 
 	if (socket == NULL)
 		throw std::logic_error("Invalid socket address");
@@ -162,13 +163,17 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			close_connection(socket, sockets, requests, responses);
 			return ;
 		}
-		if (requests.at(i_req).get_infos().status) {
+		req_status = requests.at(i_req).get_infos().status;
+		if (req_status != parsing) {
 			int i_resp = responses.add(socket, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
 			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event); // throws
 			std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
 			requests.at(i_req).clear_infos();
-			responses.at(i_resp).parse_uri();
+			if (req_status == bad_request)
+				responses.at(i_req).set_status(bad_request);
+			else
+				responses.at(i_resp).parse_uri();
 			responses.at(i_resp).process(config);
 			// After process, buffer is ready to be sent, or waiting to be filled by cgi
 			// Sending function must check for m_status --> if writing = continue | if cgi = continue waiting/receivng | else = send buffer
@@ -200,7 +205,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 	if (socket == NULL)
 		throw std::logic_error("Invalid socket address");
 
-	i =responses.search(socket);
+	i = responses.search(socket);
 	if (i == -1)
 		throw std::logic_error("Attempt to send inexisting Response");
 
