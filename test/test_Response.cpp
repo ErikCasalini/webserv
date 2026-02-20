@@ -84,46 +84,54 @@ void	test_split_path(void)
 	std::list<std::string>::iterator	it;
 	segments = split_path("/test/");
 	it = segments.begin();
-	assert((segments.size() == 2));
-	assert((*it == "test"));
-	assert((*++it == ""));
+	assert((segments.size() == 3));
+	assert((*it == "/"));
+	assert((*++it == "test"));
+	assert((*++it == "/"));
 
 	segments = split_path("/test");
 	it = segments.begin();
-	assert((segments.size() == 1));
-	assert((*it == "test"));
+	assert((segments.size() == 2));
+	assert((*it == "/"));
+	assert((*++it == "test"));
 
 	segments = split_path("/");
 	it = segments.begin();
 	assert((segments.size() == 1));
-	assert((*it == ""));
+	assert((*it == "/"));
 
 	segments = split_path("/test/deux/");
 	it = segments.begin();
-	assert((segments.size() == 3));
-	assert((*it == "test"));
+	assert((segments.size() == 5));
+	assert((*it == "/"));
+	assert((*(++it) == "test"));
+	assert((*(++it) == "/"));
 	assert((*(++it) == "deux"));
-	assert((*(++it) == ""));
+	assert((*(++it) == "/"));
 
 	segments = split_path("/test///");
 	it = segments.begin();
-	assert((segments.size() == 4));
-	assert((*(it) == "test"));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
+	assert((segments.size() == 5));
+	assert((*(it) == "/"));
+	assert((*(++it) == "test"));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
 
 	segments = split_path("/test///./..///");
-	assert((segments.size() == 8));
+	assert((segments.size() == 11));
 	it = segments.begin();
-	assert((*(it) == "test"));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
+	assert((*(it) == "/"));
+	assert((*(++it) == "test"));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
 	assert((*(++it) == "."));
+	assert((*(++it) == "/"));
 	assert((*(++it) == ".."));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
 }
 
 void	test_url_decode(void)
@@ -184,8 +192,8 @@ void	test_decode_segments(void)
 	segments.push_back("src%2ASRC%2E"); // * .
 	segments.push_back("src%2ASRC%2Esrc"); // * .
 	segments.push_back("%30"); // 0
-	segments.push_back("");
-	segments.push_back("");
+	segments.push_back("/");
+	segments.push_back("/");
 	decode_segments(segments);
 	it = segments.begin();
 	assert((segments.size() == 8));
@@ -195,8 +203,8 @@ void	test_decode_segments(void)
 	assert((*(++it) == "src*SRC."));
 	assert((*(++it) == "src*SRC.src"));
 	assert((*(++it) == "0"));
-	assert((*(++it) == ""));
-	assert((*(++it) == ""));
+	assert((*(++it) == "/"));
+	assert((*(++it) == "/"));
 
 	segments.clear();
 	segments.push_back("%");
@@ -260,114 +268,196 @@ void	test_create_path(void)
 	std::list<std::string>	segments;
 	std::string				ret;
 
+	segments.push_back("/");
 	segments.push_back("src");
 	ret = create_path(segments);
 	assert((ret == "/src"));
 
 	segments.clear();
+	segments.push_back("/");
+	ret = create_path(segments);
+	assert((ret == "/"));
+
+	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
-	segments.push_back("");
+	segments.push_back("/");
 	ret = create_path(segments);
 	assert((ret == "/src/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back(".");
-	segments.push_back("");
+	segments.push_back("/");
 	ret = create_path(segments);
 	assert((ret == "/src/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back("ok");
 	ret = create_path(segments);
 	assert((ret == "/src/test/ok"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back("ok");
-	segments.push_back("");
+	segments.push_back("/");
 	ret = create_path(segments);
 	assert((ret == "/src/test/ok/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("test");
-	segments.push_back("");
+	segments.push_back("/");
+	segments.push_back("ok");
+	segments.push_back("/");
 	ret = create_path(segments);
-	assert((ret == "/src/test/"));
+	assert((ret == "/src/ok/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("test");
+	segments.push_back("/");
+	segments.push_back("ok");
 	ret = create_path(segments);
-	assert((ret == "/src/test"));
+	assert((ret == "/src/ok"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("");
 	ret = create_path(segments);
 	assert((ret == "/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
 	ret = create_path(segments);
 	assert((ret == "/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
+	ret = create_path(segments);
+	assert((ret == "/"));
+
+	segments.clear();
+	segments.push_back("/");
+	segments.push_back("src");
+	segments.push_back("/");
+	segments.push_back("test");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
 	ret = create_path(segments);
 	assert((ret == "/src/"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back(".");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("src");
 	ret = create_path(segments);
 	assert((ret == "/src"));
 
 	segments.clear();
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back(".");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back(".");
 	ret = create_path(segments);
 	assert((ret == "/src/"));
 
 	segments.clear();
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
+	segments.push_back(".");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
+	segments.push_back("..");
+	segments.push_back("/");
 	segments.push_back("src");
+	segments.push_back("/");
+	segments.push_back(".");
+	segments.push_back("/");
+	ret = create_path(segments);
+	assert((ret == "/src/"));
+
+	segments.clear();
+	segments.push_back("/");
+	segments.push_back("src");
+	segments.push_back("/");
 	segments.push_back("test");
-	segments.push_back("");
+	segments.push_back("/");
 	segments.push_back("..");
 	ret = create_path(segments);
 	assert((ret == "/src/"));
@@ -449,22 +539,36 @@ void	test_is_exact_match(void)
 	std::list<std::string>	uri;
 	std::list<std::string>	location;
 
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	assert((is_exact_match(uri, location) == true));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	assert((is_exact_match(uri, location) == false));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	location.push_back("test2");
+	location.push_back("/");
 	assert((is_exact_match(uri, location) == false));
 
 	uri.clear();
@@ -476,8 +580,11 @@ void	test_is_exact_match(void)
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
-	location.push_back("test2");
+	location.push_back("/");
+	location.push_back("test");
+	location.push_back("/");
 	assert((is_exact_match(uri, location) == false));
 }
 
@@ -486,52 +593,104 @@ void	test_evaluate_path_matchig(void)
 	std::list<std::string>	uri;
 	std::list<std::string>	location;
 
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
+	location.push_back("/");
 	location.push_back("test");
-	assert((evaluate_path_matching(uri, location) == 1));
+	location.push_back("/");
+	assert((evaluate_path_matching(uri, location) == 3));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("test3");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	location.push_back("test2");
-	assert((evaluate_path_matching(uri, location) == 2));
+	location.push_back("/");
+	assert((evaluate_path_matching(uri, location) == 5));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	location.push_back("test2");
+	location.push_back("/");
 	location.push_back("test3");
 	assert((evaluate_path_matching(uri, location) == 0));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	location.push_back("/");
+	location.push_back("test");
+	location.push_back("/");
+	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("/");
+	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	location.push_back("test2");
+	location.push_back("/");
 	location.push_back("test3");
+	location.push_back("/");
 	assert((evaluate_path_matching(uri, location) == 0));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("ok");
+	uri.push_back("/");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	location.push_back("test2");
+	location.push_back("/");
 	location.push_back("test3");
+	location.push_back("/");
 	assert((evaluate_path_matching(uri, location) == 0));
 
 	uri.clear();
 	location.clear();
+	uri.push_back("/");
 	uri.push_back("ok");
+	uri.push_back("/");
 	uri.push_back("test");
+	location.push_back("/");
 	location.push_back("test");
+	location.push_back("/");
 	assert((evaluate_path_matching(uri, location) == 0));
+
+	uri.clear();
+	location.clear();
+	uri.push_back("/");
+	uri.push_back("test");
+	uri.push_back("/");
+	uri.push_back("ok");
+	location.push_back("/");
+	location.push_back("test");
+	location.push_back("/");
+	assert((evaluate_path_matching(uri, location) == 3));
 
 	uri.clear();
 	location.clear();
@@ -547,17 +706,27 @@ void	test_find_location(void)
 	std::list<std::string>	uri;
 	location_t				one, two, three, ret;
 
+	one.path.push_back("/");
 	one.path.push_back("test");
+	one.path.push_back("/");
 	one.path.push_back("test2");
+	one.path.push_back("/");
 	one.path.push_back("test3");
-	two.path.push_back("");
+	one.path.push_back("/");
+	two.path.push_back("/");
+	three.path.push_back("/");
 	three.path.push_back("test");
+	three.path.push_back("/");
 	three.path.push_back("test2");
+	three.path.push_back("/");
 	locations.push_back(one);
 	locations.push_back(two);
 	locations.push_back(three);
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("src");
 	ret = find_location(uri, locations);
 	assert((ret.path == three.path));
@@ -567,16 +736,24 @@ void	test_find_location(void)
 	three.path.clear();
 	uri.clear();
 	locations.clear();
+	one.path.push_back("/");
 	one.path.push_back("test");
+	one.path.push_back("/");
 	one.path.push_back("test2");
+	one.path.push_back("/");
 	one.exact_match = true;
-	two.path.push_back("");
+	two.path.push_back("/");
+	three.path.push_back("/");
 	three.path.push_back("test");
+	three.path.push_back("/");
 	locations.push_back(one);
 	locations.push_back(two);
 	locations.push_back(three);
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("src");
 	ret = find_location(uri, locations);
 	assert((ret.path == three.path));
@@ -586,16 +763,25 @@ void	test_find_location(void)
 	three.path.clear();
 	uri.clear();
 	locations.clear();
+	one.path.push_back("/");
 	one.path.push_back("test");
+	one.path.push_back("/");
+	two.path.push_back("/");
 	two.path.push_back("test");
+	two.path.push_back("/");
 	two.path.push_back("test2");
-	three.path.push_back("");
+	two.path.push_back("/");
+	three.path.push_back("/");
 	locations.push_back(one);
 	locations.push_back(two);
 	locations.push_back(three);
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("src");
+	uri.push_back("/");
 	ret = find_location(uri, locations);
 	assert((ret.path == two.path));
 
@@ -604,15 +790,24 @@ void	test_find_location(void)
 	three.path.clear();
 	uri.clear();
 	locations.clear();
+	one.path.push_back("/");
 	one.path.push_back("no");
+	one.path.push_back("/");
 	two.path.push_back("test");
+	two.path.push_back("/");
 	two.path.push_back("no");
+	two.path.push_back("/");
+	three.path.push_back("/");
 	three.path.push_back("no");
+	three.path.push_back("/");
 	locations.push_back(one);
 	locations.push_back(two);
 	locations.push_back(three);
+	uri.push_back("/");
 	uri.push_back("test");
+	uri.push_back("/");
 	uri.push_back("test2");
+	uri.push_back("/");
 	uri.push_back("src");
 	try {
 		ret = find_location(uri, locations);
