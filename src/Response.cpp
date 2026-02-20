@@ -37,32 +37,29 @@ namespace _Response
 
 	std::list<std::string>	split_path(const std::string &path) // assumes path starts with '/'
 	{
-		std::list<std::string>		segments;
-		bool						is_dir = false;
-		size_t						pos;
-		std::string::const_iterator	seg_end;
-		std::string::const_iterator	seg_beg;
+		std::stringstream		stream_path(path);
+		std::string				temp;
+		std::list<std::string>	segments;
+		bool					is_dir = false;
 
-		if (*(path.end() - 1) == '/')
+		if (stream_path.str().at(stream_path.str().size() - 1) == '/')
 			is_dir = true;
 
-		pos = path.find('/', 1);
-		seg_beg = path.begin();
-		while (pos != std::string::npos) {
-			seg_end = path.begin() + pos;
-			std::string new_seg(seg_beg + 1, seg_end); // we remove both '/'
-			segments.push_back(new_seg);
-			seg_beg = path.begin() + pos;
-			pos = path.find('/', pos + 1);
+		std::getline(stream_path, temp, '/');
+		if (stream_path.bad())
+			throw std::runtime_error("Internal reading path error");
+
+		while (std::getline(stream_path, temp, '/')) {
+			segments.push_back("/");
+			if (temp.size())
+				segments.push_back(temp);
 		}
-		if (!is_dir) {
-			std::string new_string(seg_beg + 1, path.end());
-			segments.push_back(new_string);
-		}
-		else {
-			std::string new_string("");
-			segments.push_back(new_string);
-		}
+		if (stream_path.bad())
+			throw std::runtime_error("Internal reading path error");
+
+		if (is_dir)
+			segments.push_back("/");
+
 		return (segments);
 	}
 
@@ -102,24 +99,31 @@ namespace _Response
 		}
 	}
 
-	std::string	create_path(std::list<std::string> &segments)
+	std::string	create_path(std::list<std::string> &segments) // assumes segments starts with "/"
 	{
 		std::string				ret;
-		bool					is_dir = false;
 		std::list<std::string>	new_path;
 
-		if (segments.back() == ""
-			|| segments.back() == "."
-			|| segments.back() == "..")
-			is_dir = true;
-
 		while (segments.size()) {
-			if (segments.front() == "" || segments.front() == ".")
+			if (segments.front() == "/") {
+				new_path.push_back(segments.front());
 				segments.pop_front();
+				while (segments.size() && segments.front() == "/")
+					segments.pop_front();
+			}
+			else if (segments.front() == ".") {
+				segments.pop_front();
+				if (segments.size())
+					segments.pop_front();
+			}
 			else if (segments.front() == "..") {
-				if (new_path.size() > 0)
+				if (new_path.size() > 1) {
 					new_path.pop_back();
+					new_path.pop_back();
+				}
 				segments.pop_front();
+				if (segments.size())
+					segments.pop_front();
 			}
 			else {
 				new_path.push_back(segments.front());
@@ -128,17 +132,8 @@ namespace _Response
 		}
 
 		for (std::list<std::string>::iterator it = new_path.begin(); it != new_path.end(); it++) {
-			ret.append("/");
 			ret.append(*it);
 		}
-
-		if ((is_dir && new_path.size() > 0)
-			|| ret.size() == 0)
-			ret.append("/");
-
-		new_path.push_front("");
-		if (is_dir && new_path.size() > 1)
-			new_path.push_back("");
 
 		segments = new_path; // update m_path_segments
 		return (ret); // return string format path

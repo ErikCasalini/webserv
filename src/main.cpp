@@ -35,10 +35,8 @@ int	main(void)
 	serv1_loc1.index = "index.html";
 	serv1_loc1.limit_except.push_back(get);
 	serv1_loc1.path = _Response::split_path("/src/"); // path doit toujours commencer et finir par '/'
-	if (serv1_loc1.path.size() > 1)
-		serv1_loc1.path.push_front("");
-	// serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
-	serv1_loc1.root = "/home/erik/WEBSERV_FILES/";
+	serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
+	// serv1_loc1.root = "/home/erik/WEBSERV_FILES/";
 	serv1_loc1.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc1.error_page.insert(std::make_pair(403, std::string("<html>\n<head><title>403 Forbidden</title></head>\n<body>\n<center><h1>403 Forbidden</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc1.error_page.insert(std::make_pair(404, std::string("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
@@ -53,10 +51,8 @@ int	main(void)
 	serv1_loc2.index = "index.html";
 	serv1_loc2.limit_except.push_back(get);
 	serv1_loc2.path = _Response::split_path("/");
-	if (serv1_loc2.path.size() > 1)
-		serv1_loc2.path.push_front("");
-	// serv1_loc2.root = "/home/ecasalin/Documents/serv_files/4242/";
-	serv1_loc2.root = "/home/erik/WEBSERV_FILES/";
+	serv1_loc2.root = "/home/ecasalin/Documents/serv_files/4242/";
+	// serv1_loc2.root = "/home/erik/WEBSERV_FILES/";
 	serv1_loc2.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc2.error_page.insert(std::make_pair(403, std::string("<html>\n<head><title>403 Forbidden</title></head>\n<body>\n<center><h1>403 Forbidden</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc2.error_page.insert(std::make_pair(404, std::string("<html>\n<head><title>404 Not Found</title></head>\n<body>\n<center><h1>404 Not Found</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
