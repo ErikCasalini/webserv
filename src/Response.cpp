@@ -399,22 +399,22 @@ void	Response::handle_static_request(const location_t &location)
 	// 	return ;
 	// }
 
-	// if (m_target.back() == '/') { // si '/' alors aucun fichier index n'est spécifié
-	// 	if (location.autoindex) {
-	// 		try {
-	// 			m_body = generate_indexing(m_target);
-	// 		}
-	// 		catch (_Response::internal_error &e) {
-	// 			set_error(internal_err, location.error_page.at(internal_err));
-	// 			return ;
-	// 		}
-	// 		m_status = ok;
-	// 		set_body_headers();
-	// 	}
-	// 	else
-	// 		set_error(forbidden, location.error_page.at(forbidden)); // pas d'index, pas de dir indexing
-	// 	return ;
-	// }
+	if (m_target.back() == '/') { // si '/' alors aucun fichier index n'est spécifié
+		if (location.autoindex) {
+			try {
+				m_body = generate_indexing(m_target);
+			}
+			catch (_Response::internal_error &e) {
+				set_error(internal_err, location.error_page.at(internal_err));
+				return ;
+			}
+			m_status = ok;
+			set_body_headers();
+		}
+		else
+			set_error(forbidden, location.error_page.at(forbidden)); // pas d'index, pas de dir indexing
+		return ;
+	}
 	fill_body(location);
 	set_body_headers();
 }
