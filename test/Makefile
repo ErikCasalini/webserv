@@ -42,15 +42,24 @@ SRC_CONFIG_PARSER_PREPROC := $(SRC_COMMON) \
 					 Config.cpp
 OBJ_CONFIG_PARSER_PREPROC := $(SRC_CONFIG_PARSER_PREPROC:%.cpp=$(BUILD_DIR)/%.o)
 
+SRC_CONFIG_PARSER := $(SRC_COMMON) \
+					 test_config_parser.cpp \
+					 config_parser.cpp \
+					 config_parser_preproc.cpp \
+					 Config.cpp
+OBJ_CONFIG_PARSER := $(SRC_CONFIG_PARSER:%.cpp=$(BUILD_DIR)/%.o)
+
 RUNNERS := run_test_request_parser \
 		   run_test_lib_cctype_cast \
 		   run_test_Response \
-		   run_test_config_parser_preproc
+		   run_test_config_parser_preproc \
+		   run_test_config_parser
 
 DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 			 $(OBJ_LIB_CCTYPE_CAST:.o=.d) \
 			 $(OBJ_RESPONSE:.o=.d) \
-			 $(OBJ_CONFIG_PARSER_PREPROC:.o=.d)
+			 $(OBJ_CONFIG_PARSER_PREPROC:.o=.d) \
+			 $(OBJ_CONFIG_PARSER:.o=.d)
 
 ###########
 # TARGETS #
@@ -88,6 +97,8 @@ run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
 run_test_Response: $(OBJ_RESPONSE)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 run_test_config_parser_preproc: $(OBJ_CONFIG_PARSER_PREPROC)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+run_test_config_parser: $(OBJ_CONFIG_PARSER)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 # TESTING:

@@ -16,12 +16,22 @@
 # endif
 
 std::list<std::string> preprocess(std::ifstream& config);
-// size_t parse_events(events_t& events, const std::string& conf, size_t& pos);
 void parse_max_connections(
 		config_t& config,
 		std::list<std::string>::iterator& tok_it,
 		std::list<std::string>& tokens);
+bool extract_boolean_field(
+		std::list<std::string>::iterator& tok_it,
+		std::list<std::string>& tokens);
+void parse_autoindex(
+		config_t& config,
+		std::list<std::string>::iterator& tok_it,
+		std::list<std::string>& tokens);
 void parse_events(
+		config_t& config,
+		std::list<std::string>::iterator& tok_it,
+		std::list<std::string>& tokens);
+void parse_root(
 		config_t& config,
 		std::list<std::string>::iterator& tok_it,
 		std::list<std::string>& tokens);
