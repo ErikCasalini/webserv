@@ -42,6 +42,8 @@ private:
 	void										handle_static_request(const location_t &location);
 	static std::map<int, std::string>			init_status_codes(void);
 	static const std::map<int, std::string>		&get_status_codes(void);
+	file_stat									get_file_type(std::string &target, const location_t &location);
+	void										set_redirection(status_t status, const std::string &location);
 
 	request_t									m_request;
 	std::string									m_buffer;

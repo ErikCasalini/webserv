@@ -81,6 +81,14 @@ struct request_t {
 };
 std::ostream& operator<<(std::ostream& os, const request_t& r);
 
+enum file_stat {
+	error,
+	inexistent,
+	bad_perms,
+	file,
+	dir
+};
+
 enum sock_type {
 	active,
 	passive
