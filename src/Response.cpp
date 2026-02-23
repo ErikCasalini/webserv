@@ -7,6 +7,8 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 using std::vector;
 
@@ -373,17 +375,103 @@ void	Response::set_body_headers(void)
 	m_headers.content_type = "text/html"; // a changer
 }
 
-void	Response::handle_static_request(const location_t &location)
+file_stat	Response::get_file_type(const location_t &location)
 {
-	// index is already appended if present
-	if (m_request.method == post) {
+	struct stat	target_stats;
+
+	errno = 0;
+	stat(m_target.c_str(), &target_stats);
+	switch (errno) {
+		case 0:
+			break ;
+		case ENOENT:
+		case ENOTDIR:
+			set_error(not_found, location.error_page.at(not_found));
+			errno = 0;
+			return (inexistent);
+		case EACCES:
+			set_error(forbidden, location.error_page.at(forbidden));
+			errno = 0;
+			return (bad_perms);
+		default:
+			set_error(internal_err, location.error_page.at(internal_err));
+			errno = 0;
+			return (error);
+	}
+	errno = 0;
+
+	if (S_ISDIR(target_stats.st_mode & S_IFMT))
+		return (dir);
+	else
+		return (file);
+}
+
+void	Response::set_redirection(status_t status, const std::string &location)
+{
+	m_headers.location = location;
+	m_status = status;
+}
+
+file_stat	Response::get_index_file_type(const location_t &location)
+{
+	struct stat	target_stats;
+
+	errno = 0;
+	stat(m_target.c_str(), &target_stats);
+	switch (errno) {
+		case ENOENT:
+			return (inexistent); // we don't set error if it does not exist
+		case ENOTDIR:
+			set_error(not_found, location.error_page.at(not_found));
+			errno = 0;
+			return (error);
+		case EACCES:
+			set_error(forbidden, location.error_page.at(forbidden));
+			errno = 0;
+			return (error);
+		case 0:
+			break ;
+		default:
+			set_error(internal_err, location.error_page.at(internal_err));
+			errno = 0;
+			return (error);
+	}
+	errno = 0;
+
+	if (S_ISDIR(target_stats.st_mode & S_IFMT))
+		return (dir);
+	else
+		return (file);
+}
+
+void	Response::generate_indexing(void)
+{
+	m_body = "THIS IS INDEXING";
+	m_headers.content_length = m_body.size();
+	m_headers.content_type = "text/html";
+	m_status = ok;
+}
+
+void	Response::handle_static_request(const location_t &location) // index is already appended if present
+{
+	file_stat	type;
+
+	if (m_request.method == post) { // on est surs ?
 		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
 		return ;
 	}
 
-	// if (m_request.method == del) {
-	// 	if (m_target.back() == '/')
-	// 		set_error(forbidden, location.error_page.at(forbidden));
+	type = get_file_type(location);
+	if (type != dir && type != file)
+		return ;
+	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
+		set_redirection(moved_perm, m_socket->str_data() + m_path + '/');
+		return ;
+	}
+
+	if (m_request.method == del) {
+		if (type == dir)
+			set_error(forbidden, location.error_page.at(forbidden));
 	// 	else {
 	// 		m_status = remove_file();
 	// 		switch (m_status) {
@@ -396,25 +484,40 @@ void	Response::handle_static_request(const location_t &location)
 	// 				break ;
 	// 		}
 	// 	}
-	// 	return ;
-	// }
+		return ;
+	}
 
-	// if (m_target.back() == '/') { // si '/' alors aucun fichier index n'est spécifié
-	// 	if (location.autoindex) {
-	// 		try {
-	// 			m_body = generate_indexing(m_target);
-	// 		}
-	// 		catch (_Response::internal_error &e) {
-	// 			set_error(internal_err, location.error_page.at(internal_err));
-	// 			return ;
-	// 		}
-	// 		m_status = ok;
-	// 		set_body_headers();
-	// 	}
-	// 	else
-	// 		set_error(forbidden, location.error_page.at(forbidden)); // pas d'index, pas de dir indexing
-	// 	return ;
-	// }
+	if (type == dir) {
+		m_target += location.index;
+		type = get_index_file_type(location);
+		switch (type) {
+			case file:
+				break ;
+			case dir:
+				if (type == dir && m_target.at(m_target.size() - 1) != '/') {
+					set_redirection(moved_perm, m_socket->str_data() + m_path + '/');
+					return ;
+				}
+				__attribute__((fallthrough));
+			case inexistent:
+				if (location.autoindex) {
+					try {
+						generate_indexing();
+						return ;
+					}
+					catch (_Response::internal_error &e) {
+						set_error(internal_err, location.error_page.at(internal_err));
+						return ;
+					}
+				}
+				else {
+					set_error(forbidden, location.error_page.at(forbidden));
+					return ;
+				}
+			default:
+				return ;
+		}
+	}
 	fill_body(location);
 	set_body_headers();
 }
@@ -430,14 +533,11 @@ void	Response::generate_target(const location_t &location)
 	if (m_target.at(m_target.size() - 1) == '/')
 		m_target.resize(m_target.size() - 1);
 	m_target.append(m_path);
-	if (m_target.at(m_target.size() - 1) != '/')
-		return ;
-	m_target.append(location.index); // index ne doit pas avoir de '/' ni '\'
 }
 
 void	Response::process(const config_t &config)
 {
-	location_t	location;
+	location_t		location;
 
 	if (m_status == bad_request) {
 		set_error(bad_request, config.http.server.at(m_socket->server_id).error_page.at(bad_request));
@@ -464,11 +564,10 @@ void	Response::process(const config_t &config)
 		if (_Response::is_bad_method(m_request.method, location.limit_except))
 			set_error(forbidden, location.error_page.at(forbidden));
 		else if (location.redirection.first) {
-			m_headers.location = location.redirection.second;
-			m_status = location.redirection.first;
-		}
+			set_redirection(location.redirection.first, location.redirection.second);
+		} // else if location == cgi ?
 		else
-			generate_target(location);
+			generate_target(location); // or prevent this to add index to cgi
 
 		// if (location.cgi)
 		// 	handle_cgi(); // check method
