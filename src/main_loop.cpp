@@ -209,7 +209,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 	if (i == -1)
 		throw std::logic_error("Attempt to send inexisting Response");
 
-	// if (responses.at(i).get_status() == waiting_cgi)
+	if (responses.at(i).get_status() == waiting_cgi)
 		// wait cgi
 	// else
 	switch (responses.at(i).send_response()) {

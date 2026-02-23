@@ -45,7 +45,7 @@ private:
 	static const std::map<int, std::string>		&get_status_codes(void);
 	file_stat									get_file_type(const location_t &location);
 	file_stat									get_index_file_type(const location_t &location);
-	void										set_redirection(status_t status, const std::string &location);
+	void										set_redirection(status_t status, const std::string &redir_addr);
 
 	request_t									m_request;
 	std::string									m_buffer;

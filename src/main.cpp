@@ -29,10 +29,10 @@ int	main(void)
 	server2.listen.push_back(serv2_listen1); // 5252
 	server2.listen.push_back(serv2_listen2); // 5353
 
-	serv1_loc1.autoindex = false;
+	serv1_loc1.autoindex = true;
 	serv1_loc1.cgi = false;
 	serv1_loc1.exact_match = false;
-	serv1_loc1.index = "ndex.html";
+	serv1_loc1.index = "src";
 	serv1_loc1.limit_except.push_back(get);
 	serv1_loc1.path = _Response::split_path("/src/"); // path doit toujours commencer et finir par '/'
 	serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";

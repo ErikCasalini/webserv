@@ -315,11 +315,11 @@ void	Response::generate_response(void)
 			break ;
 		default:
 			buf << "Content-Type: " << m_headers.content_type << "\r\n";
-			buf << "Content-Length: " << m_headers.content_length << "\r\n";
 			break ;
-	}
-	buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << "\r\n"
+		}
+		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << "\r\n"
 		<< "Server: " << m_headers.server << "\r\n"
+		<< "Content-Length: " << m_headers.content_length << "\r\n"
 		<< "Date:\r\n" // << _Response::get_date() << "\r\n"
 		<< "\r\n";
 
@@ -406,9 +406,10 @@ file_stat	Response::get_file_type(const location_t &location)
 		return (file);
 }
 
-void	Response::set_redirection(status_t status, const std::string &location)
+void	Response::set_redirection(status_t status, const std::string &redir_addr)
 {
-	m_headers.location = location;
+	m_headers.location = redir_addr;
+	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = status;
 }
 
@@ -449,6 +450,7 @@ void	Response::generate_indexing(void)
 	m_body = "THIS IS INDEXING";
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
+	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = ok;
 }
 
@@ -465,7 +467,7 @@ void	Response::handle_static_request(const location_t &location) // index is alr
 	if (type != dir && type != file)
 		return ;
 	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-		set_redirection(moved_perm, m_socket->str_data() + m_path + '/');
+		set_redirection(moved_perm, "http://" + m_socket->str_data() + m_path + '/');
 		return ;
 	}
 
@@ -495,7 +497,7 @@ void	Response::handle_static_request(const location_t &location) // index is alr
 				break ;
 			case dir:
 				if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-					set_redirection(moved_perm, m_socket->str_data() + m_path + '/');
+					set_redirection(moved_perm, "http://" + m_socket->str_data() + m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
@@ -518,6 +520,7 @@ void	Response::handle_static_request(const location_t &location) // index is alr
 				return ;
 		}
 	}
+	m_headers.keep_alive = m_request.headers.keep_alive;
 	fill_body(location);
 	set_body_headers();
 }
@@ -564,7 +567,7 @@ void	Response::process(const config_t &config)
 		if (_Response::is_bad_method(m_request.method, location.limit_except))
 			set_error(forbidden, location.error_page.at(forbidden));
 		else if (location.redirection.first) {
-			set_redirection(location.redirection.first, location.redirection.second);
+			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
 		} // else if location == cgi ?
 		else
 			generate_target(location); // or prevent this to add index to cgi
@@ -575,7 +578,6 @@ void	Response::process(const config_t &config)
 			handle_static_request(location);
 	}
 	generate_response();
-
 }
 
 int	Response::send_response(void)
