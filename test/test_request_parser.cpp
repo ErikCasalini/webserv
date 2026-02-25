@@ -294,9 +294,12 @@ void test_parse_content_length()
 	spaces["content-length"] = "     123    ";
 	assert((parse_content_length(spaces) == 123));
 
-	raw_headers_t max_ulong;
-	max_ulong["content-length"] = "18446744073709551615";
-	assert((parse_content_length(max_ulong) == 18446744073709551615ul));
+	raw_headers_t max_long;
+	max_long["content-length"] = "9223372036854775807";
+	assert((parse_content_length(max_long) == 9223372036854775807));
+
+	raw_headers_t empty;
+	assert((parse_content_length(empty) == -1));
 
 	// wrong inputs
 	raw_headers_t spaces_inside;
@@ -341,11 +344,6 @@ void test_parse_content_length()
 		assert((false && "chars"));
 	} catch (const Request::BadRequest& e) {};
 
-	raw_headers_t empty;
-	try {
-		parse_content_length(empty);
-		assert((false && "empty"));
-	} catch (const Request::BadRequest& e) {};
 }
 
 void test_parse_connection()
@@ -371,12 +369,8 @@ void test_parse_connection()
 	close_up["connection"] = "close";
 	assert((parse_connection(close_up) == false));
 
-	// wrong inputs
 	raw_headers_t empty;
-	try {
-		parse_content_length(empty);
-		assert((false && "empty"));
-	} catch (const Request::BadRequest& e) {};
+	assert((parse_connection(empty) == false));
 }
 
 void test_parse_headers()

@@ -7,6 +7,7 @@
 #include <string>
 #include <errno.h>
 #include <sys/socket.h>
+#include <limits>
 
 //HEADERS
 // allow
@@ -341,7 +342,7 @@ namespace _Request {
 		return (headers);
 	}
 
-	unsigned long parse_content_length(const raw_headers_t& raw_headers)
+	long parse_content_length(const raw_headers_t& raw_headers)
 	{
 		try {
 			string val = raw_headers.at("content-length");
@@ -352,16 +353,16 @@ namespace _Request {
 				char* end = NULL;
 				errno = 0;
 				unsigned long len = std::strtoul(val.c_str(), &end, 10);
-				// TODO: check for max specified length (in config file or default value)
 				// is it a specific status code?
-				if (*end || errno) {
+				if (*end || errno
+					|| len > static_cast<unsigned long>(std::numeric_limits<long>::max())) {
 					errno = 0;
 					throw Request::BadRequest("invalid content-length");
 				}
-				return (len);
+				return (static_cast<long>(len));
 			}
 		} catch (const std::out_of_range& e) {}
-		throw Request::BadRequest("missing content-length value");
+		return (-1);
 	}
 
 	bool parse_connection(const raw_headers_t& raw_headers)
@@ -376,6 +377,17 @@ namespace _Request {
 		return (false);
 	}
 
+	string parse_content_type(const raw_headers_t& raw_headers)
+	{
+		try {
+			string val = raw_headers.at("content-type");
+			strtrim(val);
+			std::transform(val.begin(), val.end(), val.begin(), to_lower);
+			return (val);
+		} catch (const std::out_of_range& e) {}
+		return ("application/octet-stream");
+	}
+
 	headers_t parse_headers(
 				const string& buffer,
 				size_t& pos,
@@ -384,11 +396,17 @@ namespace _Request {
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
 		headers.keep_alive = parse_connection(raw_headers);
+		headers.content_type = parse_content_type(raw_headers);
 		// headers.cookies = parse_cookies(raw_headers);
 		// if (request.method == get)
 		// 	headers.if_modified_since = parse_if_modified_since(raw_headers);
-		if (request.method == post)
-			headers.content_length = parse_content_length(raw_headers);
+		long cl = parse_content_length(raw_headers);
+		if (cl == -1) {
+			if (request.method == post)
+				throw Request::BadRequest("missing content-length value");
+		} else {
+			headers.content_length = static_cast<unsigned long>(cl);
+		}
 		return (headers);
 	}
 

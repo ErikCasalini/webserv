@@ -101,16 +101,15 @@ void request_t::clear()
 
 std::ostream& operator<<(std::ostream& os, const method_t& m)
 {
-	os << "method: ";
 	switch (m) {
 	case del:
-		os << "del";
+		os << "DELETE";
 		break ;
 	case get:
-		os << "get";
+		os << "GET";
 		break ;
 	case post:
-		os << "post";
+		os << "POST";
 		break ;
 	}
 	return (os);
@@ -118,22 +117,21 @@ std::ostream& operator<<(std::ostream& os, const method_t& m)
 
 std::ostream& operator<<(std::ostream& os, const protocol_t& p)
 {
-	os << "protocol: ";
 	switch (p) {
 	case zero_nine:
-		os << "zero_nine";
+		os << "0.9";
 		break ;
 	case one:
-		os << "one";
+		os << "1.0";
 		break ;
 	case one_one:
-		os << "one_one";
+		os << "1.1";
 		break ;
 	case two:
-		os << "two";
+		os << "2";
 		break ;
 	case three:
-		os << "three";
+		os << "3";
 		break ;
 	}
 	return (os);
@@ -141,7 +139,6 @@ std::ostream& operator<<(std::ostream& os, const protocol_t& p)
 
 std::ostream& operator<<(std::ostream& os, const status_t& s)
 {
-	os << "status: ";
 	switch (s) {
 	case parsing:
 		os << "parsing";
@@ -196,12 +193,12 @@ std::ostream& operator<<(std::ostream& os, const request_t& r)
 {
 	os
 		<< "request:\n"
-		<< '\t' << r.status << '\n'
-		<< '\t' << r.method << '\n'
-		<< '\t' << r.target << '\n'
-		<< '\t' << r.protocol << '\n'
+		<< "\tstatus: " << r.status << '\n'
+		<< "\tmethod: " <<  r.method << '\n'
+		<< "\ttarget: " << r.target << '\n'
+		<< "\tprotocol: " << r.protocol << '\n'
 		<< '\t' << r.headers << '\n'
-		<< '\t' << r.body << '\n';
+		<< "\tbody: " << r.body << '\n';
 	return (os);
 }
 

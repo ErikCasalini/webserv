@@ -62,7 +62,9 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 #ifndef TESTING
 	if (request->m_socket == NULL)
 		throw (std::logic_error("attempt to read unset socket"));
-	ssize_t ret = _Request::read_socket(request->m_socket->fd, request->m_buffer, request->m_recv_buf_size);
+	ssize_t ret = _Request::read_socket(request->m_socket->fd,
+										request->m_buffer,
+										request->m_recv_buf_size);
 #else
 	ssize_t ret = 1;
 #endif
@@ -76,7 +78,7 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 		throw std::runtime_error("recv failed");
 	}
 	// Wait for the two consecutive spaces to actually parse the input
-	if (request->m_infos.method == post && request->m_infos.headers.content_length > 0) {
+	if (request->m_infos.headers.content_length > 0) {
 		request->set_state(RequestStates::ExtractingBody::get_instance());
 		request->parse();
 		return ;
