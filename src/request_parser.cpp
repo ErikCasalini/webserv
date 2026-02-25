@@ -377,6 +377,17 @@ namespace _Request {
 		return (false);
 	}
 
+	string parse_content_type(const raw_headers_t& raw_headers)
+	{
+		try {
+			string val = raw_headers.at("content-type");
+			strtrim(val);
+			std::transform(val.begin(), val.end(), val.begin(), to_lower);
+			return (val);
+		} catch (const std::out_of_range& e) {}
+		return ("application/octet-stream");
+	}
+
 	headers_t parse_headers(
 				const string& buffer,
 				size_t& pos,
@@ -385,6 +396,7 @@ namespace _Request {
 		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
 		headers.keep_alive = parse_connection(raw_headers);
+		headers.content_type = parse_content_type(raw_headers);
 		// headers.cookies = parse_cookies(raw_headers);
 		// if (request.method == get)
 		// 	headers.if_modified_since = parse_if_modified_since(raw_headers);
