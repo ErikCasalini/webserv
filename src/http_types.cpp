@@ -16,6 +16,7 @@ headers_t::headers_t(const headers_t& src)
 	, location(src.location)
 	, server(src.server)
 	, if_modified_since(src.if_modified_since)
+	, allow(src.allow)
 {}
 
 headers_t& headers_t::operator=(const headers_t& src)
@@ -29,6 +30,7 @@ headers_t& headers_t::operator=(const headers_t& src)
 		location = src.location;
 		server = src.server;
 		if_modified_since = src.if_modified_since;
+		allow = src.allow;
 	}
 	return (*this);
 }
@@ -43,6 +45,7 @@ void headers_t::clear()
 	location.clear();
 	server = "Webserver_2026";
 	if_modified_since.clear();
+	allow.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const headers_t& h)
@@ -231,7 +234,32 @@ void socket_t::clear()
 	std::memset(&(this->data), 0, sizeof(this->data));
 }
 
-std::string	socket_t::str_peer_data(void) const
+std::string	socket_t::str_peer_addr(void) const
+{
+	std::ostringstream	ret;
+	uint32_t			ip;
+
+	ip = ntohl(this->peer_data.sin_addr.s_addr);
+	ret << ((ip >> 24) & 0XFF)
+		<< '.'
+		<< ((ip >> 16) & 0XFF)
+		<< '.'
+		<< ((ip >> 8) & 0XFF)
+		<< '.'
+		<< (ip & 0XFF);
+
+	return (ret.str());
+}
+
+std::string	socket_t::str_peer_port(void) const
+{
+	std::ostringstream	ret;
+
+	ret << ntohs(this->peer_data.sin_port);
+	return (ret.str());
+}
+
+std::string	socket_t::str_peer_interface(void) const
 {
 	std::ostringstream	ret;
 	uint32_t			ip;
@@ -251,7 +279,32 @@ std::string	socket_t::str_peer_data(void) const
 	return (ret.str());
 }
 
-std::string	socket_t::str_data(void) const
+std::string	socket_t::str_local_addr(void) const
+{
+	std::ostringstream	ret;
+	uint32_t			ip;
+
+	ip = ntohl(this->data.sin_addr.s_addr);
+	ret << ((ip >> 24) & 0XFF)
+		<< '.'
+		<< ((ip >> 16) & 0XFF)
+		<< '.'
+		<< ((ip >> 8) & 0XFF)
+		<< '.'
+		<< (ip & 0XFF);
+
+	return (ret.str());
+}
+
+std::string	socket_t::str_local_port(void) const
+{
+	std::ostringstream	ret;
+
+	ret << ntohs(this->data.sin_port);
+	return (ret.str());
+}
+
+std::string	socket_t::str_local_interface(void) const
 {
 	std::ostringstream	ret;
 	uint32_t			ip;
@@ -276,7 +329,7 @@ std::ostream& operator<<(std::ostream& os, const socket_t& s)
 	os << "Socket FD: " << s.fd
 	   << " | Type: " << s.type
 	   << " | Server ID: " << s.server_id
-	   << " | Peer data: " << s.str_peer_data()
-	   << " | Local data: " << s.str_data() << '\n';
+	   << " | Peer data: " << s.str_peer_interface()
+	   << " | Local data: " << s.str_local_interface() << '\n';
 	return (os);
 }

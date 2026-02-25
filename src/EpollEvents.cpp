@@ -33,7 +33,7 @@ size_t	EpollEvents::size(void) const
 
 epoll_event	EpollEvents::create(socket_t *socket, uint32_t events)
 {
-	epoll_event ret;
+	epoll_event	ret;
 
 	if (socket == NULL)
 		throw std::logic_error("Attempt to create invalid epoll event");
@@ -43,4 +43,3 @@ epoll_event	EpollEvents::create(socket_t *socket, uint32_t events)
 	ret.data.ptr = socket;
 	return (ret);
 }
-

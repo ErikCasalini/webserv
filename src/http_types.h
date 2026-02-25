@@ -13,6 +13,14 @@
 
 # define CRLF "\r\n"
 
+template <typename T>
+std::string to_string(T num)
+{
+	std::stringstream s;
+	s << num;
+	return (s.str());
+}
+
 enum method_t {
 	del,
 	get,
@@ -63,6 +71,7 @@ struct headers_t {
 	std::string server;
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
+	std::string allow;
 };
 std::ostream& operator<<(std::ostream& os, const headers_t& h);
 
@@ -94,11 +103,21 @@ enum sock_type {
 	passive
 };
 
+struct cgi_uri_infos_t {
+	std::string script_name;
+	std::string script_dir;
+	std::string path_info;
+};
+
 struct socket_t {
 	socket_t();
 	void clear();
-	std::string str_peer_data(void) const;
-	std::string str_data(void) const;
+	std::string str_peer_interface(void) const;
+	std::string str_peer_addr(void) const;
+	std::string str_peer_port(void) const;
+	std::string str_local_interface(void) const;
+	std::string str_local_addr(void) const;
+	std::string str_local_port(void) const;
 	bool operator==(socket_t &rhs) const;
 
 	int fd;

@@ -19,6 +19,7 @@ Sockets::~Sockets(void)
 		if (m_sockets.at(i).fd != -1)
 			::close(m_sockets.at(i).fd);
 	}
+	::close(m_epoll_instance);
 }
 
 void	Sockets::close(socket_t &socket)
