@@ -1,12 +1,12 @@
 #ifndef ACTIVEMESSAGES_HPP
 # define ACTIVEMESSAGES_HPP
 
-# include "CgiEpollManager.hpp"
+# include "EpollManager.hpp"
 # include "request_parser.h"
 # include <vector>
 
 template <typename T>
-class	ActiveMessages : protected CgiEpollManager
+class	ActiveMessages : public EpollManager
 {
 	public:
 
@@ -40,7 +40,7 @@ class	ActiveMessages : protected CgiEpollManager
 				if (m_messages_lst.at(i).m_socket == NULL) {
 					m_messages_lst.at(i).m_socket = socket;
 					m_messages_lst.at(i).set_request(request);
-					m_messages_lst.at(i).m_cgi_epoll_inst = cgi_epoll_instance;
+					m_messages_lst.at(i).m_cgi_epoll_inst = cgi_epoll_inst();
 					return (i);
 				}
 			}

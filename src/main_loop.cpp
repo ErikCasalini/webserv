@@ -42,7 +42,7 @@ void	init_listen_sockets(std::vector<server_t> &servers, Sockets &sockets)
 
 			int i = sockets.add(socket);
 			event = EpollEvents::create(&sockets.at(i), EPOLLIN);
-			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_ADD, socket.fd, &event); // throws
+			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, socket.fd, &event); // throws
 			lis_it++;
 		}
 		serv_it++;
@@ -56,7 +56,7 @@ void	set_active_socket(socket_t &new_socket, Sockets &sockets)
 	epoll_event	event = EpollEvents::create(&sockets.at(i), EPOLLIN);
 
 	errno = 0;
-	epoll_ctl(sockets.epollInst(), EPOLL_CTL_ADD, new_socket.fd, &event);
+	epoll_ctl(sockets.epoll_inst(), EPOLL_CTL_ADD, new_socket.fd, &event);
 	switch (errno) {
 		case 0:
 			std::cout << "[NEW CONNECTION] " << new_socket << '\n';
@@ -120,7 +120,7 @@ void	close_connection(socket_t *socket, Sockets &sockets, ActiveMessages<Request
 	if (socket == NULL)
 		throw std::logic_error("Invalid socket address");
 
-	epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_DEL, socket->fd, NULL); // throws
+	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, socket->fd, NULL); // throws
 	requests.clear(socket); // if address is present
 	responses.clear(socket); // if address is present
 	sockets.close(*socket);
@@ -167,7 +167,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		if (req_status != parsing) {
 			int i_resp = responses.add(socket, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 			event.events = EPOLLOUT;
-			epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event); // throws
+			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, socket->fd, &event); // throws
 			std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
 			requests.at(i_req).clear_infos();
 			if (req_status == bad_request)
@@ -223,7 +223,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 				close_connection(socket, sockets, requests, responses);
 			else {
 				event.events = EPOLLIN;
-				epoll_ctl_ex(sockets.epollInst(), EPOLL_CTL_MOD, socket->fd, &event);
+				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, socket->fd, &event);
 				responses.at(i).clear();
 			}
 			break ;
@@ -233,15 +233,15 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 int	main_server_loop(config_t &config)
 {
 	int							ready_fds;
-	EpollEvents					events(config.events.max_connections); // throws
+	// EpollEvents					events(config.events.max_connections); // throws
 	ActiveMessages<Request>		requests(config.events.max_connections); // throws
 	ActiveMessages<Response>	responses(config.events.max_connections); // throws
-	Sockets						sockets(epoll_create_ex(1), config.events.max_connections); // throws
+	Sockets						sockets(config.events.max_connections); // throws
 
 	init_listen_sockets(config.http.server, sockets); // throws
 	while(1) {
 		errno = 0;
-		ready_fds = epoll_wait_ex(sockets.epollInst(), events.addr(), events.size(), 0); // throws
+		ready_fds = epoll_wait_ex(sockets.epoll_inst(), events.addr(), events.size(), 0); // throws
 		for (int i = 0; i < ready_fds; i++) {
 			if (events.at(i).events & EPOLLERR)
 				handle_error(events.at(i), sockets, requests, responses);

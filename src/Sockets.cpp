@@ -5,9 +5,8 @@
 #include <vector>
 #include <sstream>
 
-Sockets::Sockets(int epoll_instance, int socket_limit)
-: m_epoll_instance(epoll_instance),
-  m_socket_limit(socket_limit),
+Sockets::Sockets(int socket_limit)
+:  m_socket_limit(socket_limit),
   m_size(0)
 {
 	m_sockets.resize(socket_limit);
@@ -19,7 +18,6 @@ Sockets::~Sockets(void)
 		if (m_sockets.at(i).fd != -1)
 			::close(m_sockets.at(i).fd);
 	}
-	::close(m_epoll_instance);
 }
 
 void	Sockets::close(socket_t &socket)
@@ -52,11 +50,6 @@ int	Sockets::add(socket_t &socket)
 socket_t	&Sockets::at(int i)
 {
 	return (m_sockets.at(i));
-}
-
-int	Sockets::epollInst(void) const
-{
-	return (m_epoll_instance);
 }
 
 int	Sockets::limit(void) const
