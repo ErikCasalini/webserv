@@ -36,7 +36,7 @@ SRC := request_parser.cpp \
 	   http_types.cpp \
 	   cctype_cast.cpp \
 	   c_network_exception_wrapper.cpp \
-	   EpollEvents.cpp \
+	   EpollManager.cpp \
 	   main_loop.cpp \
 	   main.cpp \
 	   Sockets.cpp \
