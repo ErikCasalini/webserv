@@ -1,4 +1,6 @@
 #include <stdexcept>
+#include <sys/socket.h>
+#include <sys/epoll.h>
 
 class CriticalException : public std::runtime_error
 {
