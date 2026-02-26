@@ -6,6 +6,7 @@
 # include "http_types.h"
 # include <string>
 # include <list>
+# include "EpollManager.hpp"
 
 class Response
 {
@@ -14,9 +15,7 @@ public:
 
 											Response(void);
 											~Response(void);
-	// 										Response(const Response &src);
-	// Response								&operator=(const Response &rhs);
-	const request_t							&get_request(void) const;
+	request_t								&get_request(void);
 	void									set_request(const request_t &request);
 	void									clear(void);
 	const char								*get_buf(void) const;
@@ -25,8 +24,12 @@ public:
 	size_t									get_buf_size(void) const;
 	status_t								get_status(void);
 	void									set_status(status_t status);
+	pid_t									get_child_pid(void) const;
+	void									reset_child_pid(void);
+	pipes_t									get_pipes_data(void) const;
 	void									parse_uri(void);
-	void									process(const config_t &config);
+	void									process(const config_t &config, int epoll_inst);
+	void									read_cgi_response(int epoll_inst);
 	int										send_response(void);
 
 	socket_t								*m_socket;
@@ -37,15 +40,23 @@ private:
 	void										generate_target(const location_t &location);
 	void										generate_response(void);
 	void										generate_indexing(void);
+	const cgi_uri_infos_t						generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
+	const std::vector<std::string>				generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
+	void										exec_cgi(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst);
+	char**										allocate_envp(const std::vector<std::string>& env) const;
+	void										delete_envp(char*** envp) const;
 	void										fill_body(const location_t &location);
 	void										set_body_headers(void);
 	void										set_error(status_t status, const std::string &error_body);
 	void										handle_static_request(const location_t &location);
+	void										handle_cgi(const location_t &location, int epoll_inst);
 	static std::map<int, std::string>			init_status_codes(void);
 	static const std::map<int, std::string>		&get_status_codes(void);
 	file_stat									get_file_type(const location_t &location);
+	file_stat									get_cgi_file_type(const location_t &location, const std::string &target);
 	file_stat									get_index_file_type(const location_t &location);
 	void										set_redirection(status_t status, const std::string &redir_addr);
+
 
 	request_t									m_request;
 	std::string									m_buffer;
@@ -56,7 +67,9 @@ private:
 	headers_t									m_headers;
 	status_t									m_status;
 	std::string									m_version;
-	std::string									m_body; // probablement remplacé par get_file_content()
+	std::string									m_body;
+	pid_t										m_child_pid;
+	pipes_t										m_pipes;
 };
 
 namespace _Response
@@ -85,15 +98,23 @@ namespace _Response
 			{};
 	};
 
-	void						extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
-	std::list<std::string>		split_path(const std::string &path);
-	unsigned char				url_decode(const std::string &url_code);
-	void						decode_segments(std::list<std::string> &segments);
-	std::string					create_path(std::list<std::string> &segments);
-	bool						is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location);
-	int							evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
-	const location_t			&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
-	bool						is_bad_method(method_t method, std::vector<method_t> &limit_except);
+	class	cgi_error : public std::runtime_error
+	{
+		public:
+			cgi_error(const std::string &str)
+			: std::runtime_error(str)
+			{};
+	};
+
+	void					extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
+	std::list<std::string>	split_path(const std::string &path);
+	unsigned char			url_decode(const std::string &url_code);
+	void					decode_segments(std::list<std::string> &segments);
+	std::string				create_path(std::list<std::string> &segments);
+	bool					is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location);
+	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
+	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
+	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
 }
 
 #endif
