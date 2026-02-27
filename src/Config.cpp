@@ -6,21 +6,23 @@ listen_t::listen_t()
 {};
 
 location_t::location_t()
-	: exact_match(false)
+	: autoindex(false)
 	, cgi(false)
-	, autoindex(false)
+	, exact_match(false)
 	, redirection(parsing, "")
 {};
 
 server_t::server_t()
 	: autoindex(false)
+	, max_body_size(1048576) // default 1Mo
 	, redirection(parsing, "")
 {};
 
 http_t::http_t()
 	: autoindex(false)
-	, max_body(1048576) // default 1Mo
+	// , error_page()
 	, keepalive_timeout(0)
+	, max_body_size(1048576) // default 1Mo
 {};
 
 events_t::events_t()
