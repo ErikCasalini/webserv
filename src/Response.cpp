@@ -539,18 +539,18 @@ void	Response::handle_static_request(const location_t &location)
 {
 	file_stat	type;
 
-	if (m_request.method == post) { // on est surs ?
-		m_headers.allow = "GET, DELETE";
-		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
-		return;
-	}
-
 	type = get_file_type(location);
 	if (type != dir && type != file)
 		return ;
 	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
 		set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
 		return ;
+	}
+
+	if (m_request.method == post) { // on est surs ?
+		m_headers.allow = "GET, DELETE";
+		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
+		return;
 	}
 
 	if (m_request.method == del) { // AND location del == true
@@ -765,7 +765,6 @@ void	Response::exec_cgi(const char* script_name, const char* script_dir, const c
 			argv[0] = script_name;
 			argv[1] = NULL;
 
-			// TODO: do we need to close STD{IN,OUT}_FILENO?
 			if (execve(script_path, const_cast<char**>(argv), envp) == -1) {
 				delete_envp(&envp);
 				std::exit(-1);
@@ -809,8 +808,11 @@ void	Response::read_cgi_response(int epoll_inst)
 	ssize_t	ret;
 	char	buf[50000];
 
-	if ((ret = read(m_pipes.fd_out, &buf, 50000)) > 0)
+	ret = read(m_pipes.fd_out, &buf, 50000);
+	if (ret > 0) {
+		buf[ret] = '\0';
 		m_buffer.append(buf);
+	}
 	else if (ret == 0) {
 		epoll_event new_event = EpollManager::create(m_socket, EPOLLOUT);
 		epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_pipes.fd_out, NULL);

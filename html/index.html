@@ -1,4 +1,27 @@
+<!DOCTYPE html>
 <html>
-<head><title>index</title></head>
-<body>It's a wonderful website!</body>
+  <head>
+    <title>Request Test</title>
+  </head>
+  <body>
+
+    <h1>Send Requests</h1>
+
+    <!-- POST form -->
+    <form action="http://127.0.0.1:4242/cgi/" method="POST">
+
+		<label>
+        Body:
+        <input type="text" name="Body">
+        </label>
+
+      <button type="submit">Send POST Request</button>
+    </form>
+
+    <!-- GET form -->
+    <form action="http://127.0.0.1:4242/src/" method="GET">
+      <button type="submit">Send GET Request</button>
+    </form>
+
+  </body>
 </html>
