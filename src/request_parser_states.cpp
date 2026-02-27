@@ -15,13 +15,11 @@ RequestState* RequestStates::Init::get_instance()
 	return (&singleton);
 };
 
+// clear() calls on Init state must be used with caution
+// as the buffer can be non empty, storing next requests
+// from the same connections that waits to be parsed.
 void RequestStates::Init::clear(Request* request)
 {
-	if (request->m_buffer.length() > 0) {
-		request->set_state(RequestStates::Invalid::get_instance());
-		throw RequestState::InvalidState(
-			"Can't call clear() in 'Init' state with a non empty buffer");
-	}
 	request->_clear();
 }
 
