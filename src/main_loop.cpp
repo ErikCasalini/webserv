@@ -15,6 +15,8 @@
 #include <cerrno>
 #include "Config.h"
 
+extern volatile sig_atomic_t int_signal;
+
 void	init_listen_sockets(std::vector<server_t> &servers, Sockets &sockets)
 {
 	std::vector<server_t>::const_iterator	serv_it = servers.begin();
@@ -301,7 +303,7 @@ void	reap_children(void)
 	while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
-int	main_server_loop(config_t &config)
+void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
 	Sockets						sockets(config.events.max_connections); // throws
@@ -313,6 +315,8 @@ int	main_server_loop(config_t &config)
 		errno = 0;
 		ready_fds = epoll_wait_ex(sockets.epoll_inst(), sockets.events_addr(), sockets.events_size(), 0); // throws
 		for (int i = 0; i < ready_fds; i++) {
+			if (int_signal)
+				return ;
 			if (sockets.events_at(i).events & EPOLLERR)
 				handle_error(sockets.events_at(i), sockets, requests, responses, config);
 			else if (sockets.events_at(i).events & EPOLLIN)
@@ -322,6 +326,8 @@ int	main_server_loop(config_t &config)
 			else if (sockets.events_at(i).events & EPOLLOUT)
 				handle_write_event(sockets.events_at(i), sockets, requests, responses, config);
 		}
+		if (int_signal)
+			return;
 		reap_children();
 	}
 }
