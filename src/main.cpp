@@ -77,9 +77,11 @@ int	main(void)
 
 	try {
 		main_server_loop(config);
+		reap_children();
 	}
 	catch (std::exception &e) {
 		std::cerr << e.what();
+		reap_children();
 		return (1);
 	}
 	return (0);

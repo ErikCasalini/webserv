@@ -176,6 +176,9 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	case moved_temp:
 		os << "moved_temp";
 		break ;
+	case moved_perm_body:
+		os << "moved_perm_body";
+		break ;
 	case forbidden:
 		os << "forbidden";
 		break ;

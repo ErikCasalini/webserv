@@ -47,6 +47,7 @@ enum status_t {
 	no_content = 204,
 	moved_perm = 301,
 	moved_temp = 302,
+	moved_perm_body = 308,
 	bad_request = 400,
 	forbidden = 403,
 	not_found = 404,
