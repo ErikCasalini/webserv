@@ -908,9 +908,11 @@ void	Response::handle_cgi(const location_t &location, int epoll_inst)
 				epoll_inst);
 	}
 	catch (_Response::internal_error &e) {
+		delete_envp(&envp);
 		set_error(internal_err, location.error_page.at(internal_err));
 		throw _Response::cgi_error("cgi execution failed");
 	}
+	delete_envp(&envp);
 }
 
 void	Response::generate_target(const location_t &location)
