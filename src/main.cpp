@@ -1,9 +1,11 @@
 #include <map>
 #include <string>
 #include <iostream>
+#include <stdexcept>
 #include "main_loop.hpp"
 #include "Config.h"
 #include "Response.hpp"
+#include "signals_handling.h"
 
 int	main(void)
 {
@@ -12,6 +14,14 @@ int	main(void)
 	server_t			server1, server2;
 	listen_t			serv1_listen1, serv1_listen2, serv2_listen1, serv2_listen2;
 	location_t			serv1_loc1, serv1_loc2, serv2_loc1, serv2_loc2;
+
+	try {
+		set_signal_handlers();
+	}
+	catch (std::runtime_error &e) {
+		std::cerr << e.what();
+		return (1);
+	}
 
 	serv1_listen1.ip = 0x7F000001; // 127.0.0.1 big endian endian ???
 	serv1_listen1.port = 4242;

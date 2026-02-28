@@ -3,7 +3,7 @@
 
 # include "Config.h"
 
-int		main_server_loop(config_t &config);
+void	main_server_loop(config_t &config);
 void	reap_children(void);
 
 #endif
