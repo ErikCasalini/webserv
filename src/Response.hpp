@@ -25,12 +25,15 @@ public:
 	status_t								get_status(void);
 	void									set_status(status_t status);
 	pid_t									get_child_pid(void) const;
-	void									reset_child_pid(void);
+	void									terminate_child(void);
 	pipes_t									get_pipes_data(void) const;
 	void									parse_uri(void);
 	void									process(const config_t &config, int epoll_inst);
-	void									read_cgi_response(int epoll_inst);
+	void									read_cgi_response(int epoll_inst, config_t &config);
+	void									write_body_to_cgi(int epoll_inst, config_t &config);
+	void									handle_cgi_error(int epoll_inst, config_t &config);
 	int										send_response(void);
+	void									clear_cgi_pipes(int epoll_inst);
 
 	socket_t								*m_socket;
 	static const char						authorized_chars[];
@@ -115,6 +118,7 @@ namespace _Response
 	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
 	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
 	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
+	void					close_pipes(int *p1, int *p2);
 }
 
 #endif
