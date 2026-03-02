@@ -327,7 +327,7 @@ void	main_server_loop(config_t &config)
 				handle_write_event(sockets.events_at(i), sockets, requests, responses, config);
 		}
 		if (int_signal)
-			return;
+			return ;
 		reap_children();
 	}
 }
