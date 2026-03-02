@@ -58,15 +58,15 @@ epoll_event	EpollManager::create(socket_t *socket, uint32_t events)
 	return (ret);
 }
 
-epoll_event	EpollManager::create(pipes_t *pipes, uint32_t events)
+epoll_event	EpollManager::create(Cgi *cgi, uint32_t events)
 {
 	epoll_event	ret;
 
-	if (pipes == NULL)
+	if (cgi == NULL)
 		throw std::logic_error("Attempt to create invalid epoll event");
 
 	std::memset(&ret, 0, sizeof(ret));
 	ret.events = events;
-	ret.data.ptr = pipes;
+	ret.data.ptr = cgi;
 	return (ret);
 }

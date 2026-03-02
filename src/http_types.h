@@ -113,7 +113,7 @@ struct cgi_uri_infos_t {
 
 enum fd_type {
 	sockt,
-	pipeline
+	cgi
 };
 
 struct epoll_item_t {
@@ -143,7 +143,7 @@ struct socket_t : public epoll_item_t{
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);
 
-struct pipes_t : public epoll_item_t {
+struct pipes_t {
 
 	pipes_t(void);
 	~pipes_t(void);
@@ -151,7 +151,6 @@ struct pipes_t : public epoll_item_t {
 
 	int fd_in;
 	int fd_out;
-	socket_t *response_socket;
 };
 
 #endif

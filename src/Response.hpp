@@ -7,6 +7,7 @@
 # include <string>
 # include <list>
 # include "EpollManager.hpp"
+# include "Cgi.hpp"
 
 class Response
 {
@@ -34,6 +35,8 @@ public:
 	void									handle_cgi_error(int epoll_inst, config_t &config);
 	int										send_response(void);
 	void									clear_cgi_pipes(int epoll_inst);
+	void									init_cgi(void);
+
 
 	socket_t								*m_socket;
 	static const char						authorized_chars[];
@@ -45,9 +48,6 @@ private:
 	void										generate_indexing(void);
 	const cgi_uri_infos_t						generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
 	const std::vector<std::string>				generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
-	void										exec_cgi(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst);
-	char**										allocate_envp(const std::vector<std::string>& env) const;
-	void										delete_envp(char*** envp) const;
 	void										fill_body(const location_t &location);
 	void										set_body_headers(void);
 	void										set_error(status_t status, const std::string &error_body);
@@ -71,8 +71,7 @@ private:
 	status_t									m_status;
 	std::string									m_version;
 	std::string									m_body;
-	pid_t										m_child_pid;
-	pipes_t										m_pipes;
+	Cgi											m_cgi;
 };
 
 namespace _Response
@@ -118,7 +117,6 @@ namespace _Response
 	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
 	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
 	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
-	void					close_pipes(int *p1, int *p2);
 }
 
 #endif

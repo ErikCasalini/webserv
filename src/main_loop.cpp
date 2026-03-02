@@ -144,16 +144,11 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 		std::cout << "[SOCKET INTERNAL ERROR] " << *socket << " | [CLOSED]\n";
 		close_connection(socket, sockets, requests, responses);
 	}
-	else if (item->type == pipeline) {
-		pipes_t		*pipes = static_cast<pipes_t*>(item);
-		epoll_event	new_event = EpollManager::create(pipes->response_socket, EPOLLOUT);
-		int			i = responses.search(pipes->response_socket);
-
-		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
-		// CLEAN
-		responses.at(i).clear_cgi_pipes(sockets.epoll_inst());
-		responses.at(i).terminate_child();
+	else if (item->type == cgi) {
+		Cgi			*cgi = static_cast<Cgi*>(item);
+		epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
+	
+		cgi->reset_state(sockets.epoll_inst());
 		// SET FD TRACKING AGAIN AND SEND ERR 500
 		std::cout << "[CGI INTERNAL ERROR] Error on child pipe" << " | [SENDING ERR 500]\n";
 		epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, pipes->response_socket->fd, &new_event);
@@ -204,7 +199,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			}
 		}
 	}
-	else if (item->type == pipeline) {
+	else if (item->type == cgi) {
 		pipes_t	*pipes = static_cast<pipes_t*>(item);
 		int		i = responses.search(pipes->response_socket);
 		ssize_t	ret;
@@ -232,7 +227,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		std::cout << "[PEER CLOSED] " << *socket << " | [CLOSED]\n"; // pour debug
 		close_connection(socket, sockets, requests, responses);
 	}
-	else if (item->type == pipeline) {
+	else if (item->type == cgi) {
 		pipes_t		*pipes = static_cast<pipes_t*>(item);
 		int			i = responses.search(pipes->response_socket);
 
@@ -287,7 +282,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 			}
 		}
 	}
-	else if (item->type == pipeline) {
+	else if (item->type == cgi) {
 		pipes_t		*pipes = static_cast<pipes_t*>(item);
 		i = responses.search(pipes->response_socket);
 

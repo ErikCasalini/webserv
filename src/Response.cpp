@@ -217,48 +217,22 @@ namespace _Response
 		}
 		return (true);
 	}
-
-	void	close_pipes(int *p1, int *p2)
-	{
-		if (!p1 || !p2)
-			throw std::logic_error("attempt to close NULL pipes");
-
-		if (p1[0] != -1) {
-			close(p1[0]);
-			p1[0] = -1;
-			}
-		if (p1[1] != -1) {
-			close(p1[1]);
-			p1[1] = -1;
-			}
-		if (p2[0] != -1) {
-			close(p2[0]);
-			p2[0] = -1;
-		}
-		if (p2[1] != -1) {
-			close(p2[1]);
-			p2[1] = -1;
-		}
-	}
 }
 
 Response::Response(void)
 : m_socket(NULL),
   m_status(ok),
   m_version("HTTP/1.0"),
-  m_child_pid(-1)
+  m_cgi(m_socket)
 {}
 
 Response::~Response(void)
-{
-	if (m_child_pid != -1)
-		kill(m_child_pid, SIGTERM);
-}
+{}
 
-pipes_t	Response::get_pipes_data(void) const
-{
-	return (m_pipes);
-}
+// pipes_t	Response::get_pipes_data(void) const
+// {
+// 	return (m_pipes);
+// }
 
 request_t	&Response::get_request(void)
 {
@@ -295,17 +269,17 @@ status_t	Response::get_status(void)
 	return (m_status);
 }
 
-pid_t	Response::get_child_pid(void) const
-{
-	return(m_child_pid);
-}
+// pid_t	Response::get_child_pid(void) const
+// {
+// 	return(m_child_pid);
+// }
 
-void	Response::terminate_child(void)
-{
-	if (m_child_pid != -1)
-		kill(m_child_pid, SIGTERM);
-	m_child_pid = -1;
-}
+// void	Response::terminate_child(void)
+// {
+// 	if (m_child_pid != -1)
+// 		kill(m_child_pid, SIGTERM);
+// 	m_child_pid = -1;
+// }
 
 void	Response::set_status(status_t status)
 {
@@ -325,10 +299,7 @@ void	Response::clear(void)
 	m_version = "HTTP/1.0";
 	m_body.clear();
 	m_status = ok;
-	if (m_child_pid != -1)
-		kill(m_child_pid, SIGTERM);
-	m_child_pid = -1;
-	m_pipes.clear();
+	m_cgi.clear();
 }
 
 void	Response::parse_uri(void)
@@ -627,27 +598,6 @@ void	Response::handle_static_request(const location_t &location)
 	set_body_headers();
 }
 
-void Response::delete_envp(char*** envp) const
-{
-	for (size_t i = 0; (*envp)[i] != NULL; ++i) {
-		delete [] (*envp)[i];
-	}
-	delete [] *envp;
-	*envp = NULL;
-}
-
-char**	Response::allocate_envp(const vector<std::string>& env) const
-{
-	size_t size = env.size();
-	char** envp = new char*[size + 1];
-	for (size_t i = 0; i < size; ++i) {
-		envp[i] = new char[env[i].length() + 1];
-		std::strcpy(envp[i], env[i].c_str());
-	}
-	envp[size] = NULL;
-	return (envp);
-}
-
 const cgi_uri_infos_t	Response::generate_cgi_uri_info(const location_t &location, std::list<std::string> path) const // assumes location_paths ends with '/'
 {
 	std::list<std::string>::const_iterator	it_loc = location.path.begin();
@@ -683,6 +633,13 @@ const cgi_uri_infos_t	Response::generate_cgi_uri_info(const location_t &location
 	return (ret);
 }
 
+void	Response::init_cgi(void)
+{
+	m_cgi.set_body(m_body);
+	m_cgi.set_socket(m_socket);
+}
+
+
 const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_infos) const
 {
 	vector<std::string>	env;
@@ -705,169 +662,6 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 	env.push_back("SERVER_SOFTWARE=webserv/2026");
 
 	return (env);
-}
-
-void	Response::clear_cgi_pipes(int epoll_inst)
-{
-	if (m_pipes.fd_in != -1) {
-		epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_pipes.fd_in, NULL);
-		close(m_pipes.fd_in);
-		m_pipes.fd_in = -1;
-	}
-	if (m_pipes.fd_out != -1) {
-		epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_pipes.fd_out, NULL);
-		close(m_pipes.fd_out);
-		m_pipes.fd_out = -1;
-	}
-}
-
-void	Response::exec_cgi(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst)
-{
-	int cgi_pipe_in[2];
-	int cgi_pipe_out[2];
-
-	if (pipe(cgi_pipe_in))
-		throw _Response::internal_error("cgi: pipe() failed");
-	if (pipe(cgi_pipe_out)) {
-		close(cgi_pipe_in[0]);
-		close(cgi_pipe_in[1]);
-		throw _Response::internal_error("cgi: pipe() failed");
-	}
-
-	switch (m_child_pid = fork()) {
-		case -1:
-			_Response::close_pipes(cgi_pipe_in, cgi_pipe_out);
-			throw _Response::internal_error("cgi: fork() failed");
-			break;
-
-		// CHILD
-		case 0:
-			int r_fd;
-			if ((r_fd = dup2(cgi_pipe_in[0], STDIN_FILENO)) == -1) {
-				try {
-					_Response::close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
-			}
-			int w_fd;
-			if ((w_fd = dup2(cgi_pipe_out[1], STDOUT_FILENO)) == -1) {
-				try {
-					_Response::close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
-			}
-			try {
-					_Response::close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
-
-			if (chdir(script_dir) == -1) {
-				delete_envp(&envp);
-				std::exit(-1);
-			}
-
-			const char*	argv[2];
-			argv[0] = script_name;
-			argv[1] = NULL;
-
-			if (execve(script_path, const_cast<char**>(argv), envp) == -1) {
-				delete_envp(&envp);
-				std::exit(-1);
-			}
-			break ;
-
-		// PARENT
-		default:
-			close(cgi_pipe_in[0]);
-			close(cgi_pipe_out[1]);
-
-			m_status = writing_to_cgi;
-			m_pipes.fd_in = cgi_pipe_in[1];
-			m_pipes.fd_out = cgi_pipe_out[0];
-			m_pipes.response_socket = m_socket;
-
-			epoll_event	event = EpollManager::create(&m_pipes, EPOLLOUT);
-
-			errno = 0;
-			epoll_ctl(epoll_inst, EPOLL_CTL_ADD, m_pipes.fd_in, &event);
-			switch (errno) {
-				case 0:
-					break ;
-				case ENOMEM:
-				case ENOSPC:
-					terminate_child();
-					m_pipes.clear();
-					throw _Response::internal_error("cgi: not enought ressources for epoll_ctl()");
-				default:
-					throw CriticalException("cgi: critical failure of epoll_ctl()");
-			}
-			epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolveda
-	}
-}
-
-void	Response::read_cgi_response(int epoll_inst, config_t &config)
-{
-	ssize_t	ret;
-	char	buf[50000];
-
-	ret = read(m_pipes.fd_out, &buf, 50000);
-	if (ret == -1 || m_buffer.size() + 50000 >= 1000000)
-		// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
-		handle_cgi_error(epoll_inst, config);
-	else if (ret > 0) {
-		// CONTINUE READING...
-		buf[ret] = '\0';
-		m_buffer.append(buf);
-	}
-	else if (ret == 0) {
-		// CLIENT CLOSED --> CLEAN
-		clear_cgi_pipes(epoll_inst);
-		terminate_child();
-		// SET FD TRACKING AGAIN AND HANDLE RESPONSE
-		epoll_event new_event = EpollManager::create(m_socket, EPOLLOUT);
-		epoll_ctl(epoll_inst, EPOLL_CTL_ADD, m_socket->fd, &new_event);
-		set_status(sending_resp);
-	}
-}
-
-void	Response::write_body_to_cgi(int epoll_inst, config_t &config)
-{
-	std::string	&body = get_request().body;
-	ssize_t		ret;
-
-	if (body.size() > PIPE_BUF) {
-		ret = write(m_pipes.fd_in, body.c_str(), PIPE_BUF);
-		if (ret == -1)
-			// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
-			handle_cgi_error(epoll_inst, config);
-		else
-			// CONTINUE WRITING TO CGI PIPE...
-			body.erase(body.begin(), body.begin() + ret);
-	}
-	else {
-		ret = write(m_pipes.fd_in, body.c_str(), body.size());
-		if (ret == -1)
-			// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
-			handle_cgi_error(epoll_inst, config);
-		else if (static_cast<size_t>(ret) == body.size()) {
-			// DONE --> CLOSE WRITING PIPE END AND TRACK READING END
-			epoll_event	new_event = EpollManager::create(&m_pipes, EPOLLIN);
-			epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_pipes.fd_in, NULL);
-			close(m_pipes.fd_in);
-			m_pipes.fd_in = -1;
-			epoll_ctl_ex(epoll_inst, EPOLL_CTL_ADD, m_pipes.fd_out, &new_event);
-			set_status(reading_from_cgi);
-		}
-		else
-			// CONTINUE WRITING TO CGI PIPE...
-			body.erase(body.begin(), body.begin() + ret);
-	}
 }
 
 void	Response::handle_cgi_error(int epoll_inst, config_t &config)
@@ -897,21 +691,21 @@ void	Response::handle_cgi(const location_t &location, int epoll_inst)
 	}
 
 	const vector<std::string>	env(generate_cgi_env(cgi_uri_infos));
-	char						**envp = allocate_envp(env);
+	char						**envp = m_cgi.allocate_envp(env);
 
 	try {
-		exec_cgi(cgi_uri_infos.script_name.c_str(),
+		m_cgi.exec(cgi_uri_infos.script_name.c_str(),
 				cgi_uri_infos.script_dir.c_str(),
 				(cgi_uri_infos.script_dir + cgi_uri_infos.script_name).c_str(),
 				envp,
 				epoll_inst);
 	}
 	catch (_Response::internal_error &e) {
-		delete_envp(&envp);
+		m_cgi.delete_envp(&envp);
 		set_error(internal_err, location.error_page.at(internal_err));
 		throw _Response::cgi_error("cgi execution failed");
 	}
-	delete_envp(&envp);
+	m_cgi.delete_envp(&envp);
 }
 
 void	Response::generate_target(const location_t &location)

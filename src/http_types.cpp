@@ -347,22 +347,13 @@ std::ostream& operator<<(std::ostream& os, const socket_t& s)
 }
 
 pipes_t::pipes_t()
-: epoll_item_t(pipeline),
-  fd_in(-1),
-  fd_out(-1),
-  response_socket(NULL)
+: fd_in(-1),
+  fd_out(-1)
 {}
 
 pipes_t::~pipes_t(void)
 {
-	if (fd_in != -1) {
-		close(fd_in);
-		fd_in = -1;
-	}
-	if (fd_out != -1) {
-		close(fd_out);
-		fd_out = -1;
-	}
+	clear();
 }
 
 void pipes_t::clear()
@@ -375,6 +366,4 @@ void pipes_t::clear()
 		close(fd_out);
 		fd_out = -1;
 	}
-	type = pipeline;
-	response_socket = NULL;
 }
