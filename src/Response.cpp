@@ -801,8 +801,7 @@ void	Response::exec_cgi(const char* script_name, const char* script_dir, const c
 					break ;
 				case ENOMEM:
 				case ENOSPC:
-					kill(m_child_pid, SIGTERM);
-					m_child_pid = -1;
+					terminate_child();
 					m_pipes.clear();
 					throw _Response::internal_error("cgi: not enought ressources for epoll_ctl()");
 				default:
