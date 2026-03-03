@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/epoll.h>
 #include <climits>
+#include <ctime>
 #include "EpollManager.hpp"
 #include "../include/c_network_exception.h"
 
@@ -324,6 +325,18 @@ void	Response::parse_uri(void)
 	m_status = ok;
 }
 
+std::string	Response::get_current_date(void)
+{
+	size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
+	char buf[buf_len];
+	const char *format = "%a, %d %b %Y %H:%M:%S GMT";
+
+	std::time_t	res = std::time(NULL);
+	std::strftime(buf, buf_len, format, std::localtime(&res));
+
+	return (buf);
+}
+
 void	Response::generate_response(void)
 {
 	std::stringstream	buf;
@@ -353,7 +366,7 @@ void	Response::generate_response(void)
 		}
 		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << CRLF
 		<< "Server: " << m_headers.server << CRLF
-		<< "Date:\r\n" // << _Response::get_date() << CRLF
+		<< "Date: " << get_current_date() << CRLF
 		<< CRLF;
 
 	if (m_body.size())

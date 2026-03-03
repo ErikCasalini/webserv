@@ -55,6 +55,7 @@ private:
 	file_stat								get_cgi_file_type(const location_t &location, const std::string &target);
 	file_stat								get_index_file_type(const location_t &location);
 	void									set_redirection(status_t status, const std::string &redir_addr);
+	std::string 							get_current_date(void);
 
 
 	request_t								m_request;
