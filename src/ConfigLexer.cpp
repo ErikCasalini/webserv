@@ -11,6 +11,21 @@ ConfigLexer::ConfigLexer(const string& filename)
 	: m_filename(filename)
 {};
 
+namespace config_files {
+	string resolve_include_path(string incpath, string filepath)
+	{
+		// If the include path is absolute
+		// we don't need to prepend the config path to it.
+		if (incpath.at(0) == '/')
+			return (incpath);
+		string::size_type end = filepath.rfind("/");
+		if (end != string::npos)
+			filepath = filepath.substr(0, end); 
+		incpath = filepath + "/" + incpath;
+		return (incpath);
+	}
+}
+
 namespace _config_lexer {
 	static size_t consume_spaces(const string& str, size_t pos)
 	{
@@ -90,7 +105,7 @@ namespace _config_lexer {
 		return (tokens);
 	}
 
-	void expand_includes(std::list<string>& config)
+	void expand_includes(std::list<string>& config, string filename)
 	{
 		std::list<string>::iterator it;
 		while ((it = std::find(config.begin(), config.end(), "include"))
@@ -100,6 +115,7 @@ namespace _config_lexer {
 			if (path_it == config.end())
 				throw std::runtime_error("config: unexpected end of file");
 			string include_path = *path_it;
+			include_path = config_files::resolve_include_path(include_path, filename);
 			// Load the include file content.
 			std::stringstream s_content;
 			try {
@@ -131,6 +147,6 @@ std::list<string> ConfigLexer::lex()
 		throw std::runtime_error("config: empty config file");
 
 	std::list<string> pre = _config_lexer::tokenize_config(clean);
-	_config_lexer::expand_includes(pre);
+	_config_lexer::expand_includes(pre, m_filename);
 	return (pre);
 }

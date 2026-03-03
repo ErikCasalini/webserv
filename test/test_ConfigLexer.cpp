@@ -7,6 +7,7 @@
 
 using std::string;
 using namespace _config_lexer;
+using namespace config_files;
 
 void test_remove_comments_nl()
 {
@@ -107,10 +108,10 @@ void test_expand_includes()
 	base.push_back("http");
 	base.push_back("{");
 	base.push_back("include");
-	base.push_back("test_data/config/test.types");
+	base.push_back("test.types");
 	base.push_back(";");
 	base.push_back("}");
-	expand_includes(base);
+	expand_includes(base, "test_data/config/config");
 	// for (std::list<string>::iterator it = base.begin(); it != base.end(); ++it)
 	// 	std::cout << '|' << *it << "|\n";
 	assert((base == cmp));
@@ -119,10 +120,10 @@ void test_expand_includes()
 	comments.push_back("http");
 	comments.push_back("{");
 	comments.push_back("include");
-	comments.push_back("test_data/config/test_comments.types");
+	comments.push_back("test_comments.types");
 	comments.push_back(";");
 	comments.push_back("}");
-	expand_includes(comments);
+	expand_includes(comments, "test_data/config/config");
 	// for (std::list<string>::iterator it = comments.begin(); it != comments.end(); ++it)
 	// 	std::cout << '|' << *it << "|\n";
 	assert((comments == cmp));
@@ -132,15 +133,15 @@ void test_expand_includes()
 	cmp.push_back("t");
 	std::list<string> only_inc;
 	only_inc.push_back("include");
-	only_inc.push_back("test_data/config/test.types");
-	expand_includes(only_inc);
+	only_inc.push_back("test.types");
+	expand_includes(only_inc, "test_data/config/config");
 	// for (std::list<string>::iterator it = only_inc.begin(); it != only_inc.end(); ++it)
 	// 	std::cout << '|' << *it << "|\n";
 	assert((only_inc == cmp));
 
 	cmp.clear();
 	std::list<string> empty;
-	expand_includes(empty);
+	expand_includes(empty, "test_data/config/config");
 	// for (std::list<string>::iterator it = empty.begin(); it != empty.end(); ++it)
 	// 	std::cout << '|' << *it << "|\n";
 	assert((empty == cmp));
@@ -149,7 +150,7 @@ void test_expand_includes()
 	std::list<string> no_path;
 	no_path.push_back("include");
 	try {
-		expand_includes(no_path);
+		expand_includes(no_path, "test_data/config/config");
 		assert((false && "no_path"));
 	} catch (const std::runtime_error& e) {
 		assert((std::strcmp(e.what(), "config: unexpected end of file") == 0));
