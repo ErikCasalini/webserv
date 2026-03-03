@@ -1,4 +1,5 @@
 #include "http_types.h"
+#include <ctime>
 
 // headers_t struct
 headers_t::headers_t()
@@ -192,6 +193,20 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	return (os);
 }
 
+std::ostream& operator<<(std::ostream &os, sock_type s)
+{
+	switch (s) {
+		case passive:
+			os << "passive";
+			break ;
+		case active:
+			os << "active";
+		default:
+			break ;
+	}
+	return (os);
+}
+
 std::ostream& operator<<(std::ostream& os, const request_t& r)
 {
 	os
@@ -215,7 +230,8 @@ socket_t::socket_t()
   socktype(passive),
   server_id(-1),
   local_data_len(sizeof(local_data)),
-  peer_data_len(sizeof(peer_data))
+  peer_data_len(sizeof(peer_data)),
+  last_activity(0)
 {
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
 	std::memset(&(this->local_data), 0, sizeof(this->local_data));
@@ -236,8 +252,16 @@ void socket_t::clear()
 	this->socktype = passive;
 	this->local_data_len = sizeof(local_data);
 	this->peer_data_len = sizeof(peer_data);
+	last_activity = 0;
 	std::memset(&(this->peer_data), 0, this->peer_data_len);
 	std::memset(&(this->local_data), 0, this->local_data_len);
+}
+
+bool	socket_t::timeout(void)
+{
+	if (last_activity && std::time(NULL) - last_activity > 10)
+		return (true);
+	return (false);
 }
 
 std::string	socket_t::str_peer_addr(void) const
@@ -333,10 +357,10 @@ std::string	socket_t::str_local_interface(void) const
 std::ostream& operator<<(std::ostream& os, const socket_t& s)
 {
 	os << "Socket FD: " << s.fd
-	   << " | Type: " << s.type
+	   << " | Type: " << s.socktype
 	   << " | Server ID: " << s.server_id
-	   << " | Peer data: " << s.str_peer_interface()
-	   << " | Local data: " << s.str_local_interface() << '\n';
+	   << " | Peer interface: " << s.str_peer_interface()
+	   << " | Local interface: " << s.str_local_interface() << '\n';
 	return (os);
 }
 

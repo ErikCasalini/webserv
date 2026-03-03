@@ -90,6 +90,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 				new_socket.socktype = active;
 				new_socket.server_id = listen_socket->server_id;
 				getsockname(new_socket.fd, reinterpret_cast<sockaddr*>(&new_socket.local_data), &new_socket.local_data_len);
+				new_socket.last_activity = std::time(NULL);
 				set_active_socket(new_socket, sockets); // throws
 				break;
 			case ECONNABORTED:
@@ -186,6 +187,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			req_status = requests.at(i_req).get_infos().status;
 			if (req_status != parsing) {
 				// CREATING RESPONSE
+				requests.at(i_req).m_socket->last_activity = std::time(NULL);
 				int i_resp = responses.add(sock, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
@@ -230,7 +232,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		if (socket->socktype = passive)
 			throw std::runtime_error("[FATAL ERROR] Listen Socket corrupted");
 		// CLOSE
-		std::cout << "[PEER CLOSED] " << *socket << " | [CLOSED]\n"; // pour debug
+		std::cout << "[PEER CLOSED] " << *socket << '\n'; // pour debug
 		close_connection(socket, sockets, requests, responses);
 	}
 	else if (item->type == cgi) {
@@ -285,6 +287,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 			// DONE --> KEEP ALIVE
 				event.events = EPOLLIN;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
+				responses.at(i).m_socket->last_activity = std::time(NULL);
 				responses.at(i).clear();
 			}
 		}
@@ -314,6 +317,17 @@ void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses
 			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
 	}
 }
+
+void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
+{
+	for (size_t i = 0; i < sockets.size(); i++) {
+		if (sockets.at(i).timeout()) {
+			std::cout << "[TIMEOUT] " << sockets.at(i) << '\n';
+			close_connection(&sockets.at(i), sockets, requests, responses);
+		}
+	}
+}
+
 void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
@@ -340,6 +354,7 @@ void	main_server_loop(config_t &config)
 		if (int_signal)
 			return ;
 		terminate_pending_cgi(sockets, responses, config);
+		close_pending_connections(sockets, requests, responses);
 		reap_children();
 	}
 }

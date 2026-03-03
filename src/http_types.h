@@ -10,6 +10,7 @@
 # include <netinet/in.h>
 # include <cstring>
 # include <unistd.h>
+# include <ctime>
 
 # define CRLF "\r\n"
 
@@ -110,6 +111,7 @@ enum sock_type {
 	active,
 	passive
 };
+std::ostream& operator<<(std::ostream &os, sock_type s);
 
 struct cgi_uri_infos_t {
 	std::string script_name;
@@ -138,6 +140,7 @@ struct socket_t : public epoll_item_t{
 	std::string str_local_addr(void) const;
 	std::string str_local_port(void) const;
 	bool operator==(socket_t &rhs) const;
+	bool timeout(void);
 
 	int fd;
 	sock_type socktype;
@@ -146,6 +149,7 @@ struct socket_t : public epoll_item_t{
 	sockaddr_in local_data;
 	socklen_t local_data_len;
 	socklen_t peer_data_len;
+	std::time_t last_activity;
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);
 
