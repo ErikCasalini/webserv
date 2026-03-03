@@ -144,21 +144,16 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 		std::cout << "[SOCKET INTERNAL ERROR] " << *socket << " | [CLOSED]\n";
 		close_connection(socket, sockets, requests, responses);
 	}
-	else if (item->type == pipeline) {
-		pipes_t		*pipes = static_cast<pipes_t*>(item);
-		epoll_event	new_event = EpollManager::create(pipes->response_socket, EPOLLOUT);
-		int			i = responses.search(pipes->response_socket);
+	else if (item->type == cgi) {
+		Cgi			*cgi = static_cast<Cgi*>(item);
+		epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
+		int			i = responses.search(cgi->get_socket());
 
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
-		// CLEAN
-		responses.at(i).clear_cgi_pipes(sockets.epoll_inst());
-		responses.at(i).terminate_child();
-		// SET FD TRACKING AGAIN AND SEND ERR 500
-		std::cout << "[CGI INTERNAL ERROR] Error on child pipe" << " | [SENDING ERR 500]\n";
-		epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, pipes->response_socket->fd, &new_event);
-		responses.at(i).set_status(internal_err);
-		responses.at(i).process(config, sockets.epoll_inst());
+
+		// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
+		responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
 	}
 }
 
@@ -204,15 +199,21 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			}
 		}
 	}
-	else if (item->type == pipeline) {
-		pipes_t	*pipes = static_cast<pipes_t*>(item);
-		int		i = responses.search(pipes->response_socket);
+	else if (item->type == cgi) {
+		Cgi	*cgi = static_cast<Cgi*>(item);
+		int		i = responses.search(cgi->get_socket());
 		ssize_t	ret;
 
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
-		responses.at(i).read_cgi_response(sockets.epoll_inst(), config);
+		if (cgi->read_child_response(sockets.epoll_inst()) == -1)
+			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
+		else if (cgi->get_status() == done) {
+			// READING FROM CHILD DONE -> ADD SOCKET TRACKING AGAIN AND HANDLE RESPONSE
+			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
+			epoll_ctl(sockets.epoll_inst(), EPOLL_CTL_ADD, cgi->get_socket()->fd, &new_event);
+		}
 	}
 }
 
@@ -232,25 +233,26 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		std::cout << "[PEER CLOSED] " << *socket << " | [CLOSED]\n"; // pour debug
 		close_connection(socket, sockets, requests, responses);
 	}
-	else if (item->type == pipeline) {
-		pipes_t		*pipes = static_cast<pipes_t*>(item);
-		int			i = responses.search(pipes->response_socket);
+	else if (item->type == cgi) {
+		Cgi		*cgi = static_cast<Cgi*>(item);
+		int			i = responses.search(cgi->get_socket());
 
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
-		if (responses.at(i).get_status() == writing_to_cgi)
-			// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
+		if (cgi->get_status() == write_to_child)
+			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
 			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
-		else if (responses.at(i).get_status() == reading_from_cgi) {
-			// CLIENT CLOSED --> CLEAN
-			responses.at(i).clear_cgi_pipes(sockets.epoll_inst());
-			responses.at(i).terminate_child();
+		else if (cgi->get_status() == read_from_child) {
+			// CLIENT CLOSED --> RESET CGI
+			cgi->reset_state(sockets.epoll_inst());
 			// SET FD TRACKING AGAIN AND HANDLE RESPONSE
-			epoll_event	new_event = EpollManager::create(pipes->response_socket, EPOLLOUT);
+			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
 			responses.at(i).set_status(sending_resp);
-			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, pipes->response_socket->fd, &new_event);
+			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, cgi->get_socket()->fd, &new_event);
 		}
+		else
+			throw std::logic_error("Epoll received a Cgi event in a forbidden state");
 	}
 }
 
@@ -287,14 +289,16 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 			}
 		}
 	}
-	else if (item->type == pipeline) {
-		pipes_t		*pipes = static_cast<pipes_t*>(item);
-		i = responses.search(pipes->response_socket);
+	else if (item->type == cgi) {
+		Cgi		*cgi = static_cast<Cgi*>(item);
+		i = responses.search(cgi->get_socket());
 
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
-		responses.at(i).write_body_to_cgi(sockets.epoll_inst(), config);
+		if (cgi->write_body_to_child(sockets.epoll_inst()) == -1)
+			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
+			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
 	}
 }
 

@@ -7,6 +7,7 @@
 # include <string>
 # include <list>
 # include "EpollManager.hpp"
+# include "Cgi.hpp"
 
 class Response
 {
@@ -15,64 +16,58 @@ public:
 
 											Response(void);
 											~Response(void);
-	request_t								&get_request(void);
-	void									set_request(const request_t &request);
 	void									clear(void);
+
+	request_t								&get_request(void);
 	const char								*get_buf(void) const;
 	const std::string						&get_path(void) const;
 	const std::string						&get_querry(void) const;
 	size_t									get_buf_size(void) const;
 	status_t								get_status(void);
+	void									set_request(const request_t &request);
 	void									set_status(status_t status);
-	pid_t									get_child_pid(void) const;
-	void									terminate_child(void);
-	pipes_t									get_pipes_data(void) const;
+
 	void									parse_uri(void);
 	void									process(const config_t &config, int epoll_inst);
-	void									read_cgi_response(int epoll_inst, config_t &config);
-	void									write_body_to_cgi(int epoll_inst, config_t &config);
+	void									init_cgi(void);
 	void									handle_cgi_error(int epoll_inst, config_t &config);
 	int										send_response(void);
-	void									clear_cgi_pipes(int epoll_inst);
+
 
 	socket_t								*m_socket;
 	static const char						authorized_chars[];
 
 private:
 
-	void										generate_target(const location_t &location);
-	void										generate_response(void);
-	void										generate_indexing(void);
-	const cgi_uri_infos_t						generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
-	const std::vector<std::string>				generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
-	void										exec_cgi(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst);
-	char**										allocate_envp(const std::vector<std::string>& env) const;
-	void										delete_envp(char*** envp) const;
-	void										fill_body(const location_t &location);
-	void										set_body_headers(void);
-	void										set_error(status_t status, const std::string &error_body);
-	void										handle_static_request(const location_t &location);
-	void										handle_cgi(const location_t &location, int epoll_inst);
-	static std::map<int, std::string>			init_status_codes(void);
-	static const std::map<int, std::string>		&get_status_codes(void);
-	file_stat									get_file_type(const location_t &location);
-	file_stat									get_cgi_file_type(const location_t &location, const std::string &target);
-	file_stat									get_index_file_type(const location_t &location);
-	void										set_redirection(status_t status, const std::string &redir_addr);
+	void									generate_target(const location_t &location);
+	void									generate_response(void);
+	void									generate_indexing(void);
+	const cgi_uri_infos_t					generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
+	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
+	void									fill_body(const location_t &location);
+	void									set_body_headers(void);
+	void									set_error(status_t status, const std::string &error_body);
+	void									handle_static_request(const location_t &location);
+	void									handle_cgi(const location_t &location, int epoll_inst);
+	static std::map<int, std::string>		init_status_codes(void);
+	static const std::map<int, std::string>	&get_status_codes(void);
+	file_stat								get_file_type(const location_t &location);
+	file_stat								get_cgi_file_type(const location_t &location, const std::string &target);
+	file_stat								get_index_file_type(const location_t &location);
+	void									set_redirection(status_t status, const std::string &redir_addr);
 
 
-	request_t									m_request;
-	std::string									m_buffer;
-	std::string									m_querry;
-	std::string									m_path; //
-	std::list<std::string>						m_path_segments; // besoin des 3 champs path?
-	std::string									m_target; //
-	headers_t									m_headers;
-	status_t									m_status;
-	std::string									m_version;
-	std::string									m_body;
-	pid_t										m_child_pid;
-	pipes_t										m_pipes;
+	request_t								m_request;
+	std::string								m_buffer;
+	std::string								m_querry;
+	std::string								m_path; //
+	std::list<std::string>					m_path_segments; // besoin des 3 champs path?
+	std::string								m_target; //
+	headers_t								m_headers;
+	status_t								m_status;
+	std::string								m_version;
+	std::string								m_body;
+	Cgi										m_cgi;
 };
 
 namespace _Response
@@ -118,7 +113,6 @@ namespace _Response
 	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
 	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
 	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
-	void					close_pipes(int *p1, int *p2);
 }
 
 #endif

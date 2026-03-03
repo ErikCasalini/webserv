@@ -5,8 +5,9 @@
 # include <sys/epoll.h>
 
 class Response;
+class Cgi;
 struct socket_t;
-struct pipes_t;
+
 
 class	EpollManager
 {
@@ -21,7 +22,7 @@ epoll_event			&events_at(int i);
 size_t				events_size(void) const;
 
 static epoll_event	create(socket_t *socket, uint32_t events);
-static epoll_event	create(pipes_t *pipes, uint32_t events);
+static epoll_event	create(Cgi *cgi, uint32_t events);
 
 private:
 

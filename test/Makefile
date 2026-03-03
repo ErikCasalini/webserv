@@ -35,7 +35,9 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				http_types.cpp \
 				Config.cpp \
 				EpollManager.cpp \
-				c_network_exception_wrapper.cpp
+				c_network_exception_wrapper.cpp \
+				signals_handling.cpp \
+				Cgi.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 RUNNERS := run_test_request_parser \

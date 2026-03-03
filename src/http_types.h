@@ -39,9 +39,7 @@ std::ostream& operator<<(std::ostream& os, const protocol_t& p);
 
 enum status_t {
 	parsing = 0,
-	writing_to_cgi = 1,
-	reading_from_cgi = 2,
-	sending_resp = 3,
+	sending_resp = 1,
 	ok = 200,
 	created = 201,
 	no_content = 204,
@@ -57,6 +55,14 @@ enum status_t {
 	bad_gateway = 502
 };
 std::ostream& operator<<(std::ostream& os, const status_t& s);
+
+enum	cgi_status_t
+{
+	init,
+	write_to_child,
+	read_from_child,
+	done
+};
 
 struct headers_t {
 	headers_t();
@@ -113,7 +119,7 @@ struct cgi_uri_infos_t {
 
 enum fd_type {
 	sockt,
-	pipeline
+	cgi
 };
 
 struct epoll_item_t {
@@ -143,7 +149,7 @@ struct socket_t : public epoll_item_t{
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);
 
-struct pipes_t : public epoll_item_t {
+struct pipes_t {
 
 	pipes_t(void);
 	~pipes_t(void);
@@ -151,7 +157,6 @@ struct pipes_t : public epoll_item_t {
 
 	int fd_in;
 	int fd_out;
-	socket_t *response_socket;
 };
 
 #endif
