@@ -5,6 +5,7 @@
 #include <climits>
 #include <cstdlib>
 #include <cerrno>
+#include <ctime>
 #include "Response.hpp"
 #include "../include/c_network_exception.h"
 
@@ -60,7 +61,8 @@ Cgi::Cgi(socket_t *response_socket)
   m_response_socket(response_socket),
   m_child_pid(-1),
   m_body(NULL),
-  m_response_buf(NULL)
+  m_response_buf(NULL),
+  m_last_activity(0)
 {}
 
 Cgi::~Cgi(void)
@@ -91,6 +93,7 @@ void	Cgi::reset_state(int epoll_inst)
 	}
 	m_status = init;
 	terminate_child();
+	m_last_activity = 0;
 }
 
 void	Cgi::clear(void)
@@ -102,6 +105,7 @@ void	Cgi::clear(void)
 	m_body = NULL;
 	m_response_buf = NULL;
 	m_response_socket = NULL;
+	m_last_activity = 0;
 }
 
 void	Cgi::set_body(std::string *body)
@@ -134,6 +138,13 @@ void	Cgi::terminate_child(void)
 	if (m_child_pid != -1)
 		kill(m_child_pid, SIGTERM);
 	m_child_pid = -1;
+}
+
+bool	Cgi::timeout(void)
+{
+	if (m_last_activity && std::time(NULL) - m_last_activity > 5)
+		return (true);
+	return (false);
 }
 
 void	Cgi::exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst)
@@ -202,7 +213,6 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 			close(cgi_pipe_in[0]);
 			close(cgi_pipe_out[1]);
 
-			m_status = write_to_child;
 			m_pipes.fd_in = cgi_pipe_in[1];
 			m_pipes.fd_out = cgi_pipe_out[0];
 
@@ -211,6 +221,8 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 			epoll_ctl(epoll_inst, EPOLL_CTL_ADD, m_pipes.fd_in, &event);
 			switch (errno) {
 				case 0:
+					m_status = write_to_child;
+					m_last_activity = std::time(NULL);
 					break ;
 				case ENOMEM:
 				case ENOSPC:
@@ -262,7 +274,7 @@ int	Cgi::read_child_response(int epoll_inst)
 	char	buf[50000];
 
 	ret = read(m_pipes.fd_out, &buf, 50000);
-	if (ret == -1 || m_response_buf->size() + 50000 >= 1000000)
+	if (ret == -1 || m_response_buf->size() + 50000 >= 1000000 || timeout())
 		// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
 		return (-1);
 	else if (ret > 0) {
@@ -274,6 +286,7 @@ int	Cgi::read_child_response(int epoll_inst)
 		// CLIENT CLOSED --> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 		reset_state(epoll_inst);
 		m_status = done;
+		m_last_activity = 0;
 	}
 	return (0);
 }

@@ -179,7 +179,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 				requests.at(i_req).parse();
 				}
 			catch (Request::ConnectionClosed &e) {
-				std::cout << "[PEER CLOSED] " << *sock << " | [CLOSED]\n"; // pour debug
+				std::cout << "[PEER CLOSED] " << *sock << '\n'; // pour debug
 				close_connection(sock, sockets, requests, responses);
 				return ;
 			}
@@ -207,7 +207,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
-		if (cgi->read_child_response(sockets.epoll_inst()) == -1)
+		if (cgi->timeout() || cgi->read_child_response(sockets.epoll_inst()) == -1)
 			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
 		else if (cgi->get_status() == done) {
 			// READING FROM CHILD DONE -> ADD SOCKET TRACKING AGAIN AND HANDLE RESPONSE
@@ -296,7 +296,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 		if (i == -1)
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
-		if (cgi->write_body_to_child(sockets.epoll_inst()) == -1)
+		if (cgi->timeout() || cgi->write_body_to_child(sockets.epoll_inst()) == -1)
 			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
 			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
 	}
@@ -307,6 +307,13 @@ void	reap_children(void)
 	while (waitpid(-1, NULL, WNOHANG) > 0);
 }
 
+void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses, config_t &config)
+{
+	for (size_t i = 0; i < responses.size(); i++) {
+		if (responses.at(i).cgi_timeout())
+			responses.at(i).handle_cgi_error(sockets.epoll_inst(), config);
+	}
+}
 void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
@@ -332,6 +339,7 @@ void	main_server_loop(config_t &config)
 		}
 		if (int_signal)
 			return ;
+		terminate_pending_cgi(sockets, responses, config);
 		reap_children();
 	}
 }

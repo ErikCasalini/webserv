@@ -32,6 +32,7 @@ public:
 	void									init_cgi(void);
 	void									handle_cgi_error(int epoll_inst, config_t &config);
 	int										send_response(void);
+	bool									cgi_timeout(void);
 
 
 	socket_t								*m_socket;

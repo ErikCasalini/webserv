@@ -337,6 +337,11 @@ std::string	Response::get_current_date(void)
 	return (buf);
 }
 
+bool	Response::cgi_timeout(void)
+{
+	return (m_cgi.timeout());
+}
+
 void	Response::generate_response(void)
 {
 	std::stringstream	buf;
@@ -683,7 +688,7 @@ void	Response::handle_cgi_error(int epoll_inst, config_t &config)
 	epoll_event	new_event = EpollManager::create(m_socket, EPOLLOUT);
 
 	m_cgi.reset_state(epoll_inst);
-	std::cout << "[CGI INTERNAL ERROR] Error on child pipe" << " | [SENDING ERR 500]\n";
+	std::cout << "[CGI INTERNAL ERROR] Child Error: SENDING ERR 500\n";
 	epoll_ctl_ex(epoll_inst, EPOLL_CTL_ADD, m_socket->fd, &new_event);
 	set_status(internal_err);
 	process(config, epoll_inst);

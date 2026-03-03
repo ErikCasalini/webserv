@@ -3,6 +3,7 @@
 
 # include "http_types.h"
 # include <vector>
+# include <ctime>
 
 struct config_t;
 
@@ -26,6 +27,7 @@ public:
 	void			exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst);
 	int				write_body_to_child(int epoll_inst);
 	int				read_child_response(int epoll_inst);
+	bool			timeout(void);
 
 
 	static void		delete_envp(char*** envp);
@@ -41,6 +43,8 @@ private:
 	pipes_t			m_pipes;
 	std::string		*m_body;
 	std::string		*m_response_buf;
+	std::time_t		m_last_activity;
+
 };
 
 #endif
