@@ -42,9 +42,8 @@ RequestState* RequestStates::ReadingBuffer::get_instance()
 
 void RequestStates::ReadingBuffer::clear(Request* request)
 {
-	request->set_state(RequestStates::Invalid::get_instance());
-	throw RequestState::InvalidState("Can't call clear() in 'ReadingBuffer' state");
-	(void)request;
+	request->_clear();
+	request->set_state(RequestStates::Init::get_instance());
 }
 
 void RequestStates::ReadingBuffer::clear_infos(Request* request)
