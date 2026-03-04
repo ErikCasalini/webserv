@@ -12,6 +12,7 @@
 
 typedef std::pair<status_t, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
+typedef std::pair<std::list<std::string>, std::string> upload_t; // url, real_path
 
 struct listen_t {
 	listen_t();
@@ -36,13 +37,13 @@ struct server_t {
 	server_t();
 	bool autoindex;
 	error_page_t error_page;
-	// unsigned int keepalive_timeout; // put it here too?
+	unsigned int keepalive_timeout;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
 	unsigned int max_body_size;
 	redirection_t redirection;
 	std::string root;
-	std::pair<std::list<std::string>, std::string> upload; // check if not in cgi
+	upload_t upload; // url, real_path
 };
 
 struct http_t {
