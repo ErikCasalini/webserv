@@ -73,6 +73,11 @@ class	ActiveMessages
 			return (m_messages_lst.at(index)); // throw
 		}
 
+		size_t	size(void)
+		{
+			return (m_messages_lst.size());
+		}
+
 	private:
 
 		std::vector<T>	m_messages_lst;

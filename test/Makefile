@@ -33,7 +33,11 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				test_Response.cpp \
 				Response.cpp \
 				http_types.cpp \
-				Config.cpp
+				Config.cpp \
+				EpollManager.cpp \
+				c_network_exception_wrapper.cpp \
+				signals_handling.cpp \
+				Cgi.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 RUNNERS := run_test_request_parser \
@@ -52,7 +56,7 @@ DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 all: $(BUILD_DIR) $(RUNNERS)
 
 run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; ./$$i; done
-run: all 
+run: all
 	@$(call run_all,$(RUNNERS))
 
 gdb: CXX := g++

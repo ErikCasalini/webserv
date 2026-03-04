@@ -10,8 +10,17 @@
 # include <netinet/in.h>
 # include <cstring>
 # include <unistd.h>
+# include <ctime>
 
 # define CRLF "\r\n"
+
+template <typename T>
+std::string to_string(T num)
+{
+	std::stringstream s;
+	s << num;
+	return (s.str());
+}
 
 enum method_t {
 	del,
@@ -31,13 +40,13 @@ std::ostream& operator<<(std::ostream& os, const protocol_t& p);
 
 enum status_t {
 	parsing = 0,
-	waiting_cgi = 1,
-	writing = 2,
+	sending_resp = 1,
 	ok = 200,
 	created = 201,
 	no_content = 204,
 	moved_perm = 301,
 	moved_temp = 302,
+	moved_perm_body = 308,
 	bad_request = 400,
 	forbidden = 403,
 	not_found = 404,
@@ -47,6 +56,14 @@ enum status_t {
 	bad_gateway = 502
 };
 std::ostream& operator<<(std::ostream& os, const status_t& s);
+
+enum	cgi_status_t
+{
+	init,
+	write_to_child,
+	read_from_child,
+	done
+};
 
 struct headers_t {
 	headers_t();
@@ -63,6 +80,7 @@ struct headers_t {
 	std::string server;
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
+	std::string allow;
 };
 std::ostream& operator<<(std::ostream& os, const headers_t& h);
 
@@ -83,7 +101,7 @@ std::ostream& operator<<(std::ostream& os, const request_t& r);
 
 enum file_stat {
 	error,
-	inexistent,
+	nonexistent,
 	bad_perms,
 	file,
 	dir
@@ -93,22 +111,56 @@ enum sock_type {
 	active,
 	passive
 };
+std::ostream& operator<<(std::ostream &os, sock_type s);
 
-struct socket_t {
+struct cgi_uri_infos_t {
+	std::string script_name;
+	std::string script_dir;
+	std::string path_info;
+};
+
+enum fd_type {
+	sockt,
+	cgi
+};
+
+struct epoll_item_t {
+	fd_type type;
+protected:
+	epoll_item_t(fd_type type);
+};
+
+struct socket_t : public epoll_item_t{
 	socket_t();
 	void clear();
-	std::string str_peer_data(void) const;
-	std::string str_data(void) const;
+	std::string str_peer_interface(void) const;
+	std::string str_peer_addr(void) const;
+	std::string str_peer_port(void) const;
+	std::string str_local_interface(void) const;
+	std::string str_local_addr(void) const;
+	std::string str_local_port(void) const;
 	bool operator==(socket_t &rhs) const;
+	bool timeout(void);
 
 	int fd;
-	sock_type type;
+	sock_type socktype;
 	int server_id;
 	sockaddr_in peer_data;
-	sockaddr_in data;
-	socklen_t data_len;
+	sockaddr_in local_data;
+	socklen_t local_data_len;
 	socklen_t peer_data_len;
+	std::time_t last_activity;
 };
 std::ostream& operator<<(std::ostream& os, const socket_t& s);
+
+struct pipes_t {
+
+	pipes_t(void);
+	~pipes_t(void);
+	void clear(void);
+
+	int fd_in;
+	int fd_out;
+};
 
 #endif

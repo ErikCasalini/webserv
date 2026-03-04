@@ -8,7 +8,14 @@
 #include <fstream>
 #include <sstream>
 #include <sys/types.h>
+#include <sys/wait.h>
+#include <signal.h>
 #include <sys/stat.h>
+#include <sys/epoll.h>
+#include <climits>
+#include <ctime>
+#include "EpollManager.hpp"
+#include "../include/c_network_exception.h"
 
 using std::vector;
 
@@ -211,19 +218,24 @@ namespace _Response
 		}
 		return (true);
 	}
-
 }
 
 Response::Response(void)
 : m_socket(NULL),
   m_status(ok),
-  m_version("HTTP/1.0")
+  m_version("HTTP/1.0"),
+  m_cgi(m_socket)
 {}
 
 Response::~Response(void)
 {}
 
-const request_t	&Response::get_request(void) const
+// pipes_t	Response::get_pipes_data(void) const
+// {
+// 	return (m_pipes);
+// }
+
+request_t	&Response::get_request(void)
 {
 	return (m_request);
 }
@@ -258,6 +270,18 @@ status_t	Response::get_status(void)
 	return (m_status);
 }
 
+// pid_t	Response::get_child_pid(void) const
+// {
+// 	return(m_child_pid);
+// }
+
+// void	Response::terminate_child(void)
+// {
+// 	if (m_child_pid != -1)
+// 		kill(m_child_pid, SIGTERM);
+// 	m_child_pid = -1;
+// }
+
 void	Response::set_status(status_t status)
 {
 	m_status = status;
@@ -276,6 +300,7 @@ void	Response::clear(void)
 	m_version = "HTTP/1.0";
 	m_body.clear();
 	m_status = ok;
+	m_cgi.clear();
 }
 
 void	Response::parse_uri(void)
@@ -297,31 +322,57 @@ void	Response::parse_uri(void)
 		return ;
 	}
 	m_path = _Response::create_path(m_path_segments);
+	m_status = ok;
+}
+
+std::string	Response::get_current_date(void)
+{
+	size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
+	char buf[buf_len];
+	const char *format = "%a, %d %b %Y %H:%M:%S GMT";
+
+	std::time_t	res = std::time(NULL);
+	std::strftime(buf, buf_len, format, std::localtime(&res));
+
+	return (buf);
+}
+
+bool	Response::cgi_timeout(void)
+{
+	return (m_cgi.timeout());
 }
 
 void	Response::generate_response(void)
 {
 	std::stringstream	buf;
 
-	buf << m_version << ' ' << static_cast<int>(m_status) << ' ' << Response::get_status_codes().at(m_status) << "\r\n";
+	buf << m_version << ' ' << static_cast<int>(m_status) << ' ' << Response::get_status_codes().at(m_status) << CRLF;
 
 	switch (m_status) {
+		case method_not_allowed:
+			buf << "Allow: " << m_headers.allow << CRLF
+				<< "Location: " << m_headers.location << CRLF
+				<< "Content-Length: " << m_headers.content_length << CRLF;
+			break ;
 		case no_content:
 			break ;
 		case created:
+			buf << "Location: " << m_headers.location << CRLF;
+			break ;
 		case moved_perm:
 		case moved_temp:
-			buf << "Location: " << m_headers.location << "\r\n";
+			buf << "Location: " << m_headers.location << CRLF
+				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		default:
-			buf << "Content-Type: " << m_headers.content_type << "\r\n";
+			buf << "Content-Type: " << m_headers.content_type << CRLF
+				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		}
-		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << "\r\n"
-		<< "Server: " << m_headers.server << "\r\n"
-		<< "Content-Length: " << m_headers.content_length << "\r\n"
-		<< "Date:\r\n" // << _Response::get_date() << "\r\n"
-		<< "\r\n";
+		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << CRLF
+		<< "Server: " << m_headers.server << CRLF
+		<< "Date: " << get_current_date() << CRLF
+		<< CRLF;
 
 	if (m_body.size())
 		buf << m_body;
@@ -388,7 +439,7 @@ file_stat	Response::get_file_type(const location_t &location)
 		case ENOTDIR:
 			set_error(not_found, location.error_page.at(not_found));
 			errno = 0;
-			return (inexistent);
+			return (nonexistent);
 		case EACCES:
 			set_error(forbidden, location.error_page.at(forbidden));
 			errno = 0;
@@ -421,7 +472,7 @@ file_stat	Response::get_index_file_type(const location_t &location)
 	stat(m_target.c_str(), &target_stats);
 	switch (errno) {
 		case ENOENT:
-			return (inexistent); // we don't set error if it does not exist
+			return (nonexistent); // we don't set error if it does not exist
 		case ENOTDIR:
 			set_error(not_found, location.error_page.at(not_found));
 			errno = 0;
@@ -445,6 +496,45 @@ file_stat	Response::get_index_file_type(const location_t &location)
 		return (file);
 }
 
+file_stat	Response::get_cgi_file_type(const location_t &location, const std::string &target)
+{
+	struct stat	target_stats;
+
+	errno = 0;
+	stat(target.c_str(), &target_stats);
+	switch (errno) {
+		case 0:
+			break ;
+		case ENOENT:
+		case ENOTDIR:
+			set_error(not_found, location.error_page.at(not_found));
+			errno = 0;
+			return (nonexistent);
+		case EACCES:
+			set_error(forbidden, location.error_page.at(forbidden));
+			errno = 0;
+			return (bad_perms);
+		default:
+			set_error(internal_err, location.error_page.at(internal_err));
+			errno = 0;
+			return (error);
+	}
+	errno = 0;
+
+	if (S_ISDIR(target_stats.st_mode & S_IFMT)) {
+		set_error(not_found, location.error_page.at(not_found));
+		return (dir);
+	}
+	else {
+		if (access(target.c_str(), X_OK) == 0)
+			return (file);
+	}
+
+	errno = 0;
+	set_error(forbidden, location.error_page.at(forbidden));
+	return (bad_perms);
+}
+
 void	Response::generate_indexing(void)
 {
 	m_body = "THIS IS INDEXING";
@@ -454,24 +544,25 @@ void	Response::generate_indexing(void)
 	m_status = ok;
 }
 
-void	Response::handle_static_request(const location_t &location) // index is already appended if present
+void	Response::handle_static_request(const location_t &location)
 {
 	file_stat	type;
-
-	if (m_request.method == post) { // on est surs ?
-		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
-		return ;
-	}
 
 	type = get_file_type(location);
 	if (type != dir && type != file)
 		return ;
 	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-		set_redirection(moved_perm, "http://" + m_socket->str_data() + m_path + '/');
+		set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
 		return ;
 	}
 
-	if (m_request.method == del) {
+	if (m_request.method == post) { // on est surs ?
+		m_headers.allow = "GET, DELETE";
+		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
+		return;
+	}
+
+	if (m_request.method == del) { // AND location del == true
 		if (type == dir)
 			set_error(forbidden, location.error_page.at(forbidden));
 	// 	else {
@@ -497,11 +588,11 @@ void	Response::handle_static_request(const location_t &location) // index is alr
 				break ;
 			case dir:
 				if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-					set_redirection(moved_perm, "http://" + m_socket->str_data() + m_path + location.index + '/');
+					set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
-			case inexistent:
+			case nonexistent:
 				if (location.autoindex) {
 					try {
 						generate_indexing();
@@ -525,27 +616,143 @@ void	Response::handle_static_request(const location_t &location) // index is alr
 	set_body_headers();
 }
 
+const cgi_uri_infos_t	Response::generate_cgi_uri_info(const location_t &location, std::list<std::string> path) const // assumes location_paths ends with '/'
+{
+	std::list<std::string>::const_iterator	it_loc = location.path.begin();
+	cgi_uri_infos_t							ret;
+
+	if (_Response::is_exact_match(location.path, path)) {
+		if (location.index == "")
+			throw (_Response::cgi_error("Default script name is empty"));
+		else {
+			ret.script_name = location.index;
+			ret.path_info = "";
+		}
+	}
+	else {
+		while (*it_loc == *path.begin())
+			path.pop_front();
+		ret.script_name = *path.begin();
+
+		path.pop_front();
+		while (path.size()) {
+			ret.path_info += *path.begin();
+			path.pop_front();
+		}
+	}
+
+	ret.script_dir += location.root;
+	it_loc = location.path.begin();
+	while (it_loc != location.path.end()) {
+		ret.script_dir += *it_loc;
+		it_loc++;
+	}
+
+	return (ret);
+}
+
+void	Response::init_cgi(void)
+{
+	m_cgi.set_body(&m_request.body);
+	m_cgi.set_response_buf(&m_buffer);
+	m_cgi.set_socket(m_socket);
+}
+
+
+const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_infos) const
+{
+	vector<std::string>	env;
+
+	if (m_request.headers.content_length)
+		env.push_back("CONTENT_LENGTH=" + to_string(m_request.headers.content_length));
+	else
+		env.push_back("CONTENT_LENGTH=");
+	env.push_back("CONTENT_TYPE=" + m_request.headers.content_type);
+	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+	// env.push_back("HTTP_COOKIE=") = ;
+	env.push_back("PATH_INFO=" + uri_infos.path_info);
+	env.push_back("QUERY_STRING=" + m_querry);
+	env.push_back("REMOTE_ADDR=" + m_socket->str_peer_addr());
+	env.push_back("REQUEST_METHOD=" + to_string(m_request.method));
+	env.push_back("SCRIPT_NAME=" + uri_infos.script_name);
+	env.push_back("SERVER_NAME=" + m_socket->str_local_addr());
+	env.push_back("SERVER_PORT=" + m_socket->str_local_port());
+	env.push_back("SERVER_PROTOCOL=HTTP/1.0");
+	env.push_back("SERVER_SOFTWARE=webserv/2026");
+
+	return (env);
+}
+
+void	Response::handle_cgi_error(int epoll_inst, config_t &config)
+{
+	epoll_event	new_event = EpollManager::create(m_socket, EPOLLOUT);
+
+	m_cgi.reset_state(epoll_inst);
+	std::cout << "\033[1;31m[CGI INTERNAL ERROR]\033[0m " << *m_socket << '\n';
+	epoll_ctl_ex(epoll_inst, EPOLL_CTL_ADD, m_socket->fd, &new_event);
+	set_status(internal_err);
+	process(config, epoll_inst);
+}
+
+void	Response::handle_cgi(const location_t &location, int epoll_inst)
+{
+	cgi_uri_infos_t	cgi_uri_infos(Response::generate_cgi_uri_info(location, m_path_segments));
+
+	switch(get_cgi_file_type(location, cgi_uri_infos.script_dir + cgi_uri_infos.script_name)) {
+		case file:
+			break ;
+		default:
+			set_error(forbidden, location.error_page.at(forbidden));
+			throw _Response::cgi_error("can't open script");
+	}
+
+	const vector<std::string>	env(generate_cgi_env(cgi_uri_infos));
+	char						**envp = m_cgi.allocate_envp(env);
+
+	try {
+		m_cgi.exec(cgi_uri_infos.script_name.c_str(),
+				cgi_uri_infos.script_dir.c_str(),
+				(cgi_uri_infos.script_dir + cgi_uri_infos.script_name).c_str(),
+				envp,
+				epoll_inst);
+	}
+	catch (_Response::internal_error &e) {
+		m_cgi.delete_envp(&envp);
+		set_error(internal_err, location.error_page.at(internal_err));
+		throw _Response::cgi_error("cgi execution failed");
+	}
+	catch (CriticalException &e) {
+		m_cgi.delete_envp(&envp);
+		throw CriticalException("cgi: critical failure of epoll_ctl()");
+	}
+	m_cgi.delete_envp(&envp);
+	init_cgi();
+	epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolved
+}
+
 void	Response::generate_target(const location_t &location)
 {
-	// if (location.cgi) {
-	// 	// ??
-	// 	return ;
-	// }
-
 	m_target = location.root; // root doit commencer par '/'
 	if (m_target.at(m_target.size() - 1) == '/')
 		m_target.resize(m_target.size() - 1);
 	m_target.append(m_path);
 }
 
-void	Response::process(const config_t &config)
+void	Response::process(const config_t &config, int epoll_inst)
 {
-	location_t		location;
+	location_t	location;
 
-	if (m_status == bad_request) {
-		set_error(bad_request, config.http.server.at(m_socket->server_id).error_page.at(bad_request));
-		generate_response();
-		return ;
+	switch (m_status) {
+		case bad_request:
+			set_error(bad_request, config.http.server.at(m_socket->server_id).error_page.at(bad_request));
+			generate_response();
+			return ;
+		case internal_err:
+			set_error(internal_err, config.http.server.at(m_socket->server_id).error_page.at(internal_err));
+			generate_response();
+			return ;
+		default:
+			break ;
 	}
 
 	// UPLOAD
@@ -553,7 +760,8 @@ void	Response::process(const config_t &config)
 	// 	handle_storage_request();
 
 	// NORMAL LOCATION PROCESSING
-	else {
+	// else
+	{
 		try {
 			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
 		}
@@ -568,13 +776,21 @@ void	Response::process(const config_t &config)
 			set_error(forbidden, location.error_page.at(forbidden));
 		else if (location.redirection.first) {
 			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
-		} // else if location == cgi ?
-		else
-			generate_target(location); // or prevent this to add index to cgi
+		}
+		else if (!location.cgi)
+			generate_target(location);
 
-		// if (location.cgi)
-		// 	handle_cgi(); // check method
-		// else
+		if (location.cgi) {
+			try {
+				handle_cgi(location, epoll_inst);
+				return ;
+			}
+			catch (_Response::cgi_error &e) {
+				generate_response();
+				return ;
+			}
+		}
+		else
 			handle_static_request(location);
 	}
 	generate_response();
@@ -589,7 +805,7 @@ int	Response::send_response(void)
 	ret = send(m_socket->fd, m_buffer.c_str(), (m_buffer.size() > 16000 ? 16000 : m_buffer.size()), 0);
 	if (ret == 16000) {
 		m_buffer.erase(m_buffer.begin(), m_buffer.begin() + 16000);
-		m_status = writing;
+		m_status = sending_resp;
 	}
 	else
 		m_status = ok;

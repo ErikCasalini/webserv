@@ -36,12 +36,14 @@ SRC := request_parser.cpp \
 	   http_types.cpp \
 	   cctype_cast.cpp \
 	   c_network_exception_wrapper.cpp \
-	   EpollEvents.cpp \
+	   EpollManager.cpp \
 	   main_loop.cpp \
 	   main.cpp \
 	   Sockets.cpp \
 	   Response.cpp \
-	   Config.cpp
+	   Config.cpp \
+	   signals_handling.cpp \
+	   Cgi.cpp
 
 BUILD_DIR := build
 OBJ := $(SRC:%.cpp=$(BUILD_DIR)/%.o)

@@ -1,4 +1,5 @@
 #include "http_types.h"
+#include <ctime>
 
 // headers_t struct
 headers_t::headers_t()
@@ -16,6 +17,7 @@ headers_t::headers_t(const headers_t& src)
 	, location(src.location)
 	, server(src.server)
 	, if_modified_since(src.if_modified_since)
+	, allow(src.allow)
 {}
 
 headers_t& headers_t::operator=(const headers_t& src)
@@ -29,6 +31,7 @@ headers_t& headers_t::operator=(const headers_t& src)
 		location = src.location;
 		server = src.server;
 		if_modified_since = src.if_modified_since;
+		allow = src.allow;
 	}
 	return (*this);
 }
@@ -43,6 +46,7 @@ void headers_t::clear()
 	location.clear();
 	server = "Webserver_2026";
 	if_modified_since.clear();
+	allow.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const headers_t& h)
@@ -152,11 +156,8 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	case not_implemented:
 		os << "not_implemented";
 		break ;
-	case waiting_cgi:
-		os << "waiting_cgi";
-		break ;
-	case writing:
-		os << "writing";
+	case sending_resp:
+		os << "sending_resp";
 		break ;
 	case created:
 		os << "created";
@@ -169,6 +170,9 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 		break ;
 	case moved_temp:
 		os << "moved_temp";
+		break ;
+	case moved_perm_body:
+		os << "moved_perm_body";
 		break ;
 	case forbidden:
 		os << "forbidden";
@@ -189,6 +193,20 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	return (os);
 }
 
+std::ostream& operator<<(std::ostream &os, sock_type s)
+{
+	switch (s) {
+		case passive:
+			os << "passive";
+			break ;
+		case active:
+			os << "active";
+		default:
+			break ;
+	}
+	return (os);
+}
+
 std::ostream& operator<<(std::ostream& os, const request_t& r)
 {
 	os
@@ -202,15 +220,21 @@ std::ostream& operator<<(std::ostream& os, const request_t& r)
 	return (os);
 }
 
+epoll_item_t::epoll_item_t(fd_type type)
+: type(type)
+{}
+
 socket_t::socket_t()
-: fd(-1),
-  type(passive),
+: epoll_item_t(sockt),
+  fd(-1),
+  socktype(passive),
   server_id(-1),
-  data_len(sizeof(data)),
-  peer_data_len(sizeof(peer_data))
+  local_data_len(sizeof(local_data)),
+  peer_data_len(sizeof(peer_data)),
+  last_activity(0)
 {
 	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
-	std::memset(&(this->data), 0, sizeof(this->data));
+	std::memset(&(this->local_data), 0, sizeof(this->local_data));
 }
 
 bool socket_t::operator==(socket_t &rhs) const
@@ -224,14 +248,48 @@ void socket_t::clear()
 {
 	this->fd = -1;
 	this->server_id = -1;
-	this->type = passive;
-	this->data_len = sizeof(data);
+	this->type = sockt;
+	this->socktype = passive;
+	this->local_data_len = sizeof(local_data);
 	this->peer_data_len = sizeof(peer_data);
-	std::memset(&(this->peer_data), 0, sizeof(this->peer_data));
-	std::memset(&(this->data), 0, sizeof(this->data));
+	last_activity = 0;
+	std::memset(&(this->peer_data), 0, this->peer_data_len);
+	std::memset(&(this->local_data), 0, this->local_data_len);
 }
 
-std::string	socket_t::str_peer_data(void) const
+bool	socket_t::timeout(void)
+{
+	if (last_activity && std::time(NULL) - last_activity > 10)
+		return (true);
+	return (false);
+}
+
+std::string	socket_t::str_peer_addr(void) const
+{
+	std::ostringstream	ret;
+	uint32_t			ip;
+
+	ip = ntohl(this->peer_data.sin_addr.s_addr);
+	ret << ((ip >> 24) & 0XFF)
+		<< '.'
+		<< ((ip >> 16) & 0XFF)
+		<< '.'
+		<< ((ip >> 8) & 0XFF)
+		<< '.'
+		<< (ip & 0XFF);
+
+	return (ret.str());
+}
+
+std::string	socket_t::str_peer_port(void) const
+{
+	std::ostringstream	ret;
+
+	ret << ntohs(this->peer_data.sin_port);
+	return (ret.str());
+}
+
+std::string	socket_t::str_peer_interface(void) const
 {
 	std::ostringstream	ret;
 	uint32_t			ip;
@@ -251,14 +309,39 @@ std::string	socket_t::str_peer_data(void) const
 	return (ret.str());
 }
 
-std::string	socket_t::str_data(void) const
+std::string	socket_t::str_local_addr(void) const
+{
+	std::ostringstream	ret;
+	uint32_t			ip;
+
+	ip = ntohl(this->local_data.sin_addr.s_addr);
+	ret << ((ip >> 24) & 0XFF)
+		<< '.'
+		<< ((ip >> 16) & 0XFF)
+		<< '.'
+		<< ((ip >> 8) & 0XFF)
+		<< '.'
+		<< (ip & 0XFF);
+
+	return (ret.str());
+}
+
+std::string	socket_t::str_local_port(void) const
+{
+	std::ostringstream	ret;
+
+	ret << ntohs(this->local_data.sin_port);
+	return (ret.str());
+}
+
+std::string	socket_t::str_local_interface(void) const
 {
 	std::ostringstream	ret;
 	uint32_t			ip;
 	uint16_t			port;
 
-	ip = ntohl(this->data.sin_addr.s_addr); // convert ip to system endian (little)
-	port = ntohs(this->data.sin_port); // convert port to system endian (little)
+	ip = ntohl(this->local_data.sin_addr.s_addr); // convert ip to system endian (little)
+	port = ntohs(this->local_data.sin_port); // convert port to system endian (little)
 		ret << ((ip >> 24) & 0XFF)
 		<< '.'
 		<< ((ip >> 16) & 0XFF)
@@ -274,9 +357,31 @@ std::string	socket_t::str_data(void) const
 std::ostream& operator<<(std::ostream& os, const socket_t& s)
 {
 	os << "Socket FD: " << s.fd
-	   << " | Type: " << s.type
+	   << " | Type: " << s.socktype
 	   << " | Server ID: " << s.server_id
-	   << " | Peer data: " << s.str_peer_data()
-	   << " | Local data: " << s.str_data() << '\n';
+	   << " | Peer interface: " << s.str_peer_interface()
+	   << " | Local interface: " << s.str_local_interface();
 	return (os);
+}
+
+pipes_t::pipes_t()
+: fd_in(-1),
+  fd_out(-1)
+{}
+
+pipes_t::~pipes_t(void)
+{
+	clear();
+}
+
+void pipes_t::clear()
+{
+	if (fd_in != -1) {
+		close(fd_in);
+		fd_in = -1;
+	}
+	if (fd_out != -1) {
+		close(fd_out);
+		fd_out = -1;
+	}
 }

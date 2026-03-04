@@ -5,8 +5,8 @@
 #include <vector>
 #include <sstream>
 
-Sockets::Sockets(int epoll_instance, int socket_limit)
-: m_epoll_instance(epoll_instance),
+Sockets::Sockets(int socket_limit)
+: m_epoll(socket_limit),
   m_socket_limit(socket_limit),
   m_size(0)
 {
@@ -53,11 +53,6 @@ socket_t	&Sockets::at(int i)
 	return (m_sockets.at(i));
 }
 
-int	Sockets::epollInst(void) const
-{
-	return (m_epoll_instance);
-}
-
 int	Sockets::limit(void) const
 {
 	return (m_socket_limit);
@@ -66,6 +61,26 @@ int	Sockets::limit(void) const
 int	Sockets::size(void) const
 {
 	return (m_size);
+}
+
+int	Sockets::epoll_inst(void) const
+{
+	return (m_epoll.epoll_inst());
+}
+
+epoll_event	*Sockets::events_addr(void)
+{
+	return (m_epoll.events_addr());
+}
+
+epoll_event	&Sockets::events_at(int i)
+{
+	return (m_epoll.events_at(i));
+}
+
+size_t	Sockets::events_size(void) const
+{
+	return (m_epoll.events_size());
 }
 
 //DEBUG
