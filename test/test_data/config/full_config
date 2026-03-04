@@ -9,6 +9,7 @@ events {
 http {
 	autoindex	false;
 
+	# Errors and include paths are relative to the config file
 	error_page	500 501 502	html/50x.html;
 	error_page	400			html/400.html;
 	error_page	404			html/404.html;
@@ -16,6 +17,7 @@ http {
 	keepalive_timeout	10;
 	max_body_size	1048576;
 
+	# root paths are relative to the executable
 	root	servers;
 
 	# include raw file content (must be structured)

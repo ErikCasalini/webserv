@@ -528,7 +528,6 @@ void test_parse()
 	assert((leading_crlf.protocol == one));
 	assert((leading_crlf.status == ok));
 
-	// TODO: is it ok to give that the "ok" status?
 	Request o_o("GET / HTTP/1.1" CRLF CRLF);
 	o_o.parse();
 	request_t oneone = o_o.get_infos();
@@ -591,7 +590,6 @@ void test_parse()
 	assert((partial_body.target == "/"));
 	assert((partial_body.protocol == one));
 	assert((partial_body.status == parsing));
-	// TODO: store the residual content-lenght to parse
 	assert((partial_body.headers.content_length == 123));
 	assert((content_length.body == "ok"));
 
