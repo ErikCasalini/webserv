@@ -320,7 +320,7 @@ void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses
 
 void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
-	for (size_t i = 0; i < sockets.size(); i++) {
+	for (size_t i = 0; i < sockets.limit(); i++) {
 		if (sockets.at(i).timeout()) {
 			std::cout << "[TIMEOUT] " << sockets.at(i) << '\n';
 			close_connection(&sockets.at(i), sockets, requests, responses);
