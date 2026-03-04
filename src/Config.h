@@ -12,6 +12,7 @@
 
 typedef std::pair<status_t, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
+typedef std::pair<std::list<std::string>, std::string> upload_t; // url, real_path
 
 struct listen_t {
 	listen_t();
@@ -21,38 +22,40 @@ struct listen_t {
 
 struct location_t {
 	location_t();
-	std::list<std::string> path;
-	bool exact_match;
-	std::string root;
-	std::vector<method_t> limit_except;
-	bool cgi;
 	bool autoindex;
+	bool cgi;
 	error_page_t error_page;
+	bool exact_match;
 	std::string index;
+	std::vector<method_t> limit_except;
+	std::list<std::string> path;
 	redirection_t redirection;
+	std::string root;
 };
 
 struct server_t {
 	server_t();
+	bool autoindex;
+	error_page_t error_page;
+	unsigned int keepalive_timeout;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
-	std::string root;
-	error_page_t error_page;
-	bool autoindex;
+	unsigned int max_body_size;
 	redirection_t redirection;
-	std::pair<std::list<std::string>, std::string> upload; // check if not in cgi
+	std::string root;
+	upload_t upload; // url, real_path
 };
 
 struct http_t {
 	http_t();
-	// map<std::string, std::string> types;
-	// std::string default_type;
-	std::vector<server_t> server;
-	std::string root;
 	bool autoindex;
 	error_page_t error_page;
-	unsigned int max_body;
 	unsigned int keepalive_timeout;
+	unsigned int max_body_size;
+	std::string root;
+	std::vector<server_t> server;
+	std::string default_type;
+	std::map<std::string, std::string> types;
 };
 
 struct events_t {

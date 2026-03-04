@@ -40,13 +40,32 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				Cgi.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
+SRC_CONFIG_LEXER := $(SRC_COMMON) \
+					 test_ConfigLexer.cpp \
+					 ConfigLexer.cpp \
+					 Config.cpp
+OBJ_CONFIG_LEXER := $(SRC_CONFIG_LEXER:%.cpp=$(BUILD_DIR)/%.o)
+
+SRC_CONFIG_PARSER := $(SRC_COMMON) \
+					 test_ConfigParser.cpp \
+					 ConfigParser.cpp \
+					 ConfigLexer.cpp \
+					 Response.cpp \
+					 http_types.cpp \
+					 Config.cpp
+OBJ_CONFIG_PARSER := $(SRC_CONFIG_PARSER:%.cpp=$(BUILD_DIR)/%.o)
+
 RUNNERS := run_test_request_parser \
 		   run_test_lib_cctype_cast \
-		   run_test_Response
+		   run_test_Response \
+		   run_test_ConfigLexer \
+		   run_test_ConfigParser
 
 DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 			 $(OBJ_LIB_CCTYPE_CAST:.o=.d) \
-			 $(OBJ_RESPONSE:.o=.d)
+			 $(OBJ_RESPONSE:.o=.d) \
+			 $(OBJ_CONFIG_LEXER:.o=.d) \
+			 $(OBJ_CONFIG_PARSER:.o=.d)
 
 ###########
 # TARGETS #
@@ -82,6 +101,10 @@ run_test_request_parser: $(OBJ_REQUEST_PARSER)
 run_test_lib_cctype_cast: $(OBJ_LIB_CCTYPE_CAST)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 run_test_Response: $(OBJ_RESPONSE)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+run_test_ConfigLexer: $(OBJ_CONFIG_LEXER)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+run_test_ConfigParser: $(OBJ_CONFIG_PARSER)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 # TESTING:

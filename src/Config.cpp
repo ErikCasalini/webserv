@@ -1,26 +1,29 @@
 #include "Config.h"
 
 listen_t::listen_t()
-	: ip(0)
-	, port(0)
+	: ip(0x7F000001) // 127.0.0.1
+	, port(80)
 {};
 
 location_t::location_t()
-	: exact_match(false)
+	: autoindex(false)
 	, cgi(false)
-	, autoindex(false)
+	, exact_match(false)
 	, redirection(parsing, "")
 {};
 
 server_t::server_t()
 	: autoindex(false)
+	, max_body_size(1048576) // default 1Mo
 	, redirection(parsing, "")
 {};
 
 http_t::http_t()
 	: autoindex(false)
-	, max_body(5242880) // default 5Mo
+	// , error_page()
 	, keepalive_timeout(0)
+	, max_body_size(1048576) // default 1Mo
+	, default_type("application/octet-stream")
 {};
 
 events_t::events_t()
