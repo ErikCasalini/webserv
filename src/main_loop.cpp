@@ -61,11 +61,11 @@ void	set_active_socket(socket_t &new_socket, Sockets &sockets)
 	epoll_ctl(sockets.epoll_inst(), EPOLL_CTL_ADD, new_socket.fd, &event);
 	switch (errno) {
 		case 0:
-			std::cout << "[NEW CONNECTION] " << new_socket << '\n';
+			std::cout << "\033[1;32m[NEW CONNECTION]\033[0m " << new_socket << '\n';
 			break;
 		case ENOMEM:
 		case ENOSPC:
-			std::cout << "[SOCKET ERROR] " << strerror(errno) << " | " << new_socket << " | [CLOSED]\n";
+			std::cout << "\033[1;31m[SOCKET ERROR]\033[0m " << strerror(errno) << " | " << new_socket << " | [CLOSED]\n";
 			sockets.close(new_socket); // --> silenlty close unhandlable socket and continue draining.
 			errno = 0;
 			break;
@@ -180,7 +180,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 				requests.at(i_req).parse();
 				}
 			catch (Request::ConnectionClosed &e) {
-				std::cout << "[PEER CLOSED] " << *sock << '\n'; // pour debug
+				std::cout << "\033[1;35m[PEER CLOSED]\033[0m " << *sock << '\n'; // pour debug
 				close_connection(sock, sockets, requests, responses);
 				return ;
 			}
@@ -230,9 +230,9 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		socket_t	*socket = static_cast<socket_t*>(item);
 
 		if (socket->socktype = passive)
-			throw std::runtime_error("[FATAL ERROR] Listen Socket corrupted");
+			throw std::runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
 		// CLOSE
-		std::cout << "[PEER CLOSED] " << *socket << '\n'; // pour debug
+		std::cout << "\033[1;32m[PEER CLOSED]\033[0m " << *socket << '\n'; // pour debug
 		close_connection(socket, sockets, requests, responses);
 	}
 	else if (item->type == cgi) {
@@ -322,7 +322,7 @@ void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &reques
 {
 	for (size_t i = 0; i < sockets.limit(); i++) {
 		if (sockets.at(i).timeout()) {
-			std::cout << "[TIMEOUT] " << sockets.at(i) << '\n';
+			std::cout << "\033[1;33m[TIMEOUT]\033[0m " << sockets.at(i) << '\n';
 			close_connection(&sockets.at(i), sockets, requests, responses);
 		}
 	}
@@ -340,8 +340,10 @@ void	main_server_loop(config_t &config)
 		errno = 0;
 		ready_fds = epoll_wait_ex(sockets.epoll_inst(), sockets.events_addr(), sockets.events_size(), 0); // throws
 		for (int i = 0; i < ready_fds; i++) {
-			if (int_signal)
+			if (int_signal) {
+				std::cout << "\nQuitting...\n";
 				return ;
+			}
 			if (sockets.events_at(i).events & EPOLLERR)
 				handle_error(sockets.events_at(i), sockets, requests, responses, config);
 			else if (sockets.events_at(i).events & EPOLLIN)
@@ -351,8 +353,10 @@ void	main_server_loop(config_t &config)
 			else if (sockets.events_at(i).events & EPOLLOUT)
 				handle_write_event(sockets.events_at(i), sockets, requests, responses, config);
 		}
-		if (int_signal)
-			return ;
+		if (int_signal) {
+				std::cout << "\nQuitting...\n";
+				return ;
+		}
 		terminate_pending_cgi(sockets, responses, config);
 		close_pending_connections(sockets, requests, responses);
 		reap_children();

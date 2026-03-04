@@ -360,7 +360,7 @@ std::ostream& operator<<(std::ostream& os, const socket_t& s)
 	   << " | Type: " << s.socktype
 	   << " | Server ID: " << s.server_id
 	   << " | Peer interface: " << s.str_peer_interface()
-	   << " | Local interface: " << s.str_local_interface() << '\n';
+	   << " | Local interface: " << s.str_local_interface();
 	return (os);
 }
 
