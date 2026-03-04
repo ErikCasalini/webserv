@@ -128,9 +128,9 @@ namespace _config_lexer {
 			std::list<string> tokens = tokenize_config(content);
 			config.insert(it, tokens.begin(), tokens.end());
 
-			// Remove the two include nodes
-			config.erase(it);
-			config.erase(path_it);
+			// Remove the three include nodes ('include', file, ';')
+			for (int i = 0; i < 3; ++i)
+				config.erase(it++);
 		}
 	}
 }
