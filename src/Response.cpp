@@ -271,6 +271,11 @@ status_t	Response::get_status(void) const
 	return (m_status);
 }
 
+void	Response::set_storage_infos(upload_t *upload)
+{
+	m_storage.set_storage_infos(upload);
+}
+
 cgi_status_t	Response::get_cgi_status(void) const
 {
 	return (m_cgi.get_status());
@@ -697,7 +702,7 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 {
 	cgi_uri_infos_t	cgi_uri_infos(Response::generate_cgi_uri_info(location, m_path_segments));
 
-	switch(get_cgi_file_type(location, cgi_uri_infos.script_dir + cgi_uri_infos.script_name)) {
+	switch (get_cgi_file_type(location, cgi_uri_infos.script_dir + cgi_uri_infos.script_name)) {
 		case file:
 			break ;
 		default:
@@ -755,12 +760,13 @@ void	Response::process(const config_t &config, Sockets &sockets)
 	}
 
 	// UPLOAD
-	// if (m_path_segments == config.http.server.at(m_socket->server_id).upload.first)
-	// 	handle_storage_request();
-
+	if (m_storage.init(m_path_segments) == 0) {
+		m_status = m_storage.exec(m_request, m_body, m_headers);
+		if (m_status != ok && m_status != no_content && m_status != created)
+			set_error(m_status, config.http.server.at(m_socket->server_id).error_page.at(m_status));
+	}
 	// NORMAL LOCATION PROCESSING
-	// else
-	{
+	else {
 		try {
 			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
 		}
