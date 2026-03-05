@@ -1,5 +1,6 @@
 #include "Cgi.hpp"
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <signal.h>
 #include <sys/epoll.h>
 #include <climits>
@@ -7,6 +8,7 @@
 #include <cerrno>
 #include <ctime>
 #include "Response.hpp"
+#include "Sockets.hpp"
 #include "../include/c_network_exception.h"
 
 // HELPER FUNCTIONS
@@ -62,13 +64,16 @@ Cgi::Cgi(socket_t *response_socket)
   m_child_pid(-1),
   m_body(NULL),
   m_response_buf(NULL),
-  m_last_activity(0)
+  m_last_activity(0),
+  m_is_child(false)
 {}
 
 Cgi::~Cgi(void)
 {
 	m_pipes.clear();
-	terminate_child();
+	if (!m_is_child) {
+		terminate_child();
+	}
 }
 
 void	Cgi::reset_state(int epoll_inst)
@@ -123,31 +128,49 @@ void	Cgi::set_socket(socket_t *socket)
 	m_response_socket = socket;
 }
 
-socket_t	*Cgi::get_socket(void)
+socket_t	*Cgi::get_socket(void) const
 {
 	return (m_response_socket);
 }
 
-cgi_status_t	Cgi::get_status(void)
+cgi_status_t	Cgi::get_status(void) const
 {
 	return (m_status);
 }
 
+pid_t	Cgi::get_child_pid(void) const
+{
+	return (m_child_pid);
+}
+
+void	Cgi::reset_child_pid(void)
+{
+	m_child_pid = -1;
+}
+
 void	Cgi::terminate_child(void)
 {
-	if (m_child_pid != -1)
-		kill(m_child_pid, SIGTERM);
+	if (m_child_pid != -1) {
+		// CHECK IF CHILD IS ALREADY DEAD
+		pid_t	w = waitpid(m_child_pid, NULL, WNOHANG);
+
+		if (w == 0) {
+			// CHILD STILL RUNNING --> KILL AND REAP
+			kill(m_child_pid, SIGKILL);
+			waitpid(m_child_pid, NULL, 0);
+		}
+	}
 	m_child_pid = -1;
 }
 
 bool	Cgi::timeout(void)
 {
-	if (m_last_activity && std::time(NULL) - m_last_activity > 5)
+	if (m_last_activity && (std::time(NULL) - m_last_activity > CGI_TIMEOUT))
 		return (true);
 	return (false);
 }
 
-void	Cgi::exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, int epoll_inst)
+void	Cgi::exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, Sockets &sockets)
 {
 	int cgi_pipe_in[2];
 	int cgi_pipe_out[2];
@@ -168,34 +191,30 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 
 		// CHILD
 		case 0:
+
+			m_is_child = true;
+			sockets.close_all();
+			close(sockets.epoll_inst());
+
 			int r_fd;
 			if ((r_fd = dup2(cgi_pipe_in[0], STDIN_FILENO)) == -1) {
-				try {
-					close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
+				close_pipes(cgi_pipe_in, cgi_pipe_out);
+				delete_envp(&envp);
+				throw ChildCriticalError("\033[1;31m[CHILD CRITICAL ERROR]\033[0m: close_pipes() failed");
 			}
+
 			int w_fd;
 			if ((w_fd = dup2(cgi_pipe_out[1], STDOUT_FILENO)) == -1) {
-				try {
-					close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
+				close_pipes(cgi_pipe_in, cgi_pipe_out);
+				delete_envp(&envp);
+				throw ChildCriticalError("\033[1;31m[CHILD CRITICAL ERROR]\033[0m: close_pipes() failed");
 			}
-			try {
-					close_pipes(cgi_pipe_in, cgi_pipe_out);
-				} catch (std::logic_error &e) {
-					delete_envp(&envp);
-					std::exit(-1);
-				}
+
+			close_pipes(cgi_pipe_in, cgi_pipe_out);
 
 			if (chdir(script_dir) == -1) {
 				delete_envp(&envp);
-				std::exit(-1);
+				throw ChildCriticalError("\033[1;31m[CHILD CRITICAL ERROR]\033[0m: chdir() failed");
 			}
 
 			const char*	argv[2];
@@ -204,7 +223,7 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 
 			if (execve(script_path, const_cast<char**>(argv), envp) == -1) {
 				delete_envp(&envp);
-				std::exit(-1);
+				throw ChildCriticalError("\033[1;31m[CHILD CRITICAL ERROR]\033[0m: execve() failed");
 			}
 			break ;
 
@@ -218,7 +237,7 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 
 			epoll_event	event = EpollManager::create(this, EPOLLOUT);
 
-			epoll_ctl(epoll_inst, EPOLL_CTL_ADD, m_pipes.fd_in, &event);
+			epoll_ctl(sockets.epoll_inst(), EPOLL_CTL_ADD, m_pipes.fd_in, &event);
 			switch (errno) {
 				case 0:
 					m_status = write_to_child;
@@ -271,10 +290,10 @@ int	Cgi::write_body_to_child(int epoll_inst)
 int	Cgi::read_child_response(int epoll_inst)
 {
 	ssize_t	ret;
-	char	buf[50000];
+	char	buf[PIPE_BUF + 1];
 
-	ret = read(m_pipes.fd_out, &buf, 50000);
-	if (ret == -1 || m_response_buf->size() + 50000 >= 1000000 || timeout())
+	ret = read(m_pipes.fd_out, &buf, PIPE_BUF);
+	if (ret == -1 || m_response_buf->size() + PIPE_BUF >= 1000000 || timeout())
 		// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
 		return (-1);
 	else if (ret > 0) {
@@ -283,9 +302,19 @@ int	Cgi::read_child_response(int epoll_inst)
 		m_response_buf->append(buf);
 	}
 	else if (ret == 0) {
-		// CLIENT CLOSED --> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
+		// CHILD CLOSED --> CHECK EXIT STATUS
+		int		wstatus;
+		pid_t	w = waitpid(m_child_pid, &wstatus, WNOHANG);
+
+		if (w < 0 || !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
+		// CHILD OR WAITPID FAILED --> CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
+			m_child_pid = -1;
+			return (-1);
+		}
+		// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 		reset_state(epoll_inst);
 		m_status = done;
+		// parse_response (if NPH on envoie direct sinon on craft)
 		m_last_activity = 0;
 	}
 	return (0);

@@ -34,6 +34,22 @@ void	Sockets::close(socket_t &socket)
 	throw std::logic_error("Socket fd not present in Sockets object");
 }
 
+// Do not clear
+void	Sockets::close_all(void)
+{
+	for (int i = 0; i < m_socket_limit; i++) {
+		if (m_sockets.at(i).fd != -1) {
+			::close(m_sockets.at(i).fd);
+			m_sockets.at(i).fd = -1;
+		}
+	}
+}
+
+void	Sockets::close_epoll(void)
+{
+	m_epoll.close_inst();
+}
+
 int	Sockets::add(socket_t &socket)
 {
 	if (m_size < m_socket_limit) {

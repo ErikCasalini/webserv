@@ -16,6 +16,7 @@ public:
 
 					EpollManager(int event_limit);
 					~EpollManager(void);
+void				close_inst(void);
 int					epoll_inst(void) const;
 epoll_event			*events_addr(void);
 epoll_event			&events_at(int i);

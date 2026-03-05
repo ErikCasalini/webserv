@@ -16,8 +16,10 @@ class Sockets
 
 						Sockets(int socket_limit);
 						~Sockets(void);
-		int				add(socket_t &socket);
 		void			close(socket_t &socket);
+		void			close_all(void);
+		void			close_epoll(void);
+		int				add(socket_t &socket);
 		int				limit(void) const;
 		int				size(void) const;
 		socket_t		&at(int i);

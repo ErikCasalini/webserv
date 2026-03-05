@@ -23,14 +23,16 @@ public:
 	const std::string						&get_path(void) const;
 	const std::string						&get_querry(void) const;
 	size_t									get_buf_size(void) const;
-	status_t								get_status(void);
+	status_t								get_status(void) const;
+	cgi_status_t							get_cgi_status(void) const;
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
 
 	void									parse_uri(void);
-	void									process(const config_t &config, int epoll_inst);
+	void									process(const config_t &config, Sockets &sockets);
 	void									init_cgi(void);
-	void									handle_cgi_error(int epoll_inst, config_t &config);
+	void									reset_cgi(int epoll_inst);
+	void									handle_cgi_error(Sockets &sockets, config_t &config);
 	int										send_response(void);
 	bool									cgi_timeout(void);
 
@@ -49,7 +51,7 @@ private:
 	void									set_body_headers(void);
 	void									set_error(status_t status, const std::string &error_body);
 	void									handle_static_request(const location_t &location);
-	void									handle_cgi(const location_t &location, int epoll_inst);
+	void									handle_cgi(const location_t &location, Sockets &sockets);
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
 	file_stat								get_file_type(const location_t &location);

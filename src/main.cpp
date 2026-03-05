@@ -19,7 +19,7 @@ int	main(void)
 		set_signal_handlers();
 	}
 	catch (std::runtime_error &e) {
-		std::cerr << e.what();
+		std::cerr << e.what() << '\n';
 		return (1);
 	}
 	std::cout << "PID: " << getpid() << "\n";
@@ -92,7 +92,7 @@ int	main(void)
 		reap_children();
 	}
 	catch (std::exception &e) {
-		std::cerr << e.what();
+		std::cerr << e.what() << '\n';
 		reap_children();
 		return (1);
 	}
