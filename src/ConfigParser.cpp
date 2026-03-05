@@ -221,7 +221,6 @@ server_t ConfigParser::inherit_from_http()
 	server_t server;
 	server.autoindex = m_config.http.autoindex;
 	server.error_page = m_config.http.error_page;
-	server.keepalive_timeout = m_config.http.keepalive_timeout;
 	server.max_body_size = m_config.http.max_body_size;
 	server.root = m_config.http.root;
 	return (server);
@@ -504,8 +503,6 @@ server_t ConfigParser::parse_server()
 			server.autoindex = parse_autoindex();
 		} else if (*m_tok_it == "error_page") {
 			parse_error_page(server.error_page);
-		} else if (*m_tok_it == "keepalive_timeout") {
-			server.keepalive_timeout = parse_keepalive_timeout();
 		} else if (*m_tok_it == "listen") {
 			server.listen.push_back(parse_listen());
 		} else if (*m_tok_it == "location") {

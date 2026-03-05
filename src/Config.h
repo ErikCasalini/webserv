@@ -132,7 +132,6 @@ struct server_t {
 	server_t();
 	bool autoindex;
 	error_page_t error_page;
-	unsigned int keepalive_timeout;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
 	unsigned int max_body_size;

@@ -28,7 +28,6 @@ http {
 	server {
 		autoindex			true;
 		error_page			404	html/404.html;
-		keepalive_timeout	10;
 		listen				127.0.0.1:4242;
 		root				servers/test/html;
 		max_body_size		16384;
