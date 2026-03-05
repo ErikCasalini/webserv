@@ -426,7 +426,6 @@ void test_full_text_config()
 	assert((std::strcmp(server.error_page[404].c_str(), err_404) == 0)); 
 	// Test field inheritance:
 	assert((std::strcmp(server.error_page[500].c_str(), err_50x) == 0)); 
-	assert((server.keepalive_timeout == 10)); 
 	assert((server.listen[0].ip == 0x7F000001)); 
 	assert((server.listen[0].port == 4242)); 
 	assert((std::strcmp(server.root.c_str(), "/servers/test/html/") == 0)); 

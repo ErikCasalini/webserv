@@ -8,7 +8,102 @@
 # include <list>
 # include <vector>
 
-# define DEFAULT_MAX_CONNECTIONS 512
+# ifndef DEFAULT_MAX_CONNECTIONS
+#  define DEFAULT_MAX_CONNECTIONS 512
+# endif
+
+# ifndef DEFAULT_IP
+#  define DEFAULT_IP 0x7F000001 // 127.0.0.1
+# endif
+
+# ifndef DEFAULT_PORT
+#  define DEFAULT_PORT 8080
+# endif
+
+# ifndef VERSION
+#  define VERSION "webserv/2026"
+# endif
+
+# ifndef DEFAULT_ERROR_400
+#  define DEFAULT_ERROR_400 "<html>"\
+"<head><title>400 Bad Request</title></head>"\
+"<body>"\
+"<center><h1>400 Bad Request</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_401
+#  define DEFAULT_ERROR_401 "<html>"\
+"<head><title>401 Unauthorized</title></head>"\
+"<body>"\
+"<center><h1>401 Unauthorized</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_402
+#  define DEFAULT_ERROR_402 "<html>"\
+"<head><title>402 Payment Required</title></head>"\
+"<body>"\
+"<center><h1>402 Payment Required</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_403
+#  define DEFAULT_ERROR_403 "<html>"\
+"<head><title>403 Forbidden</title></head>"\
+"<body>"\
+"<center><h1>403 Forbidden</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_404
+#  define DEFAULT_ERROR_404 "<html>"\
+"<head><title>404 Not Found</title></head>"\
+"<body>"\
+"<center><h1>404 Not Found</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_500
+#  define DEFAULT_ERROR_500 "<html>"\
+"<head><title>500 Internal Server Error</title></head>"\
+"<body>"\
+"<center><h1>500 Internal Server Error</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_501
+#  define DEFAULT_ERROR_501 "<html>"\
+"<head><title>501 Not Implemented</title></head>"\
+"<body>"\
+"<center><h1>501 Not Implemented</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
+# ifndef DEFAULT_ERROR_502
+#  define DEFAULT_ERROR_502 "<html>"\
+"<head><title>502 Bad Gateway</title></head>"\
+"<body>"\
+"<center><h1>502 Bad Gateway</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
 
 typedef std::pair<status_t, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
@@ -37,7 +132,6 @@ struct server_t {
 	server_t();
 	bool autoindex;
 	error_page_t error_page;
-	unsigned int keepalive_timeout;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
 	unsigned int max_body_size;
