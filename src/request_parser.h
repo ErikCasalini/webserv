@@ -76,7 +76,9 @@ namespace _Request {
 	string extract_key(const string& buffer, size_t& pos);
 	string extract_values(const string& buffer, size_t& pos);
 	raw_headers_t extract_headers(const string& m_buffer, size_t& pos);
-	long parse_content_length(const raw_headers_t& raw_headers);
+	long parse_content_length(
+			const raw_headers_t& raw_headers,
+			const unsigned int max_body_size);
 	bool parse_connection(const raw_headers_t& raw_headers);
 	headers_t parse_headers(
 			const string& buffer,

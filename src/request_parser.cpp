@@ -342,7 +342,9 @@ namespace _Request {
 		return (headers);
 	}
 
-	long parse_content_length(const raw_headers_t& raw_headers)
+	long parse_content_length(
+			const raw_headers_t& raw_headers,
+			const unsigned int max_body_size)
 	{
 		try {
 			string val = raw_headers.at("content-length");
@@ -355,7 +357,7 @@ namespace _Request {
 				unsigned long len = std::strtoul(val.c_str(), &end, 10);
 				// is it a specific status code?
 				if (*end || errno
-					|| len > static_cast<unsigned long>(std::numeric_limits<long>::max())) {
+					|| len > static_cast<unsigned long>(max_body_size)) {
 					errno = 0;
 					throw Request::BadRequest("invalid content-length");
 				}
@@ -400,7 +402,7 @@ namespace _Request {
 		// headers.cookies = parse_cookies(raw_headers);
 		// if (request.method == get)
 		// 	headers.if_modified_since = parse_if_modified_since(raw_headers);
-		long cl = parse_content_length(raw_headers);
+		long cl = parse_content_length(raw_headers, max_body_size);
 		if (cl == -1) {
 			if (request.method == post)
 				throw Request::BadRequest("missing content-length value");

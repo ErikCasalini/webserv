@@ -80,7 +80,7 @@ class	ActiveMessages
 
 	private:
 
-		std::vector<T>	m_messages_lst;
+		std::vector<T(const config_t& conf)>	m_messages_lst;
 		int				m_socket_limit;
 
 };

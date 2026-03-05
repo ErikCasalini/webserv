@@ -62,7 +62,7 @@ Cgi::Cgi(socket_t *response_socket)
   m_status(init),
   m_response_socket(response_socket),
   m_child_pid(-1),
-  m_body(NULL),
+  m_request_body(NULL),
   m_response_buf(NULL),
   m_last_activity(0),
   m_is_child(false)
@@ -107,7 +107,7 @@ void	Cgi::clear(void)
 		throw std::logic_error("Pipes fd are not cleared by CGI runtime");
 	m_status = init;
 	terminate_child();
-	m_body = NULL;
+	m_request_body = NULL;
 	m_response_buf = NULL;
 	m_response_socket = NULL;
 	m_last_activity = 0;
@@ -115,7 +115,7 @@ void	Cgi::clear(void)
 
 void	Cgi::set_body(std::string *body)
 {
-	m_body = body;
+	m_request_body = body;
 }
 
 void	Cgi::set_response_buf(std::string *response_buf)
@@ -257,21 +257,21 @@ int	Cgi::write_body_to_child(int epoll_inst)
 {
 	ssize_t	ret;
 
-	if (m_body->size() > PIPE_BUF) {
-		ret = write(m_pipes.fd_in, m_body->c_str(), PIPE_BUF);
+	if (m_request_body->size() > PIPE_BUF) {
+		ret = write(m_pipes.fd_in, m_request_body->c_str(), PIPE_BUF);
 		if (ret == -1)
 			// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
 			return (-1);
 		else
 			// CONTINUE WRITING TO CGI PIPE...
-			m_body->erase(m_body->begin(), m_body->begin() + ret);
+			m_request_body->erase(m_request_body->begin(), m_request_body->begin() + ret);
 	}
 	else {
-		ret = write(m_pipes.fd_in, m_body->c_str(), m_body->size());
+		ret = write(m_pipes.fd_in, m_request_body->c_str(), m_request_body->size());
 		if (ret == -1)
 			// CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
 			return -1;
-		else if (static_cast<size_t>(ret) == m_body->size()) {
+		else if (static_cast<size_t>(ret) == m_request_body->size()) {
 			// DONE --> CLOSE WRITING PIPE END AND TRACK READING END
 			epoll_event	new_event = EpollManager::create(this, EPOLLIN);
 			epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_pipes.fd_in, NULL);
@@ -282,7 +282,7 @@ int	Cgi::write_body_to_child(int epoll_inst)
 		}
 		else
 			// CONTINUE WRITING TO CGI PIPE...
-			m_body->erase(m_body->begin(), m_body->begin() + ret);
+			m_request_body->erase(m_request_body->begin(), m_request_body->begin() + ret);
 	}
 	return (0);
 }
