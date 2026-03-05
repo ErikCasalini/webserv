@@ -15,6 +15,7 @@
 #include <climits>
 #include <ctime>
 #include "EpollManager.hpp"
+#include "Sockets.hpp"
 #include "../include/c_network_exception.h"
 
 using std::vector;
@@ -265,26 +266,24 @@ size_t	Response::get_buf_size(void) const
 	return (m_buffer.size());
 }
 
-status_t	Response::get_status(void)
+status_t	Response::get_status(void) const
 {
 	return (m_status);
 }
 
-// pid_t	Response::get_child_pid(void) const
-// {
-// 	return(m_child_pid);
-// }
-
-// void	Response::terminate_child(void)
-// {
-// 	if (m_child_pid != -1)
-// 		kill(m_child_pid, SIGTERM);
-// 	m_child_pid = -1;
-// }
+cgi_status_t	Response::get_cgi_status(void) const
+{
+	return (m_cgi.get_status());
+}
 
 void	Response::set_status(status_t status)
 {
 	m_status = status;
+}
+
+void	Response::reset_cgi(int epoll_inst)
+{
+	m_cgi.reset_state(epoll_inst);
 }
 
 void	Response::clear(void)
@@ -351,7 +350,7 @@ void	Response::generate_response(void)
 	switch (m_status) {
 		case method_not_allowed:
 			buf << "Allow: " << m_headers.allow << CRLF
-				<< "Location: " << m_headers.location << CRLF
+				<< "Location: " << m_headers.location << CRLF // wtf?
 				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		case no_content:
@@ -683,18 +682,18 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 	return (env);
 }
 
-void	Response::handle_cgi_error(int epoll_inst, config_t &config)
+void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
 {
 	epoll_event	new_event = EpollManager::create(m_socket, EPOLLOUT);
 
-	m_cgi.reset_state(epoll_inst);
+	m_cgi.reset_state(sockets.epoll_inst());
 	std::cout << "\033[1;31m[CGI INTERNAL ERROR]\033[0m " << *m_socket << '\n';
-	epoll_ctl_ex(epoll_inst, EPOLL_CTL_ADD, m_socket->fd, &new_event);
+	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, m_socket->fd, &new_event);
 	set_status(internal_err);
-	process(config, epoll_inst);
+	process(config, sockets);
 }
 
-void	Response::handle_cgi(const location_t &location, int epoll_inst)
+void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 {
 	cgi_uri_infos_t	cgi_uri_infos(Response::generate_cgi_uri_info(location, m_path_segments));
 
@@ -703,7 +702,7 @@ void	Response::handle_cgi(const location_t &location, int epoll_inst)
 			break ;
 		default:
 			set_error(forbidden, location.error_page.at(forbidden));
-			throw _Response::cgi_error("can't open script");
+			throw _Response::cgi_error("cgi: can't open script");
 	}
 
 	const vector<std::string>	env(generate_cgi_env(cgi_uri_infos));
@@ -714,20 +713,20 @@ void	Response::handle_cgi(const location_t &location, int epoll_inst)
 				cgi_uri_infos.script_dir.c_str(),
 				(cgi_uri_infos.script_dir + cgi_uri_infos.script_name).c_str(),
 				envp,
-				epoll_inst);
+				sockets);
 	}
 	catch (_Response::internal_error &e) {
 		m_cgi.delete_envp(&envp);
 		set_error(internal_err, location.error_page.at(internal_err));
-		throw _Response::cgi_error("cgi execution failed");
+		throw _Response::cgi_error("cgi: execution failed");
 	}
 	catch (CriticalException &e) {
 		m_cgi.delete_envp(&envp);
 		throw CriticalException("cgi: critical failure of epoll_ctl()");
 	}
 	m_cgi.delete_envp(&envp);
-	init_cgi();
-	epoll_ctl_ex(epoll_inst, EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolved
+	init_cgi(); // --> on set NPH ou normal CGI
+	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolved
 }
 
 void	Response::generate_target(const location_t &location)
@@ -738,7 +737,7 @@ void	Response::generate_target(const location_t &location)
 	m_target.append(m_path);
 }
 
-void	Response::process(const config_t &config, int epoll_inst)
+void	Response::process(const config_t &config, Sockets &sockets)
 {
 	location_t	location;
 
@@ -782,7 +781,7 @@ void	Response::process(const config_t &config, int epoll_inst)
 
 		if (location.cgi) {
 			try {
-				handle_cgi(location, epoll_inst);
+				handle_cgi(location, sockets);
 				return ;
 			}
 			catch (_Response::cgi_error &e) {

@@ -19,6 +19,12 @@ EpollManager::EpollManager(int event_limit)
 
 EpollManager::~EpollManager(void)
 {
+	if (m_epoll_inst != -1)
+		close(m_epoll_inst);
+}
+
+void	EpollManager::close_inst(void)
+{
 	if (m_epoll_inst != -1) {
 		close(m_epoll_inst);
 		m_epoll_inst = -1;

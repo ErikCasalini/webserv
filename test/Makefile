@@ -37,7 +37,8 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				EpollManager.cpp \
 				c_network_exception_wrapper.cpp \
 				signals_handling.cpp \
-				Cgi.cpp
+				Cgi.cpp \
+				Sockets.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 SRC_CONFIG_LEXER := $(SRC_COMMON) \
