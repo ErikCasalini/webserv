@@ -303,7 +303,7 @@ int	Cgi::read_child_response(int epoll_inst)
 	}
 	else if (ret == 0) {
 		// CHILD CLOSED --> CHECK EXIT STATUS
-		int		wstatus;
+		int		wstatus = 0;
 		pid_t	w = waitpid(m_child_pid, &wstatus, WNOHANG);
 
 		if (w < 0 || !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {

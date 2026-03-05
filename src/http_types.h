@@ -12,6 +12,8 @@
 # include <unistd.h>
 # include <ctime>
 
+struct config_t;
+
 # define CRLF "\r\n"
 
 template <typename T>
@@ -140,7 +142,7 @@ struct socket_t : public epoll_item_t{
 	std::string str_local_addr(void) const;
 	std::string str_local_port(void) const;
 	bool operator==(socket_t &rhs) const;
-	bool timeout(void);
+	bool timeout(config_t &config);
 
 	int fd;
 	sock_type socktype;

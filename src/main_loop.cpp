@@ -246,7 +246,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 			responses.at(i).handle_cgi_error(sockets, config);
 		else if (cgi->get_status() == read_from_child) {
 			// CHILD CLOSED --> CHECK EXIT STATUS
-			int		wstatus;
+			int		wstatus = 0;
 			pid_t	w = waitpid(cgi->get_child_pid(), &wstatus, WNOHANG);
 
 			if (w < 0 || !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
@@ -326,13 +326,13 @@ void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses
 	}
 }
 
-void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
+void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
 {
 	for (size_t i_sock = 0; i_sock < sockets.limit(); i_sock++) {
-		if (sockets.at(i_sock).timeout()) {
+		if (sockets.at(i_sock).timeout(config)) {
 			int	i_resp = responses.search(&sockets.at(i_sock));
 
-			if (i_resp == -1 || (i_resp != -1 && responses.at(i_resp).cgi_timeout())) {
+			if (i_resp == -1 || responses.at(i_resp).cgi_timeout()) {
 				std::cout << "\033[1;33m[TIMEOUT]\033[0m " << sockets.at(i_sock) << '\n';
 				close_connection(&sockets.at(i_sock), sockets, requests, responses);
 			}
@@ -370,6 +370,6 @@ void	main_server_loop(config_t &config)
 				return ;
 		}
 		terminate_pending_cgi(sockets, responses, config);
-		close_pending_connections(sockets, requests, responses);
+		close_pending_connections(sockets, requests, responses, config);
 	}
 }
