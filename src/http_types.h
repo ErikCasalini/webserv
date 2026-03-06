@@ -132,7 +132,7 @@ protected:
 	epoll_item_t(fd_type type);
 };
 
-struct socket_t : public epoll_item_t{
+struct socket_t : public epoll_item_t {
 	socket_t();
 	void clear();
 	std::string str_peer_interface(void) const;

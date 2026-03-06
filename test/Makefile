@@ -38,7 +38,8 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				c_network_exception_wrapper.cpp \
 				signals_handling.cpp \
 				Cgi.cpp \
-				Sockets.cpp
+				Sockets.cpp \
+				Storage.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 SRC_CONFIG_LEXER := $(SRC_COMMON) \
@@ -57,7 +58,8 @@ SRC_CONFIG_PARSER := $(SRC_COMMON) \
 					 EpollManager.cpp \
 					 c_network_exception_wrapper.cpp \
 					 http_types.cpp \
-					 Config.cpp
+					 Config.cpp \
+					 Storage.cpp
 OBJ_CONFIG_PARSER := $(SRC_CONFIG_PARSER:%.cpp=$(BUILD_DIR)/%.o)
 
 RUNNERS := run_test_request_parser \

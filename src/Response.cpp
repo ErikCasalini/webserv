@@ -211,6 +211,45 @@ namespace _Response
 		return (*ret);
 	}
 
+	status_t	read_file_to_body(const std::string &file_name, std::string &body)
+	{
+		switch (get_file_type(file_name)) {
+			case nonexistent:
+				return (not_found);
+			case bad_perms:
+			case dir:
+				return (forbidden);
+			case error:
+				return (internal_err);
+			default: //file
+				break;
+		}
+
+		if (access(file_name.c_str(), R_OK) == -1)
+			return (forbidden);
+
+		std::string		temp;
+		std::ifstream	file(file_name.c_str());
+
+		if (file.fail())
+			return (internal_err);
+
+		while (std::getline(file, temp))
+			body.append(temp);
+
+		if (file.bad())
+			return (internal_err);
+		else
+			return (ok);
+	}
+
+	void	set_body_headers(headers_t &headers, std::string body, std::string file_name)
+	{
+		(void)file_name;
+		headers.content_length = body.size();
+		headers.content_type = "text/html"; // remplacer par fonction qui cherche (si trouve pas -> bit stream)
+	}
+
 	bool	is_bad_method(method_t method, std::vector<method_t> &limit_except)
 	{
 		for (std::vector<method_t>::const_iterator it = limit_except.begin(); it != limit_except.end(); it++) {
@@ -218,6 +257,30 @@ namespace _Response
 				return (false);
 		}
 		return (true);
+	}
+
+	file_stat	get_file_type(const std::string &file_name)
+	{
+		struct stat	target_stats;
+
+		errno = 0;
+		stat(file_name.c_str(), &target_stats);
+		switch (errno) {
+			case 0:
+				break ;
+			case ENOENT:
+			case ENOTDIR:
+				return (nonexistent);
+			case EACCES:
+				return (bad_perms);
+			default:
+				return (error);
+		}
+
+		if (S_ISDIR(target_stats.st_mode & S_IFMT))
+			return (dir);
+		else
+			return (file);
 	}
 }
 
@@ -231,11 +294,6 @@ Response::Response(void)
 Response::~Response(void)
 {}
 
-// pipes_t	Response::get_pipes_data(void) const
-// {
-// 	return (m_pipes);
-// }
-
 request_t	&Response::get_request(void)
 {
 	return (m_request);
@@ -244,6 +302,11 @@ request_t	&Response::get_request(void)
 void	Response::set_request(const request_t &request)
 {
 	m_request = request;
+}
+
+void	Response::set_storage_infos(upload_t *upload)
+{
+	m_storage.set_storage_infos(upload);
 }
 
 const char	*Response::get_buf(void) const
@@ -300,6 +363,7 @@ void	Response::clear(void)
 	m_body.clear();
 	m_status = ok;
 	m_cgi.clear();
+	m_storage.clear();
 }
 
 void	Response::parse_uri(void)
@@ -350,13 +414,14 @@ void	Response::generate_response(void)
 	switch (m_status) {
 		case method_not_allowed:
 			buf << "Allow: " << m_headers.allow << CRLF
-				<< "Location: " << m_headers.location << CRLF // wtf?
 				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		case no_content:
 			break ;
 		case created:
-			buf << "Location: " << m_headers.location << CRLF;
+			buf << "Location: " << m_headers.location << CRLF
+				<< "Content-Type: " << m_headers.content_type << CRLF
+				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		case moved_perm:
 		case moved_temp:
@@ -385,75 +450,10 @@ void	Response::set_error(status_t status, const std::string &error_body)
 	m_body = error_body;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
-	m_headers.keep_alive = false;
-}
-
-void	Response::fill_body(const location_t &location)
-{
-	errno = 0;
-	std::ifstream	file(m_target.c_str());
-	std::string		temp;
-
-	switch (errno) {
-		case 0:
-			break ;
-		case ENOENT:
-			errno = 0;
-			set_error(not_found, location.error_page.at(not_found));
-			return ;
-		case EACCES:
-			errno = 0;
-			set_error(forbidden, location.error_page.at(forbidden));
-			return ;
-		default:
-			errno = 0;
-			set_error(internal_err, location.error_page.at(internal_err));
-			return ;
-	}
-	while (std::getline(file, temp))
-		m_body.append(temp);
-
-	if (file.bad())
-		set_error(internal_err, location.error_page.at(internal_err));
+	if (status == bad_request)
+		m_headers.keep_alive = false;
 	else
-		m_status = ok;
-}
-
-void	Response::set_body_headers(void)
-{
-	m_headers.content_length = m_body.size();
-	m_headers.content_type = "text/html"; // a changer
-}
-
-file_stat	Response::get_file_type(const location_t &location)
-{
-	struct stat	target_stats;
-
-	errno = 0;
-	stat(m_target.c_str(), &target_stats);
-	switch (errno) {
-		case 0:
-			break ;
-		case ENOENT:
-		case ENOTDIR:
-			set_error(not_found, location.error_page.at(not_found));
-			errno = 0;
-			return (nonexistent);
-		case EACCES:
-			set_error(forbidden, location.error_page.at(forbidden));
-			errno = 0;
-			return (bad_perms);
-		default:
-			set_error(internal_err, location.error_page.at(internal_err));
-			errno = 0;
-			return (error);
-	}
-	errno = 0;
-
-	if (S_ISDIR(target_stats.st_mode & S_IFMT))
-		return (dir);
-	else
-		return (file);
+		m_headers.keep_alive = m_request.headers.keep_alive;
 }
 
 void	Response::set_redirection(status_t status, const std::string &redir_addr)
@@ -545,14 +545,26 @@ void	Response::generate_indexing(void)
 
 void	Response::handle_static_request(const location_t &location)
 {
-	file_stat	type;
+	file_stat	type = _Response::get_file_type(m_target);
 
-	type = get_file_type(location);
-	if (type != dir && type != file)
-		return ;
-	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-		set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
-		return ;
+	switch (type) {
+		case nonexistent:
+			set_error(not_found, location.error_page.at(not_found));
+			return ;
+		case bad_perms:
+			set_error(forbidden, location.error_page.at(forbidden));
+			return ;
+		case error:
+			set_error(internal_err, location.error_page.at(internal_err));
+			return ;
+		case dir:
+			if (m_target.at(m_target.size() - 1) != '/') {
+				set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
+				return ;
+			}
+			break ;
+		default: // file
+			break ;
 	}
 
 	if (m_request.method == post) { // on est surs ?
@@ -594,7 +606,7 @@ void	Response::handle_static_request(const location_t &location)
 			case nonexistent:
 				if (location.autoindex) {
 					try {
-						generate_indexing();
+						generate_indexing(); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 						return ;
 					}
 					catch (_Response::internal_error &e) {
@@ -611,8 +623,10 @@ void	Response::handle_static_request(const location_t &location)
 		}
 	}
 	m_headers.keep_alive = m_request.headers.keep_alive;
-	fill_body(location);
-	set_body_headers();
+	m_status = _Response::read_file_to_body(m_target, m_body);
+	if (m_status != ok)
+		set_error(m_status, location.error_page.at(m_status));
+	_Response::set_body_headers(m_headers, m_body, m_target);
 }
 
 const cgi_uri_infos_t	Response::generate_cgi_uri_info(const location_t &location, std::list<std::string> path) const // assumes location_paths ends with '/'
@@ -754,12 +768,14 @@ void	Response::process(const config_t &config, Sockets &sockets)
 			break ;
 	}
 
-	// UPLOAD
-	// if (m_path_segments == config.http.server.at(m_socket->server_id).upload.first)
-	// 	handle_storage_request();
-
+	// STORAGE
+	if (m_storage.init(m_path_segments) == 0) {
+		m_status = m_storage.exec(m_request, m_body, m_headers);
+		if (m_status != ok && m_status != no_content && m_status != created)
+			set_error(m_status, config.http.server.at(m_socket->server_id).error_page.at(m_status));
+	}
 	// NORMAL LOCATION PROCESSING
-	// else
+	else
 	{
 		try {
 			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);

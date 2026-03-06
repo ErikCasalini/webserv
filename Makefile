@@ -44,7 +44,8 @@ SRC := request_parser.cpp \
 	   Config.cpp \
 	   signals_handling.cpp \
 	   Cgi.cpp \
-	   ConfigLexer.cpp
+	   ConfigLexer.cpp \
+	   Storage.cpp
 
 BUILD_DIR := build
 OBJ := $(SRC:%.cpp=$(BUILD_DIR)/%.o)

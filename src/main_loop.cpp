@@ -79,7 +79,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 	socket_t	new_socket;
 	bool		stop_draining = false;
 
-	if (socket == NULL)
+	if (listen_socket == NULL)
 		throw std::logic_error("Invalid socket address");
 
 	while (!stop_draining && sockets.size() < sockets.limit()) {
@@ -147,7 +147,6 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 	}
 	else if (item->type == cgi) {
 		Cgi			*cgi = static_cast<Cgi*>(item);
-		epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
 		int			i = responses.search(cgi->get_socket());
 
 		if (i == -1)
@@ -188,7 +187,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			if (req_status != parsing) {
 				// CREATING RESPONSE
 				requests.at(i_req).m_socket->last_activity = std::time(NULL);
-				int i_resp = responses.add(sock, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+				int i_resp = responses.add(sock, requests.at(i_req).get_infos(), config);// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
 				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
