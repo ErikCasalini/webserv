@@ -57,7 +57,7 @@ private:
 	socket_t		*m_response_socket;
 	pid_t			m_child_pid;
 	pipes_t			m_pipes;
-	std::string		*m_body;
+	std::string		*m_request_body;
 	std::string		*m_response_buf;
 	std::time_t		m_last_activity;
 	bool			m_is_child;
