@@ -1,4 +1,5 @@
 #include "http_types.h"
+#include "Config.h"
 #include <ctime>
 
 // headers_t struct
@@ -257,9 +258,9 @@ void socket_t::clear()
 	std::memset(&(this->local_data), 0, this->local_data_len);
 }
 
-bool	socket_t::timeout(void)
+bool	socket_t::timeout(config_t &config)
 {
-	if (last_activity && std::time(NULL) - last_activity > 10)
+	if (last_activity && std::time(NULL) - last_activity > config.http.keepalive_timeout)
 		return (true);
 	return (false);
 }

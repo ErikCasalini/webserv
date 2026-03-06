@@ -31,7 +31,7 @@ class	ActiveMessages
 			throw std::logic_error("Attempt to add Message while ActiveMessage is full");
 		}
 
-		int	add(socket_t *socket, const request_t &request) // for Responses only
+		int	add(socket_t *socket, const request_t &request, const config_t &config) // For Responses only
 		{
 			if (socket == NULL)
 				throw std::logic_error("Attempt to add invalid socket");
@@ -39,6 +39,7 @@ class	ActiveMessages
 				if (m_messages_lst.at(i).m_socket == NULL) {
 					m_messages_lst.at(i).m_socket = socket;
 					m_messages_lst.at(i).set_request(request);
+					m_messages_lst.at(i).set_storage(&config.http.server.at(socket->server_id).upload);
 					return (i);
 				}
 			}

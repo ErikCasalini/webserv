@@ -8,6 +8,7 @@
 # include <list>
 # include "EpollManager.hpp"
 # include "Cgi.hpp"
+# include "Storage.hpp"
 
 class Response
 {
@@ -26,6 +27,7 @@ public:
 	status_t								get_status(void) const;
 	cgi_status_t							get_cgi_status(void) const;
 	void									set_request(const request_t &request);
+	void									set_storage_infos(upload_t *upload);
 	void									set_status(status_t status);
 
 	void									parse_uri(void);
@@ -72,6 +74,7 @@ private:
 	std::string								m_version;
 	std::string								m_body;
 	Cgi										m_cgi;
+	Storage									m_storage;
 };
 
 namespace _Response
