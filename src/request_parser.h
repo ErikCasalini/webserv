@@ -49,7 +49,6 @@ private:
 	std::string m_buffer;
 	size_t m_recv_buf_size;
 	size_t m_pos;
-	// bool m_extracting_body;
 	RequestState* m_state;
 	void set_state(RequestState* state);
 	void erase_parsed();
