@@ -21,7 +21,9 @@ SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  request_parser.cpp \
 					  request_parser_states.cpp \
 					  http_types.cpp \
-					  cctype_cast.cpp
+					  cctype_cast.cpp \
+					  general_utils.cpp
+
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
 
 SRC_LIB_CCTYPE_CAST := $(SRC_COMMON) \
@@ -39,7 +41,10 @@ SRC_RESPONSE := $(SRC_COMMON) \
 				signals_handling.cpp \
 				Cgi.cpp \
 				Sockets.cpp \
-				Storage.cpp
+				Storage.cpp \
+				parse_uri_utils.cpp \
+				general_utils.cpp \
+				response_utils.cpp
 OBJ_RESPONSE := $(SRC_RESPONSE:%.cpp=$(BUILD_DIR)/%.o)
 
 SRC_CONFIG_LEXER := $(SRC_COMMON) \
@@ -52,14 +57,14 @@ SRC_CONFIG_PARSER := $(SRC_COMMON) \
 					 test_ConfigParser.cpp \
 					 ConfigParser.cpp \
 					 ConfigLexer.cpp \
-					 Response.cpp \
 					 Cgi.cpp \
 					 Sockets.cpp \
 					 EpollManager.cpp \
 					 c_network_exception_wrapper.cpp \
 					 http_types.cpp \
 					 Config.cpp \
-					 Storage.cpp
+					 parse_uri_utils.cpp \
+					 general_utils.cpp
 OBJ_CONFIG_PARSER := $(SRC_CONFIG_PARSER:%.cpp=$(BUILD_DIR)/%.o)
 
 RUNNERS := run_test_request_parser \

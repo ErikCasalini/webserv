@@ -1,6 +1,8 @@
 #include "http_types.h"
 #include <ctime>
 #include "Config.h"
+#include "general_utils.h"
+#include "Cgi.hpp"
 
 // headers_t struct
 headers_t::headers_t()
@@ -385,4 +387,38 @@ void pipes_t::clear()
 		close(fd_out);
 		fd_out = -1;
 	}
+}
+
+cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::string> path) // assumes location_paths ends with '/'
+{
+	std::list<std::string>::const_iterator	it_loc = location.path.begin();
+
+	if (is_exact_match(location.path, path)) {
+		if (location.index == "")
+			throw (Cgi::cgi_error("Default script name is empty"));
+		else {
+			script_name = location.index;
+			path_info = "";
+		}
+	}
+	else {
+		while (*it_loc == *path.begin())
+			path.pop_front();
+		script_name = *path.begin();
+
+		path.pop_front();
+		while (path.size()) {
+			path_info += *path.begin();
+			path.pop_front();
+		}
+	}
+
+	script_dir += location.root;
+	it_loc = location.path.begin();
+	while (it_loc != location.path.end()) {
+		script_dir += *it_loc;
+		it_loc++;
+	}
+
+	script_abs_path = script_dir + script_name;
 }

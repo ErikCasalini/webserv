@@ -1,9 +1,10 @@
 #include "../src/Response.hpp"
+#include "../src/general_utils.h"
+#include "../src/response_utils.h"
+#include "../src/parse_uri_utils.h"
 #include "lib_test.h"
 #include <list>
 #include "../src/Config.h"
-
-using namespace _Response;
 
 void	test_extract_uri_elem(void)
 {
@@ -576,7 +577,7 @@ void	test_is_exact_match(void)
 	try {
 		is_exact_match(uri, location);
 		assert(false);
-	} catch (_Response::bad_location &e) {}
+	} catch (bad_location &e) {}
 
 	uri.clear();
 	location.clear();

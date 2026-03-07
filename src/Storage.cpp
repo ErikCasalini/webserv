@@ -1,6 +1,7 @@
 #include "Storage.hpp"
-#include "Response.hpp"
 #include "http_types.h"
+#include "general_utils.h"
+#include "response_utils.h"
 #include <fstream>
 #include <sys/stat.h>
 #include <cstdio>
@@ -64,9 +65,9 @@ status_t	Storage::retrive(string &body, headers_t &headers) const
 {
 	status_t	ret;
 
-	ret = _Response::read_file_to_body(m_file_path, body);
+	ret = read_file_to_body(m_file_path, body);
 	if (ret == ok)
-		_Response::set_body_headers(headers, body, m_file_path);
+		set_body_headers(headers, body, m_file_path);
 	return (ret);
 }
 
@@ -84,7 +85,7 @@ void	Storage::set_new_file_location(headers_t &headers) const
 
 status_t	Storage::store(const string &request_body, string &response_body, headers_t &headers) const
 {
-	switch (_Response::get_file_type(m_file_path)) {
+	switch (get_file_type(m_file_path)) {
 		case dir:
 		case bad_perms:
 			return (forbidden);
@@ -110,13 +111,13 @@ status_t	Storage::store(const string &request_body, string &response_body, heade
 
 	response_body = request_body;
 	set_new_file_location(headers);
-	_Response::set_body_headers(headers, response_body, m_file_path);
+	set_body_headers(headers, response_body, m_file_path);
 	return (created);
 }
 
 status_t	Storage::suppress(void) const
 {
-	switch (_Response::get_file_type(m_file_path)) {
+	switch (get_file_type(m_file_path)) {
 		case dir:
 		case bad_perms:
 			return (forbidden);

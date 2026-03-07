@@ -25,6 +25,13 @@ public:
 			: std::runtime_error(str)
 			{};
 	};
+	class	cgi_error : public std::runtime_error
+	{
+		public:
+			cgi_error(const std::string &str)
+			: std::runtime_error(str)
+			{};
+	};
 
 					Cgi(socket_t *response_socket);
 					~Cgi(void);

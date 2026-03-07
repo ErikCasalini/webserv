@@ -47,14 +47,12 @@ private:
 	void									generate_target(const location_t &location);
 	void									generate_response(void);
 	void									generate_indexing(void);
-	const cgi_uri_infos_t					generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
 	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
 	void									set_error(status_t status, const std::string &error_body);
 	void									handle_static_request(const location_t &location);
 	void									handle_cgi(const location_t &location, Sockets &sockets);
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
-	file_stat								get_cgi_file_type(const location_t &location, const std::string &target);
 	file_stat								get_index_file_type(const location_t &location);
 	void									set_redirection(status_t status, const std::string &redir_addr);
 	std::string 							get_current_date(void);
@@ -74,45 +72,5 @@ private:
 	Storage									m_storage;
 	// config_t								&m_config;
 };
-
-namespace _Response
-{
-	class	bad_location : public std::runtime_error
-	{
-		public:
-			bad_location(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	class	internal_error : public std::runtime_error
-	{
-		public:
-			internal_error(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	class	cgi_error : public std::runtime_error
-	{
-		public:
-			cgi_error(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	void					extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
-	std::list<std::string>	split_path(const std::string &path);
-	unsigned char			url_decode(const std::string &url_code);
-	void					decode_segments(std::list<std::string> &segments);
-	std::string				create_path(std::list<std::string> &segments);
-	bool					is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location);
-	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
-	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
-	status_t				read_file_to_body(const std::string &file_name, std::string &body);
-	void					set_body_headers(headers_t &headers, std::string body, std::string file_name);
-	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
-	file_stat				get_file_type(const std::string &file_name);
-}
 
 #endif

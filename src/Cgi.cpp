@@ -7,8 +7,8 @@
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
-#include "Response.hpp"
 #include "Sockets.hpp"
+#include "response_utils.h"
 #include "../include/c_network_exception.h"
 
 // HELPER FUNCTIONS
@@ -176,17 +176,17 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 	int cgi_pipe_out[2];
 
 	if (pipe(cgi_pipe_in))
-		throw _Response::internal_error("cgi: pipe() failed");
+		throw internal_error("cgi: pipe() failed");
 	if (pipe(cgi_pipe_out)) {
 		close(cgi_pipe_in[0]);
 		close(cgi_pipe_in[1]);
-		throw _Response::internal_error("cgi: pipe() failed");
+		throw internal_error("cgi: pipe() failed");
 	}
 
 	switch (m_child_pid = fork()) {
 		case -1:
 			close_pipes(cgi_pipe_in, cgi_pipe_out);
-			throw _Response::internal_error("cgi: fork() failed");
+			throw internal_error("cgi: fork() failed");
 			break;
 
 		// CHILD
@@ -246,7 +246,7 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 				case ENOMEM:
 				case ENOSPC:
 					m_pipes.clear();
-					throw _Response::internal_error("cgi: not enought ressources for epoll_ctl()");
+					throw internal_error("cgi: not enought ressources for epoll_ctl()");
 				default:
 					throw CriticalException("cgi: critical failure of epoll_ctl()");
 			}

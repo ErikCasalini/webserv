@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include "main_loop.hpp"
 #include "Config.h"
-#include "Response.hpp"
+#include "parse_uri_utils.h"
 #include "signals_handling.h"
 
 int	main(void)
@@ -41,9 +41,9 @@ int	main(void)
 	serv1_loc1.autoindex = true;
 	serv1_loc1.cgi = true;
 	serv1_loc1.exact_match = false;
-	serv1_loc1.index = "cgi.sh";
+	serv1_loc1.index = "mdr";
 	serv1_loc1.limit_except.push_back(post);
-	serv1_loc1.path = _Response::split_path("/cgi/"); // path doit toujours commencer et finir par '/'
+	serv1_loc1.path = split_path("/cgi/"); // path doit toujours commencer et finir par '/'
 	serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
 	// serv1_loc1.root = "/home/erik/WEBSERV_FILES/";
 	// serv1_loc1.root = "/home/kura/WEBSERV_FILES/";
@@ -62,7 +62,7 @@ int	main(void)
 	serv1_loc2.limit_except.push_back(post);
 	serv1_loc2.limit_except.push_back(get);
 	serv1_loc2.limit_except.push_back(del);
-	serv1_loc2.path = _Response::split_path("/");
+	serv1_loc2.path = split_path("/");
 	serv1_loc2.root = "/home/ecasalin/Documents/serv_files/4242/";
 	// serv1_loc2.root = "/home/erik/WEBSERV_FILES/";
 	// serv1_loc2.root = "/home/kura/WEBSERV_FILES/";
@@ -74,9 +74,9 @@ int	main(void)
 	serv1_loc2.error_page.insert(std::make_pair(501, std::string("<html>\n<head><title>501 Not Implemented</title></head>\n<body>\n<center><h1>501 Not Implemented</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 	serv1_loc2.error_page.insert(std::make_pair(502, std::string("<html>\n<head><title>502 Bad Gateway</title></head>\n<body>\n<center><h1>502 Bad Gateway</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
 
-	server1.upload.first = _Response::split_path("/upload/");
+	server1.upload.first = split_path("/upload/"); // START AND END WITH 1 '/'
 	// server1.upload.second = "/home/kura/WEBSERV_FILES/upload/";
-	server1.upload.second = "/home/ecasalin/Documents/serv_files/4242/upload";
+	server1.upload.second = "/home/ecasalin/Documents/serv_files/4242/upload/"; // START AND END WITH 1'/'
 	server1.locations.push_back(serv1_loc1);
 	server1.locations.push_back(serv1_loc2);
 	server1.error_page.insert(std::make_pair(400, std::string("<html>\n<head><title>400 Bad Request</title></head>\n<body>\n<center><h1>400 Bad Request</h1></center>\n<hr><center>webserv/0.0.0</center>\n</body>\n</html>")));
