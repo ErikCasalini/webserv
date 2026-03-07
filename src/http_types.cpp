@@ -389,7 +389,7 @@ void pipes_t::clear()
 	}
 }
 
-cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::string> path) // assumes location_paths ends with '/'
+cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::string> path) // assumes location_path ends with and begins with '/'
 {
 	std::list<std::string>::const_iterator	it_loc = location.path.begin();
 
@@ -413,8 +413,9 @@ cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::stri
 		}
 	}
 
-	script_dir += location.root;
+	script_dir = location.root;
 	it_loc = location.path.begin();
+	it_loc++;
 	while (it_loc != location.path.end()) {
 		script_dir += *it_loc;
 		it_loc++;

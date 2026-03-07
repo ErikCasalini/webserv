@@ -207,45 +207,14 @@ void	Response::set_redirection(status_t status, const std::string &redir_addr)
 	m_status = status;
 }
 
-file_stat	Response::get_index_file_type(const location_t &location)
+status_t	Response::generate_indexing(const location_t &location)
 {
-	struct stat	target_stats;
-
-	errno = 0;
-	stat(m_target.c_str(), &target_stats);
-	switch (errno) {
-		case ENOENT:
-			return (nonexistent); // we don't set error if it does not exist
-		case ENOTDIR:
-			set_error(not_found, location.error_page.at(not_found));
-			errno = 0;
-			return (error);
-		case EACCES:
-			set_error(forbidden, location.error_page.at(forbidden));
-			errno = 0;
-			return (error);
-		case 0:
-			break ;
-		default:
-			set_error(internal_err, location.error_page.at(internal_err));
-			errno = 0;
-			return (error);
-	}
-	errno = 0;
-
-	if (S_ISDIR(target_stats.st_mode & S_IFMT))
-		return (dir);
-	else
-		return (file);
-}
-
-void	Response::generate_indexing(void)
-{
-	m_body = "THIS IS INDEXING";
+	(void)location;
+	m_body = "THIS IS INDEXING OF: " + m_target;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
 	m_headers.keep_alive = m_request.headers.keep_alive;
-	m_status = ok;
+	return (ok);
 }
 
 void	Response::handle_static_request(const location_t &location)
@@ -300,33 +269,31 @@ void	Response::handle_static_request(const location_t &location)
 	}
 
 	if (type == dir) {
-		m_target += location.index;
-		type = get_index_file_type(location);
-		switch (type) {
+		std::string	index_testing(m_target + location.index);
+
+		switch (get_file_type(index_testing)) {
 			case file:
 				break ;
 			case dir:
-				if (type == dir && m_target.at(m_target.size() - 1) != '/') {
+				if (index_testing.at(index_testing.size() - 1) != '/') {
 					set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					try {
-						generate_indexing(); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
-						return ;
-					}
-					catch (internal_error &e) {
-						set_error(internal_err, location.error_page.at(internal_err));
-						return ;
-					}
-				}
-				else {
-					set_error(forbidden, location.error_page.at(forbidden));
+					m_status = generate_indexing(location); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					if (m_status != ok)
+						set_error(m_status, location.error_page.at(m_status));
 					return ;
 				}
-			default:
+				else
+					__attribute__((fallthrough));
+			case bad_perms:
+				set_error(forbidden, location.error_page.at(forbidden));
+				return ;
+			case error:
+				set_error(internal_err, location.error_page.at(internal_err));
 				return ;
 		}
 	}

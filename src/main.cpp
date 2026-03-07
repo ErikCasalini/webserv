@@ -41,7 +41,7 @@ int	main(void)
 	serv1_loc1.autoindex = true;
 	serv1_loc1.cgi = true;
 	serv1_loc1.exact_match = false;
-	serv1_loc1.index = "mdr";
+	serv1_loc1.index = "cgi.sh";
 	serv1_loc1.limit_except.push_back(post);
 	serv1_loc1.path = split_path("/cgi/"); // path doit toujours commencer et finir par '/'
 	serv1_loc1.root = "/home/ecasalin/Documents/serv_files/4242/";
