@@ -573,21 +573,24 @@ void	Response::handle_static_request(const location_t &location)
 		return;
 	}
 
-	if (m_request.method == del) { // AND location del == true
-		if (type == dir)
+	if (m_request.method == del) {
+		if (type == dir) // || location.delete == false
 			set_error(forbidden, location.error_page.at(forbidden));
-	// 	else {
-	// 		m_status = remove_file();
-	// 		switch (m_status) {
-	// 			case forbidden:
-	// 			case not_found:
-	// 			case internal_err:
-	// 				set_error(m_status, location.error_page.at(m_status));
-	// 				break ;
-	// 			default:
-	// 				break ;
-	// 		}
-	// 	}
+		else {
+			errno = 0;
+			std::remove(m_target.c_str());
+			switch (errno) {
+				case 0:
+					m_status = no_content;
+					break ;
+				case EPERM:
+				case EACCES:
+					set_error(forbidden, location.error_page.at(forbidden));
+					break ;
+				default:
+					set_error(internal_err, location.error_page.at(internal_err));
+			}
+		}
 		return ;
 	}
 
@@ -787,10 +790,15 @@ void	Response::process(const config_t &config, Sockets &sockets)
 			return ;
 		}
 
-		if (_Response::is_bad_method(m_request.method, location.limit_except))
+		if (_Response::is_bad_method(m_request.method, location.limit_except)) {
 			set_error(forbidden, location.error_page.at(forbidden));
+			generate_response();
+			return ;
+		}
 		else if (location.redirection.first) {
 			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
+			generate_response();
+			return ;
 		}
 		else if (!location.cgi)
 			generate_target(location);
