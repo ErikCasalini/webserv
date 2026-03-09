@@ -75,11 +75,7 @@ namespace _Request {
 	string parse_target(const string& buffer, size_t& pos);
 	protocol_t parse_protocol(const string& buffer, size_t& pos);
 
-	string extract_key(const string& buffer, size_t& pos);
-	string extract_values(const string& buffer, size_t& pos);
-	raw_headers_t extract_headers(const string& m_buffer, size_t& pos);
-	long parse_content_length(const raw_headers_t& raw_headers);
-	bool parse_connection(const raw_headers_t& raw_headers);
+	std::string extract_headers(const string& m_buffer, size_t& pos);
 	headers_t parse_headers(
 			const string& buffer,
 			size_t& pos,

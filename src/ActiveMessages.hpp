@@ -1,7 +1,7 @@
 #ifndef ACTIVEMESSAGES_HPP
 # define ACTIVEMESSAGES_HPP
 
-# include "request_parser.h"
+# include "Config.h"
 # include <vector>
 
 template <typename T>

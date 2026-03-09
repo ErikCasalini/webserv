@@ -1,13 +1,11 @@
 #include "http_types.h"
 #include "request_parser.h"
 #include "../include/cctype_cast.h"
-#include <algorithm>
+#include "Headers.h"
 #include <cstring>
 #include <stdexcept>
 #include <string>
-#include <errno.h>
 #include <sys/socket.h>
-#include <limits>
 
 //HEADERS
 // allow
@@ -280,108 +278,16 @@ namespace _Request {
 		throw Request::BadRequest("unknown protocol version");
 	}
 
-	string extract_key(const string& buffer, size_t& pos)
+	string extract_headers(const string& buffer, size_t& pos)
 	{
-		string key;
-		size_t start = pos;
-		// Catch out-of-range exceptions if at end of string
-		try {
-			while (is_graph(buffer.at(pos))) {
-				if (buffer.at(pos) == ':') {
-					if (pos == start)
-						throw Request::BadRequest("missing header name");
-					string key = buffer.substr(start, pos - start);
-					std::transform(key.begin(), key.end(), key.begin(), to_lower);
-					++pos;
-					return (key);
-				}
-				else if (is_space(buffer.at(pos)))
-					throw Request::BadRequest("space between name and colon");
-				++pos;
-			}
-		} catch (const std::out_of_range& e) {
-			throw Request::BadRequest("unexpected EOL in header key");
-		}
-		throw Request::BadRequest("invalid header name");
-	}
+		const string::size_type i = buffer.find(CRLF CRLF);
+		if (i == string::npos)
+			throw Request::BadRequest("unexpected EOF");
 
-	// TODO: handle quoted strings: "asdsda" or quoted pairs: \n
-	string extract_values(const string& buffer, size_t& pos)
-	{
-		string val;
-		try {
-			size_t start = pos;
-			while (buffer.substr(pos, 2) != CRLF)
-				++pos;
-			// Push the full string without any checks,
-			// actual parsing is done after only if the key is recognized.
-			val = buffer.substr(start, pos - start);
-			pos += 2;
-			return (val);
-		} catch (const std::out_of_range& e) {
-			throw Request::BadRequest("missing CRLF after header line");
-		}
-	}
-
-	raw_headers_t extract_headers(const string& buffer, size_t& pos)
-	{
-		raw_headers_t headers;
-
-		try {
-			while (buffer.substr(pos, 2) != CRLF && pos < buffer.length()) {
-				string key = extract_key(buffer, pos);
-				headers[key] = extract_values(buffer, pos);
-			}
-		} catch (const std::out_of_range& e) {
-			throw Request::BadRequest("unexpected EOL in headers");
-		}
+		const string::size_type len = i - pos + 2;
+		const string headers = buffer.substr(pos, len);
+		pos += len;
 		return (headers);
-	}
-
-	long parse_content_length(const raw_headers_t& raw_headers)
-	{
-		try {
-			string val = raw_headers.at("content-length");
-			if (val.length() > 0) {
-				strtrim(val);
-				if (val.at(0) == '-')
-					throw Request::BadRequest("content-length is negative");
-				char* end = NULL;
-				errno = 0;
-				unsigned long len = std::strtoul(val.c_str(), &end, 10);
-				// is it a specific status code?
-				if (*end || errno
-					|| len > static_cast<unsigned long>(std::numeric_limits<long>::max())) {
-					errno = 0;
-					throw Request::BadRequest("invalid content-length");
-				}
-				return (static_cast<long>(len));
-			}
-		} catch (const std::out_of_range& e) {}
-		return (-1);
-	}
-
-	bool parse_connection(const raw_headers_t& raw_headers)
-	{
-		try {
-			string val = raw_headers.at("connection");
-			strtrim(val);
-			std::transform(val.begin(), val.end(), val.begin(), to_lower);
-			if (val.length() > 0 && val == "keep-alive")
-				return (true);
-		} catch (const std::out_of_range& e) {}
-		return (false);
-	}
-
-	string parse_content_type(const raw_headers_t& raw_headers)
-	{
-		try {
-			string val = raw_headers.at("content-type");
-			strtrim(val);
-			std::transform(val.begin(), val.end(), val.begin(), to_lower);
-			return (val);
-		} catch (const std::out_of_range& e) {}
-		return ("application/octet-stream");
 	}
 
 	headers_t parse_headers(
@@ -389,19 +295,23 @@ namespace _Request {
 				size_t& pos,
 				const request_t& request)
 	{
-		raw_headers_t raw_headers = extract_headers(buffer, pos);
 		headers_t headers;
-		headers.keep_alive = parse_connection(raw_headers);
-		headers.content_type = parse_content_type(raw_headers);
-		// headers.cookies = parse_cookies(raw_headers);
-		// if (request.method == get)
-		// 	headers.if_modified_since = parse_if_modified_since(raw_headers);
-		long cl = parse_content_length(raw_headers);
-		if (cl == -1) {
-			if (request.method == post)
-				throw Request::BadRequest("missing content-length value");
-		} else {
-			headers.content_length = static_cast<unsigned long>(cl);
+		try {
+			Headers raw_headers(extract_headers(buffer, pos), CRLF);
+			headers.keep_alive = raw_headers.parse_connection();
+			headers.content_type = raw_headers.parse_content_type();
+			// headers.cookies = raw_headers.parse_cookies(raw_headers);
+			// if (request.method == get)
+			// 	headers.if_modified_since = raw_headers.parse_if_modified_since(raw_headers);
+			const long cl = raw_headers.parse_content_length();
+			if (cl == -1) {
+				if (request.method == post)
+					throw Request::BadRequest("missing content-length value");
+			} else {
+				headers.content_length = static_cast<unsigned long>(cl);
+			}
+		} catch (const Headers::BadHeader& e) {
+			throw Request::BadRequest(e.what());
 		}
 		return (headers);
 	}
