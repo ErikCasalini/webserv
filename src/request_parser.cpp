@@ -46,7 +46,6 @@ using std::map;
 
 Request::Request()
 	: m_socket(NULL)
-	, m_recv_buf_size(50000)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
 {}
@@ -55,7 +54,6 @@ Request::Request()
 Request::Request(string buffer)
 	: m_socket(NULL)
 	, m_buffer(buffer)
-	, m_recv_buf_size(50000)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
 {}
@@ -64,7 +62,6 @@ Request::Request(const Request& src)
 	: m_socket(src.m_socket)
 	, m_infos(src.m_infos)
 	, m_buffer(src.m_buffer)
-	, m_recv_buf_size(src.m_recv_buf_size)
 	, m_pos(src.m_pos)
 	, m_state(src.m_state)
 {
@@ -76,7 +73,6 @@ Request& Request::operator=(const Request& src)
 		m_socket = src.m_socket;
 		m_infos = src.m_infos;
 		m_buffer = src.m_buffer;
-		m_recv_buf_size = src.m_recv_buf_size;
 		m_pos = src.m_pos;
 		m_state = src.m_state;
 	}
@@ -148,11 +144,11 @@ Request::NotImplemented::NotImplemented(const char* msg) : std::runtime_error(ms
 Request::ConnectionClosed::ConnectionClosed(const char* msg) : std::runtime_error(msg) {};
 
 namespace _Request {
-	ssize_t read_socket(int sockfd, string& buffer, size_t read_size)
+	ssize_t read_socket(int sockfd, string& buffer)
 	{
-		char buf[read_size];
+		char buf[REQUEST_RECV_SIZE];
 		ssize_t ret = 0;
-		ret = recv(sockfd, &buf, read_size, MSG_DONTWAIT);
+		ret = recv(sockfd, &buf, REQUEST_RECV_SIZE, MSG_DONTWAIT);
 		if (ret > 0)
 			buffer.append(buf, static_cast<string::size_type>(ret));
 		return (ret);
