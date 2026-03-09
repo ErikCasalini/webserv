@@ -248,7 +248,7 @@ void	Response::handle_static_request(const location_t &location)
 	}
 
 	if (m_request.method == del) {
-		if (type == dir) // || location.delete == false
+		if (type == dir)
 			set_error(forbidden, location.error_page.at(forbidden));
 		else {
 			errno = 0;
@@ -273,6 +273,7 @@ void	Response::handle_static_request(const location_t &location)
 
 		switch (get_file_type(index_testing)) {
 			case file:
+				m_target = index_testing;
 				break ;
 			case dir:
 				if (index_testing.at(index_testing.size() - 1) != '/') {
@@ -282,7 +283,7 @@ void	Response::handle_static_request(const location_t &location)
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					m_status = generate_indexing(location); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					m_status = generate_indexing(location); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 					if (m_status != ok)
 						set_error(m_status, location.error_page.at(m_status));
 					return ;
@@ -348,7 +349,13 @@ void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
 
 void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 {
-	cgi_uri_infos_t	cgi_uri_infos(location, m_path_segments);
+	cgi_uri_infos_t	cgi_uri_infos;
+
+	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
+	if (cgi_uri_infos.init(location, m_path_segments) == -1) {
+		set_error(forbidden, location.error_page.at(forbidden));
+		throw Cgi::cgi_error("cgi: script name is empty");
+	}
 
 	switch(get_file_type(cgi_uri_infos.script_abs_path)) {
 		case file:

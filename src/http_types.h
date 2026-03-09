@@ -118,7 +118,7 @@ enum sock_type {
 std::ostream& operator<<(std::ostream &os, sock_type s);
 
 struct cgi_uri_infos_t {
-	cgi_uri_infos_t(const location_t &location, std::list<std::string> path);
+	int init(const location_t &location, std::list<std::string> path);
 	std::string script_name;
 	std::string script_dir;
 	std::string path_info;

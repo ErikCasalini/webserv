@@ -4,6 +4,5 @@
 # include "Config.h"
 
 void	main_server_loop(config_t &config);
-void	reap_children(void);
 
 #endif
