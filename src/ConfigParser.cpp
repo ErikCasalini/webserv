@@ -313,13 +313,19 @@ redirection_t ConfigParser::parse_redirection()
 {
 	redirection_t redirection;
 	consume();
-	unsigned long status = value_to_ul(*m_tok_it, 301, 302, "redirect status");
+	unsigned long status = value_to_ul(*m_tok_it, 301, 308, "redirect status");
 	switch (status) {
 		case 301:
 			redirection.first = moved_perm;
 			break;
 		case 302:
 			redirection.first = moved_temp;
+			break;
+		case 307:
+			redirection.first = temp_redir;
+			break;
+		case 308:
+			redirection.first = perm_redir;
 			break;
 		default:
 			throw ConfigParser::InvalidValue("redirection status not handled");
