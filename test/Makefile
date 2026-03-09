@@ -22,6 +22,7 @@ SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  request_parser_states.cpp \
 					  http_types.cpp \
 					  cctype_cast.cpp \
+					  Headers.cpp \
 					  general_utils.cpp
 
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
