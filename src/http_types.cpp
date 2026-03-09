@@ -394,12 +394,8 @@ int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> pat
 	std::list<std::string>::const_iterator	it_loc = location.path.begin();
 
 	if (is_exact_match(location.path, path)) {
-		if (location.index == "")
-			return (-1);
-		else {
-			script_name = location.index;
-			path_info = "";
-		}
+		script_name = location.index;
+		path_info = "";
 	}
 	else {
 		while (*it_loc == *path.begin()) {
@@ -424,5 +420,7 @@ int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> pat
 	}
 
 	script_abs_path = script_dir + script_name;
+	if (script_name == "")
+		return (-1);
 	return (0);
 }

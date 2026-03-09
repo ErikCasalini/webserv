@@ -207,10 +207,9 @@ void	Response::set_redirection(status_t status, const std::string &redir_addr)
 	m_status = status;
 }
 
-status_t	Response::generate_indexing(const location_t &location)
+status_t	Response::generate_indexing(const std::string &directory)
 {
-	(void)location;
-	m_body = "THIS IS INDEXING OF: " + m_target;
+	m_body = "THIS IS INDEXING OF: " + directory;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
 	m_headers.keep_alive = m_request.headers.keep_alive;
@@ -283,7 +282,7 @@ void	Response::handle_static_request(const location_t &location)
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					m_status = generate_indexing(location); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					m_status = generate_indexing(m_target); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 					if (m_status != ok)
 						set_error(m_status, location.error_page.at(m_status));
 					return ;
@@ -353,8 +352,14 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 
 	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
 	if (cgi_uri_infos.init(location, m_path_segments) == -1) {
-		set_error(forbidden, location.error_page.at(forbidden));
-		throw Cgi::cgi_error("cgi: script name is empty");
+		if (location.autoindex) {
+			m_status = generate_indexing(cgi_uri_infos.script_abs_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+			if (m_status != ok)
+				set_error(m_status, location.error_page.at(m_status));
+		}
+		else
+			set_error(forbidden, location.error_page.at(forbidden));
+		throw Cgi::cgi_error("cgi: script name is empty, attempt to index dir");
 	}
 
 	switch(get_file_type(cgi_uri_infos.script_abs_path)) {
