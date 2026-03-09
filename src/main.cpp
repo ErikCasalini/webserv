@@ -1,4 +1,3 @@
-#include <map>
 #include <string>
 #include <iostream>
 #include <stdexcept>
@@ -6,14 +5,17 @@
 #include "Config.h"
 #include "ConfigLexer.h"
 #include "ConfigParser.h"
-#include "parse_uri_utils.h"
 #include "signals_handling.h"
 
 int	main(int argc, char *argv[])
 {
+	if (argc != 2) {
+		std::cerr << "Usage: webserv CONFIG_FILE\n";
+		return (2);
+	}
 	ConfigLexer lexer(argv[1]);
 	std::list<std::string> tokens = lexer.lex();
-	ConfigParser parser(tokens, argv[1]);
+	ConfigParser parser(tokens, argv[1], argv[0]);
 	config_t config = parser.parse();
 
 	try {

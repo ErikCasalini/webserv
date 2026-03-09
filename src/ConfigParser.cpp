@@ -198,10 +198,12 @@ unsigned int ConfigParser::parse_max_body_size()
 	return (static_cast<unsigned int>(n));
 }
 
-string ConfigParser::prepare_path_slicing(string path)
+string ConfigParser::prepare_path(string path)
 {
-	if (path.at(0) != '/')
+	if (path.at(0) != '/') {
 		path.insert(0, "/");
+		path.insert(0, config_files::extract_path_part(m_exec_path));
+	}
 	if (path.at(path.length() - 1) != '/')
 		path.append("/");
 	return (path);
@@ -210,7 +212,7 @@ string ConfigParser::prepare_path_slicing(string path)
 string ConfigParser::parse_root()
 {
 	consume();
-	string path = prepare_path_slicing(*m_tok_it);
+	string path = prepare_path(*m_tok_it);
 	consume();
 	consume(";");
 	return (path);
@@ -300,10 +302,10 @@ upload_t ConfigParser::parse_upload()
 {
 	upload_t upload;
 	consume();
-	string url = prepare_path_slicing(*m_tok_it);
+	string url = prepare_path(*m_tok_it);
 	upload.first = split_path(url);
 	consume();
-	upload.second = prepare_path_slicing(*m_tok_it);
+	upload.second = prepare_path(*m_tok_it);
 	consume();
 	consume(";");
 	return (upload);
@@ -442,7 +444,7 @@ void ConfigParser::parse_location(location_t& location)
 {
 	consume();
 	parse_exact_match(location);
-	string path = prepare_path_slicing(*m_tok_it);
+	string path = prepare_path(*m_tok_it);
 	location.path = split_path(path);
 	consume();
 	consume("{");
@@ -617,11 +619,14 @@ config_t ConfigParser::parse()
 	return (m_config);
 }
 
-ConfigParser::ConfigParser(const std::list<std::string>& tokens, string conf_path)
+ConfigParser::ConfigParser(const std::list<std::string>& tokens,
+							string conf_path,
+							std::string executable_path)
 	: m_tokens(tokens)
 	, m_tok_it(m_tokens.begin())
 	, m_depth(1)
 	, m_conf_path(conf_path)
+	, m_exec_path(executable_path)
 {};
 
 ConfigParser::UnexpectedToken::UnexpectedToken(string msg)

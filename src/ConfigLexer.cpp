@@ -12,15 +12,21 @@ ConfigLexer::ConfigLexer(const string& filename)
 {};
 
 namespace config_files {
+	string extract_path_part(string filepath)
+	{
+		string::size_type end = filepath.rfind("/");
+		if (end != string::npos)
+			filepath = filepath.substr(0, end);
+		return (filepath);
+	}
+
 	string resolve_include_path(string incpath, string filepath)
 	{
 		// If the include path is absolute
 		// we don't need to prepend the config path to it.
 		if (incpath.at(0) == '/')
 			return (incpath);
-		string::size_type end = filepath.rfind("/");
-		if (end != string::npos)
-			filepath = filepath.substr(0, end); 
+		filepath = extract_path_part(filepath);
 		incpath = filepath + "/" + incpath;
 		return (incpath);
 	}
