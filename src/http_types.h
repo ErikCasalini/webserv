@@ -11,8 +11,10 @@
 # include <cstring>
 # include <unistd.h>
 # include <ctime>
+# include <list>
 
 struct config_t;
+struct location_t;
 
 # define CRLF "\r\n"
 
@@ -116,9 +118,11 @@ enum sock_type {
 std::ostream& operator<<(std::ostream &os, sock_type s);
 
 struct cgi_uri_infos_t {
+	cgi_uri_infos_t(const location_t &location, std::list<std::string> path);
 	std::string script_name;
 	std::string script_dir;
 	std::string path_info;
+	std::string script_abs_path;
 };
 
 enum fd_type {
@@ -132,7 +136,7 @@ protected:
 	epoll_item_t(fd_type type);
 };
 
-struct socket_t : public epoll_item_t{
+struct socket_t : public epoll_item_t {
 	socket_t();
 	void clear();
 	std::string str_peer_interface(void) const;

@@ -8,6 +8,7 @@
 # include <list>
 # include "EpollManager.hpp"
 # include "Cgi.hpp"
+# include "Storage.hpp"
 
 class Response
 {
@@ -27,6 +28,7 @@ public:
 	cgi_status_t							get_cgi_status(void) const;
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
+	void									set_storage_infos(upload_t *upload);
 
 	void									parse_uri(void);
 	void									process(const config_t &config, Sockets &sockets);
@@ -44,19 +46,13 @@ private:
 
 	void									generate_target(const location_t &location);
 	void									generate_response(void);
-	void									generate_indexing(void);
-	const cgi_uri_infos_t					generate_cgi_uri_info(const location_t &location_path, std::list<std::string> path) const;
+	status_t								generate_indexing(const location_t &location);
 	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
-	void									fill_body(const location_t &location);
-	void									set_body_headers(void);
 	void									set_error(status_t status, const std::string &error_body);
 	void									handle_static_request(const location_t &location);
 	void									handle_cgi(const location_t &location, Sockets &sockets);
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
-	file_stat								get_file_type(const location_t &location);
-	file_stat								get_cgi_file_type(const location_t &location, const std::string &target);
-	file_stat								get_index_file_type(const location_t &location);
 	void									set_redirection(status_t status, const std::string &redir_addr);
 	std::string 							get_current_date(void);
 
@@ -72,51 +68,8 @@ private:
 	std::string								m_version;
 	std::string								m_body;
 	Cgi										m_cgi;
+	Storage									m_storage;
+	// config_t								&m_config;
 };
-
-namespace _Response
-{
-	class	bad_location : public std::runtime_error
-	{
-		public:
-			bad_location(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	class	forbidden : public std::runtime_error
-	{
-		public:
-			forbidden(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	class	internal_error : public std::runtime_error
-	{
-		public:
-			internal_error(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	class	cgi_error : public std::runtime_error
-	{
-		public:
-			cgi_error(const std::string &str)
-			: std::runtime_error(str)
-			{};
-	};
-
-	void					extract_uri_elem(std::string&uri, std::string &path, std::string &querry);
-	std::list<std::string>	split_path(const std::string &path);
-	unsigned char			url_decode(const std::string &url_code);
-	void					decode_segments(std::list<std::string> &segments);
-	std::string				create_path(std::list<std::string> &segments);
-	bool					is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location);
-	int						evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location);
-	const location_t		&find_location(const std::list<std::string> &path, const std::vector<location_t> &locations);
-	bool					is_bad_method(method_t method, std::vector<method_t> &limit_except);
-}
 
 #endif

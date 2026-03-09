@@ -1,7 +1,7 @@
 #include "ConfigParser.h"
 #include "ConfigLexer.h"
-#include "Response.hpp"
 #include <cstdlib>
+#include "parse_uri_utils.h"
 #include <limits>
 #include <stdexcept>
 #include <fstream>
@@ -301,7 +301,7 @@ upload_t ConfigParser::parse_upload()
 	upload_t upload;
 	consume();
 	string url = prepare_path_slicing(*m_tok_it);
-	upload.first = _Response::split_path(url);
+	upload.first = split_path(url);
 	consume();
 	upload.second = prepare_path_slicing(*m_tok_it);
 	consume();
@@ -437,7 +437,7 @@ void ConfigParser::parse_location(location_t& location)
 	consume();
 	parse_exact_match(location);
 	string path = prepare_path_slicing(*m_tok_it);
-	location.path = _Response::split_path(path);
+	location.path = split_path(path);
 	consume();
 	consume("{");
 	while (m_tok_it != m_tokens.end()) {

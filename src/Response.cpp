@@ -16,6 +16,9 @@
 #include <ctime>
 #include "EpollManager.hpp"
 #include "Sockets.hpp"
+#include "parse_uri_utils.h"
+#include "response_utils.h"
+#include "general_utils.h"
 #include "../include/c_network_exception.h"
 
 using std::vector;
@@ -24,202 +27,6 @@ const char	Response::authorized_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 							":/?[]@#" // Reserved gen-delims
 							"!$&'()*+,;=" // Reserved sub-delims
 							"%"; // Url encoding
-
-// Helpers for Response class
-namespace _Response
-{
-	void	extract_uri_elem(std::string&uri, std::string &path, std::string &querry)
-	{
-		size_t	q_pos = uri.find('?');
-		size_t	end = uri.find('#');
-
-		if (q_pos != std::string::npos && q_pos < end) { // if querry present
-			path.assign(uri, 0, q_pos);
-			q_pos++; // after '?'
-			if (end != std::string::npos)
-				querry.assign(uri, q_pos, end - q_pos); // querry is everything between ? and #
-			else
-				querry.assign(uri, q_pos); // querry is everything after '?' (or nothing if q_pos = m_request.target.size)
-		}
-		else
-			path.assign(uri, 0, end);
-	}
-
-	std::list<std::string>	split_path(const std::string &path) // assumes path starts with '/'
-	{
-		std::stringstream		stream_path(path);
-		std::string				temp;
-		std::list<std::string>	segments;
-		bool					is_dir = false;
-
-		if (stream_path.str().at(stream_path.str().size() - 1) == '/')
-			is_dir = true;
-
-		std::getline(stream_path, temp, '/');
-		if (stream_path.bad())
-			throw std::runtime_error("Internal reading path error");
-
-		while (std::getline(stream_path, temp, '/')) {
-			segments.push_back("/");
-			if (temp.size())
-				segments.push_back(temp);
-		}
-		if (stream_path.bad())
-			throw std::runtime_error("Internal reading path error");
-
-		if (is_dir)
-			segments.push_back("/");
-
-		return (segments);
-	}
-
-	unsigned char	url_decode(const std::string &url_code)
-	{
-		if (!isxdigit(url_code[0])
-			|| !isxdigit(url_code[1]))
-			throw std::invalid_argument("Wrong url encoding format");
-
-		int tmp = std::strtol(url_code.c_str(), NULL, 16);
-		if (tmp == 0x0 || tmp == 0x2F || tmp == 0x5C)
-			throw std::invalid_argument("Url expands to forbidden symbol");
-		return (static_cast<unsigned char>(tmp));
-	}
-
-	void	decode_segments(std::list<std::string> &segments)
-	{
-		std::list<std::string>::iterator	it_list = segments.begin();
-		size_t								pos;
-
-		for (size_t i = 0; i < segments.size(); i++, it_list++) {
-			std::string				decoded; // new decoded string
-			std::string::iterator	it_seg = it_list->begin(); // original string iterator
-
-			decoded.reserve(it_list->size());
-			pos = 0;
-			while ((pos = it_list->find('%', pos)) != std::string::npos) {
-				if (it_list->begin() + pos >= it_list->end() - 2) // if '%' is one of the 2 last chars --> bad URL encoding (%A or %)
-					throw std::invalid_argument("Wrong url encoding format");
-				decoded.append(*it_list, it_seg - it_list->begin(), pos - (it_seg - it_list->begin()));
-				decoded.append(1, url_decode(it_list->substr(pos + 1, 2)));
-				pos += 3;
-				it_seg = it_list->begin() + pos;
-			}
-			decoded.append(*it_list, it_seg - it_list->begin());
-			*it_list = decoded;
-		}
-	}
-
-	std::string	create_path(std::list<std::string> &segments) // assumes segments starts with "/"
-	{
-		std::string				ret;
-		std::list<std::string>	new_path;
-
-		while (segments.size()) {
-			if (segments.front() == "/") {
-				new_path.push_back(segments.front());
-				segments.pop_front();
-				while (segments.size() && segments.front() == "/")
-					segments.pop_front();
-			}
-			else if (segments.front() == ".") {
-				segments.pop_front();
-				if (segments.size())
-					segments.pop_front();
-			}
-			else if (segments.front() == "..") {
-				if (new_path.size() > 1) {
-					new_path.pop_back();
-					new_path.pop_back();
-				}
-				segments.pop_front();
-				if (segments.size())
-					segments.pop_front();
-			}
-			else {
-				new_path.push_back(segments.front());
-				segments.pop_front();
-			}
-		}
-
-		for (std::list<std::string>::iterator it = new_path.begin(); it != new_path.end(); it++) {
-			ret.append(*it);
-		}
-
-		segments = new_path; // update m_path_segments
-		return (ret); // return string format path
-	}
-
-	bool	is_exact_match(const std::list<std::string> &path, const std::list<std::string> &location)
-	{
-		std::list<std::string>::const_iterator	it_path = path.begin();
-		std::list<std::string>::const_iterator	it_loc = location.begin();
-
-		if (path.size() == 0 || location.size() == 0)
-			throw (bad_location("Empty path or location segments"));
-
-		if (path.size() != location.size())
-			return (false);
-
-		for (size_t i = 0; i < path.size(); i++, it_path++, it_loc++) {
-			if (*it_path != *it_loc)
-				return (false);
-		}
-		return (true);
-	}
-
-	int	evaluate_path_matching(const std::list<std::string> &path, const std::list<std::string> &location)
-	{
-		std::list<std::string>::const_iterator	it_path = path.begin();
-		std::list<std::string>::const_iterator	it_loc = location.begin();
-		std::list<std::string>::const_iterator	loc_end = location.end();
-		int										match_rate = 0;
-
-		if (path.size() == 0 || location.size() == 0)
-			throw (bad_location("Empty path or location segments"));
-		if (path.size() < location.size())
-			return (0);
-
-		for (; it_loc != loc_end; it_path++, it_loc++) {
-			if (*it_path != *it_loc)
-				return (0);
-			match_rate++;
-		}
-		return (match_rate);
-	}
-
-	const location_t	&find_location(const std::list<std::string> &path, const vector<location_t> &locations) // assume location path starts with '/'
-	{
-		vector<location_t>::const_iterator	it_loc = locations.begin();
-		vector<location_t>::const_iterator	ret = locations.end();
-
-		for (int best_match = 0, match_rate; it_loc < locations.end(); it_loc++) {
-			if (it_loc->exact_match) {
-				if (is_exact_match(path, it_loc->path))
-					return (*it_loc);
-			}
-			else {
-				match_rate = evaluate_path_matching(path, it_loc->path);
-				if (match_rate > best_match) {
-					best_match = match_rate;
-					ret = it_loc;
-				}
-			}
-		}
-		if (ret == locations.end())
-			throw (bad_location("Uri matchs no locations"));
-
-		return (*ret);
-	}
-
-	bool	is_bad_method(method_t method, std::vector<method_t> &limit_except)
-	{
-		for (std::vector<method_t>::const_iterator it = limit_except.begin(); it != limit_except.end(); it++) {
-			if (method == *it)
-				return (false);
-		}
-		return (true);
-	}
-}
 
 Response::Response(void)
 : m_socket(NULL),
@@ -231,11 +38,6 @@ Response::Response(void)
 Response::~Response(void)
 {}
 
-// pipes_t	Response::get_pipes_data(void) const
-// {
-// 	return (m_pipes);
-// }
-
 request_t	&Response::get_request(void)
 {
 	return (m_request);
@@ -244,6 +46,11 @@ request_t	&Response::get_request(void)
 void	Response::set_request(const request_t &request)
 {
 	m_request = request;
+}
+
+void	Response::set_storage_infos(upload_t *upload)
+{
+	m_storage.set_storage_infos(upload);
 }
 
 const char	*Response::get_buf(void) const
@@ -300,6 +107,7 @@ void	Response::clear(void)
 	m_body.clear();
 	m_status = ok;
 	m_cgi.clear();
+	m_storage.clear();
 }
 
 void	Response::parse_uri(void)
@@ -311,16 +119,16 @@ void	Response::parse_uri(void)
 		return ;
 	}
 
-	_Response::extract_uri_elem(m_request.target, m_path, m_querry);
-	m_path_segments = _Response::split_path(m_path);
+	extract_uri_elem(m_request.target, m_path, m_querry);
+	m_path_segments = split_path(m_path);
 	try {
-		_Response::decode_segments(m_path_segments);
+		decode_segments(m_path_segments);
 	}
 	catch (std::invalid_argument &e) {
 		m_status = bad_request;
 		return ;
 	}
-	m_path = _Response::create_path(m_path_segments);
+	m_path = create_path(m_path_segments);
 	m_status = ok;
 }
 
@@ -350,13 +158,14 @@ void	Response::generate_response(void)
 	switch (m_status) {
 		case method_not_allowed:
 			buf << "Allow: " << m_headers.allow << CRLF
-				<< "Location: " << m_headers.location << CRLF // wtf?
 				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		case no_content:
 			break ;
 		case created:
-			buf << "Location: " << m_headers.location << CRLF;
+			buf << "Location: " << m_headers.location << CRLF
+				<< "Content-Type: " << m_headers.content_type << CRLF
+				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		case moved_perm:
 		case moved_temp:
@@ -385,75 +194,10 @@ void	Response::set_error(status_t status, const std::string &error_body)
 	m_body = error_body;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
-	m_headers.keep_alive = false;
-}
-
-void	Response::fill_body(const location_t &location)
-{
-	errno = 0;
-	std::ifstream	file(m_target.c_str());
-	std::string		temp;
-
-	switch (errno) {
-		case 0:
-			break ;
-		case ENOENT:
-			errno = 0;
-			set_error(not_found, location.error_page.at(not_found));
-			return ;
-		case EACCES:
-			errno = 0;
-			set_error(forbidden, location.error_page.at(forbidden));
-			return ;
-		default:
-			errno = 0;
-			set_error(internal_err, location.error_page.at(internal_err));
-			return ;
-	}
-	while (std::getline(file, temp))
-		m_body.append(temp);
-
-	if (file.bad())
-		set_error(internal_err, location.error_page.at(internal_err));
+	if (status == bad_request)
+		m_headers.keep_alive = false;
 	else
-		m_status = ok;
-}
-
-void	Response::set_body_headers(void)
-{
-	m_headers.content_length = m_body.size();
-	m_headers.content_type = "text/html"; // a changer
-}
-
-file_stat	Response::get_file_type(const location_t &location)
-{
-	struct stat	target_stats;
-
-	errno = 0;
-	stat(m_target.c_str(), &target_stats);
-	switch (errno) {
-		case 0:
-			break ;
-		case ENOENT:
-		case ENOTDIR:
-			set_error(not_found, location.error_page.at(not_found));
-			errno = 0;
-			return (nonexistent);
-		case EACCES:
-			set_error(forbidden, location.error_page.at(forbidden));
-			errno = 0;
-			return (bad_perms);
-		default:
-			set_error(internal_err, location.error_page.at(internal_err));
-			errno = 0;
-			return (error);
-	}
-	errno = 0;
-
-	if (S_ISDIR(target_stats.st_mode & S_IFMT))
-		return (dir);
-	else
-		return (file);
+		m_headers.keep_alive = m_request.headers.keep_alive;
 }
 
 void	Response::set_redirection(status_t status, const std::string &redir_addr)
@@ -463,96 +207,38 @@ void	Response::set_redirection(status_t status, const std::string &redir_addr)
 	m_status = status;
 }
 
-file_stat	Response::get_index_file_type(const location_t &location)
+status_t	Response::generate_indexing(const location_t &location)
 {
-	struct stat	target_stats;
-
-	errno = 0;
-	stat(m_target.c_str(), &target_stats);
-	switch (errno) {
-		case ENOENT:
-			return (nonexistent); // we don't set error if it does not exist
-		case ENOTDIR:
-			set_error(not_found, location.error_page.at(not_found));
-			errno = 0;
-			return (error);
-		case EACCES:
-			set_error(forbidden, location.error_page.at(forbidden));
-			errno = 0;
-			return (error);
-		case 0:
-			break ;
-		default:
-			set_error(internal_err, location.error_page.at(internal_err));
-			errno = 0;
-			return (error);
-	}
-	errno = 0;
-
-	if (S_ISDIR(target_stats.st_mode & S_IFMT))
-		return (dir);
-	else
-		return (file);
-}
-
-file_stat	Response::get_cgi_file_type(const location_t &location, const std::string &target)
-{
-	struct stat	target_stats;
-
-	errno = 0;
-	stat(target.c_str(), &target_stats);
-	switch (errno) {
-		case 0:
-			break ;
-		case ENOENT:
-		case ENOTDIR:
-			set_error(not_found, location.error_page.at(not_found));
-			errno = 0;
-			return (nonexistent);
-		case EACCES:
-			set_error(forbidden, location.error_page.at(forbidden));
-			errno = 0;
-			return (bad_perms);
-		default:
-			set_error(internal_err, location.error_page.at(internal_err));
-			errno = 0;
-			return (error);
-	}
-	errno = 0;
-
-	if (S_ISDIR(target_stats.st_mode & S_IFMT)) {
-		set_error(not_found, location.error_page.at(not_found));
-		return (dir);
-	}
-	else {
-		if (access(target.c_str(), X_OK) == 0)
-			return (file);
-	}
-
-	errno = 0;
-	set_error(forbidden, location.error_page.at(forbidden));
-	return (bad_perms);
-}
-
-void	Response::generate_indexing(void)
-{
-	m_body = "THIS IS INDEXING";
+	(void)location;
+	m_body = "THIS IS INDEXING OF: " + m_target;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
 	m_headers.keep_alive = m_request.headers.keep_alive;
-	m_status = ok;
+	return (ok);
 }
 
 void	Response::handle_static_request(const location_t &location)
 {
-	file_stat	type;
+	file_stat	type = get_file_type(m_target);
 
-	type = get_file_type(location);
-	if (type != dir && type != file)
-		return ;
-	if (type == dir && m_target.at(m_target.size() - 1) != '/') {
-		set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
-		return ;
+	switch (type) {
+		case nonexistent:
+			set_error(not_found, location.error_page.at(not_found));
+			return ;
+		case bad_perms:
+			set_error(forbidden, location.error_page.at(forbidden));
+			return ;
+		case error:
+			set_error(internal_err, location.error_page.at(internal_err));
+			return ;
+		case dir:
+			if (m_target.at(m_target.size() - 1) != '/') {
+				set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
+				return ;
+			}
+			break ;
+		default: // file
+			break ;
 	}
 
 	if (m_request.method == post) { // on est surs ?
@@ -561,93 +247,61 @@ void	Response::handle_static_request(const location_t &location)
 		return;
 	}
 
-	if (m_request.method == del) { // AND location del == true
-		if (type == dir)
+	if (m_request.method == del) {
+		if (type == dir) // || location.delete == false
 			set_error(forbidden, location.error_page.at(forbidden));
-	// 	else {
-	// 		m_status = remove_file();
-	// 		switch (m_status) {
-	// 			case forbidden:
-	// 			case not_found:
-	// 			case internal_err:
-	// 				set_error(m_status, location.error_page.at(m_status));
-	// 				break ;
-	// 			default:
-	// 				break ;
-	// 		}
-	// 	}
+		else {
+			errno = 0;
+			std::remove(m_target.c_str());
+			switch (errno) {
+				case 0:
+					m_status = no_content;
+					break ;
+				case EPERM:
+				case EACCES:
+					set_error(forbidden, location.error_page.at(forbidden));
+					break ;
+				default:
+					set_error(internal_err, location.error_page.at(internal_err));
+			}
+		}
 		return ;
 	}
 
 	if (type == dir) {
-		m_target += location.index;
-		type = get_index_file_type(location);
-		switch (type) {
+		std::string	index_testing(m_target + location.index);
+
+		switch (get_file_type(index_testing)) {
 			case file:
 				break ;
 			case dir:
-				if (type == dir && m_target.at(m_target.size() - 1) != '/') {
+				if (index_testing.at(index_testing.size() - 1) != '/') {
 					set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					try {
-						generate_indexing();
-						return ;
-					}
-					catch (_Response::internal_error &e) {
-						set_error(internal_err, location.error_page.at(internal_err));
-						return ;
-					}
-				}
-				else {
-					set_error(forbidden, location.error_page.at(forbidden));
+					m_status = generate_indexing(location); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					if (m_status != ok)
+						set_error(m_status, location.error_page.at(m_status));
 					return ;
 				}
-			default:
+				else
+					__attribute__((fallthrough));
+			case bad_perms:
+				set_error(forbidden, location.error_page.at(forbidden));
+				return ;
+			case error:
+				set_error(internal_err, location.error_page.at(internal_err));
 				return ;
 		}
 	}
 	m_headers.keep_alive = m_request.headers.keep_alive;
-	fill_body(location);
-	set_body_headers();
-}
-
-const cgi_uri_infos_t	Response::generate_cgi_uri_info(const location_t &location, std::list<std::string> path) const // assumes location_paths ends with '/'
-{
-	std::list<std::string>::const_iterator	it_loc = location.path.begin();
-	cgi_uri_infos_t							ret;
-
-	if (_Response::is_exact_match(location.path, path)) {
-		if (location.index == "")
-			throw (_Response::cgi_error("Default script name is empty"));
-		else {
-			ret.script_name = location.index;
-			ret.path_info = "";
-		}
-	}
-	else {
-		while (*it_loc == *path.begin())
-			path.pop_front();
-		ret.script_name = *path.begin();
-
-		path.pop_front();
-		while (path.size()) {
-			ret.path_info += *path.begin();
-			path.pop_front();
-		}
-	}
-
-	ret.script_dir += location.root;
-	it_loc = location.path.begin();
-	while (it_loc != location.path.end()) {
-		ret.script_dir += *it_loc;
-		it_loc++;
-	}
-
-	return (ret);
+	m_status = read_file_to_body(m_target, m_body);
+	if (m_status != ok)
+		set_error(m_status, location.error_page.at(m_status));
+	set_body_headers(m_headers, m_body, m_target);
 }
 
 void	Response::init_cgi(void)
@@ -656,7 +310,6 @@ void	Response::init_cgi(void)
 	m_cgi.set_response_buf(&m_buffer);
 	m_cgi.set_socket(m_socket);
 }
-
 
 const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_infos) const
 {
@@ -695,14 +348,27 @@ void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
 
 void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 {
-	cgi_uri_infos_t	cgi_uri_infos(Response::generate_cgi_uri_info(location, m_path_segments));
+	cgi_uri_infos_t	cgi_uri_infos(location, m_path_segments);
 
-	switch(get_cgi_file_type(location, cgi_uri_infos.script_dir + cgi_uri_infos.script_name)) {
+	switch(get_file_type(cgi_uri_infos.script_abs_path)) {
 		case file:
+			if (access(cgi_uri_infos.script_abs_path.c_str(), X_OK) < 0) {
+				set_error(forbidden, location.error_page.at(forbidden));
+				throw Cgi::cgi_error("cgi: can't open script");
+			}
 			break ;
-		default:
+		case dir:
+		case nonexistent:
+			set_error(not_found, location.error_page.at(not_found));
+			throw Cgi::cgi_error("cgi: can't open script");
+		case bad_perms:
 			set_error(forbidden, location.error_page.at(forbidden));
-			throw _Response::cgi_error("cgi: can't open script");
+			throw Cgi::cgi_error("cgi: can't open script");
+		case error:
+			set_error(internal_err, location.error_page.at(internal_err));
+			throw Cgi::cgi_error("cgi: can't open script");
+		default:
+			throw CriticalException("cgi: get_cgi_file() returned unexpected file type");
 	}
 
 	const vector<std::string>	env(generate_cgi_env(cgi_uri_infos));
@@ -715,10 +381,10 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 				envp,
 				sockets);
 	}
-	catch (_Response::internal_error &e) {
+	catch (internal_error &e) {
 		m_cgi.delete_envp(&envp);
 		set_error(internal_err, location.error_page.at(internal_err));
-		throw _Response::cgi_error("cgi: execution failed");
+		throw Cgi::cgi_error("cgi: execution failed");
 	}
 	catch (CriticalException &e) {
 		m_cgi.delete_envp(&envp);
@@ -754,27 +420,34 @@ void	Response::process(const config_t &config, Sockets &sockets)
 			break ;
 	}
 
-	// UPLOAD
-	// if (m_path_segments == config.http.server.at(m_socket->server_id).upload.first)
-	// 	handle_storage_request();
-
+	// STORAGE
+	if (m_storage.init(m_path_segments) == 0) {
+		m_status = m_storage.exec(m_request, m_body, m_headers);
+		if (m_status != ok && m_status != no_content && m_status != created)
+			set_error(m_status, config.http.server.at(m_socket->server_id).error_page.at(m_status));
+	}
 	// NORMAL LOCATION PROCESSING
-	// else
+	else
 	{
 		try {
-			location = _Response::find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
+			location = find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
 		}
-		catch (_Response::bad_location &e) {
+		catch (bad_location &e) {
 			(void)e;
 			set_error(not_found, config.http.server.at(m_socket->server_id).error_page.at(not_found));
 			generate_response();
 			return ;
 		}
 
-		if (_Response::is_bad_method(m_request.method, location.limit_except))
+		if (is_bad_method(m_request.method, location.limit_except)) {
 			set_error(forbidden, location.error_page.at(forbidden));
+			generate_response();
+			return ;
+		}
 		else if (location.redirection.first) {
 			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
+			generate_response();
+			return ;
 		}
 		else if (!location.cgi)
 			generate_target(location);
@@ -784,7 +457,7 @@ void	Response::process(const config_t &config, Sockets &sockets)
 				handle_cgi(location, sockets);
 				return ;
 			}
-			catch (_Response::cgi_error &e) {
+			catch (Cgi::cgi_error &e) {
 				generate_response();
 				return ;
 			}
