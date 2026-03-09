@@ -15,7 +15,7 @@ void test_parse_max_connections()
 	base_lst.push_back("257");
 	base_lst.push_back(";");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.events.max_connections == 257));
 
@@ -28,7 +28,7 @@ void test_parse_max_connections()
 	min_lst.push_back(ss.str());
 	min_lst.push_back(";");
 	min_lst.push_back("}");
-	ConfigParser min_c(min_lst, "placeholder_file");
+	ConfigParser min_c(min_lst, "placeholder_file", "/path/webserv");
 	config_t min_conf = min_c.parse();
 	assert((min_conf.events.max_connections == CONNECTIONS_MIN));
 
@@ -42,7 +42,7 @@ void test_parse_max_connections()
 	max_lst.push_back(ss.str());
 	max_lst.push_back(";");
 	max_lst.push_back("}");
-	ConfigParser max_c(max_lst, "placeholder_file");
+	ConfigParser max_c(max_lst, "placeholder_file", "/path/webserv");
 	config_t max_conf = max_c.parse();
 	assert((max_conf.events.max_connections == CONNECTIONS_MAX));
 
@@ -53,7 +53,7 @@ void test_parse_max_connections()
 	neg_lst.push_back("-1");
 	neg_lst.push_back(";");
 	neg_lst.push_back("}");
-	ConfigParser neg_c(neg_lst, "placeholder_file");
+	ConfigParser neg_c(neg_lst, "placeholder_file", "/path/webserv");
 	try {
 		neg_c.parse();
 		assert((false && "neg"));
@@ -68,7 +68,7 @@ void test_parse_max_connections()
 	zero_lst.push_back("0");
 	zero_lst.push_back(";");
 	zero_lst.push_back("}");
-	ConfigParser zero_c(zero_lst, "placeholder_file");
+	ConfigParser zero_c(zero_lst, "placeholder_file", "/path/webserv");
 	try {
 		zero_c.parse();
 		assert((false && "zero"));
@@ -86,7 +86,7 @@ void test_parse_max_connections()
 	bigger_lst.push_back(ss.str());
 	bigger_lst.push_back(";");
 	bigger_lst.push_back("}");
-	ConfigParser bigger_c(bigger_lst, "placeholder_file");
+	ConfigParser bigger_c(bigger_lst, "placeholder_file", "/path/webserv");
 	try {
 		bigger_c.parse();
 		assert((false && "bigger"));
@@ -104,7 +104,7 @@ void test_parse_max_connections()
 	smaller_lst.push_back(ss.str());
 	smaller_lst.push_back(";");
 	smaller_lst.push_back("}");
-	ConfigParser smaller_c(smaller_lst, "placeholder_file");
+	ConfigParser smaller_c(smaller_lst, "placeholder_file", "/path/webserv");
 	try {
 		smaller_c.parse();
 		assert((false && "smaller"));
@@ -117,7 +117,7 @@ void test_parse_max_connections()
 	eof_lst.push_back("{");
 	eof_lst.push_back("max_connections");
 	eof_lst.push_back("257");
-	ConfigParser eof_c(eof_lst, "placeholder_file");
+	ConfigParser eof_c(eof_lst, "placeholder_file", "/path/webserv");
 	try {
 		eof_c.parse();
 		assert((false && "eof"));
@@ -131,7 +131,7 @@ void test_parse_max_connections()
 	nosep_lst.push_back("max_connections");
 	nosep_lst.push_back("257");
 	nosep_lst.push_back("}");
-	ConfigParser nosep_c(nosep_lst, "placeholder_file");
+	ConfigParser nosep_c(nosep_lst, "placeholder_file", "/path/webserv");
 	try {
 		nosep_c.parse();
 		assert((false && "nosep"));
@@ -145,7 +145,7 @@ void test_parse_max_connections()
 	nonum_lst.push_back("max_connections");
 	nonum_lst.push_back("test");
 	nonum_lst.push_back("}");
-	ConfigParser nonum_c(nonum_lst, "placeholder_file");
+	ConfigParser nonum_c(nonum_lst, "placeholder_file", "/path/webserv");
 	try {
 		nonum_c.parse();
 		assert((false && "nonum"));
@@ -164,7 +164,7 @@ void test_parse_events()
 	base_lst.push_back("257");
 	base_lst.push_back(";");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.events.max_connections == 257));
 
@@ -178,7 +178,7 @@ void test_parse_events()
 	redef_lst.push_back("257");
 	redef_lst.push_back(";");
 	redef_lst.push_back("}");
-	ConfigParser redef_c(redef_lst, "placeholder_file");
+	ConfigParser redef_c(redef_lst, "placeholder_file", "/path/webserv");
 	config_t redef_conf = redef_c.parse();
 	assert((redef_conf.events.max_connections == 257));
 
@@ -188,7 +188,7 @@ void test_parse_events()
 	noopen_lst.push_back("257");
 	noopen_lst.push_back(";");
 	noopen_lst.push_back("}");
-	ConfigParser noopeen_c(noopen_lst, "placeholder_file");
+	ConfigParser noopeen_c(noopen_lst, "placeholder_file", "/path/webserv");
 	try {
 		config_t noopen_conf = noopeen_c.parse();
 		assert((false && "noopen"));
@@ -200,7 +200,7 @@ void test_parse_events()
 	nofield_lst.push_back("events");
 	nofield_lst.push_back("{");
 	nofield_lst.push_back("}");
-	ConfigParser nofield_c(nofield_lst, "placeholder_file");
+	ConfigParser nofield_c(nofield_lst, "placeholder_file", "/path/webserv");
 	config_t nofield_conf = nofield_c.parse();
 	assert((nofield_conf.events.max_connections == 256)); // 256 is init/default value
 }
@@ -223,7 +223,7 @@ void test_parse_http()
 	base_lst.push_back("/root/");
 	base_lst.push_back(";");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.http.autoindex == true));
 	assert((base_conf.http.keepalive_timeout == 10));
@@ -243,7 +243,7 @@ void test_parse_listen()
 	base_lst.push_back(";");
 	base_lst.push_back("}");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.http.server[0].listen[0].ip == 0x7F000001));
 	assert((base_conf.http.server[0].listen[0].port == 4242));
@@ -258,7 +258,7 @@ void test_parse_listen()
 	noip_lst.push_back(";");
 	noip_lst.push_back("}");
 	noip_lst.push_back("}");
-	ConfigParser noip_c(noip_lst, "placeholder_file");
+	ConfigParser noip_c(noip_lst, "placeholder_file", "/path/webserv");
 	try {
 		config_t noip_conf = noip_c.parse();
 		assert((false && "noip"));
@@ -276,7 +276,7 @@ void test_parse_listen()
 	noport_lst.push_back(";");
 	noport_lst.push_back("}");
 	noport_lst.push_back("}");
-	ConfigParser noport_c(noport_lst, "placeholder_file");
+	ConfigParser noport_c(noport_lst, "placeholder_file", "/path/webserv");
 	try {
 		config_t noport_conf = noport_c.parse();
 		assert((false && "noport"));
@@ -294,7 +294,7 @@ void test_parse_listen()
 	nosemicolon_lst.push_back(";");
 	nosemicolon_lst.push_back("}");
 	nosemicolon_lst.push_back("}");
-	ConfigParser nosemicolon_c(nosemicolon_lst, "placeholder_file");
+	ConfigParser nosemicolon_c(nosemicolon_lst, "placeholder_file", "/path/webserv");
 	try {
 		config_t nosemicolon_conf = nosemicolon_c.parse();
 		assert((false && "nosemicolon"));
@@ -316,13 +316,15 @@ void test_parse_upload()
 	base_lst.push_back(";");
 	base_lst.push_back("}");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	list<string>::iterator base_it = base_conf.http.server[0].upload.first.begin();
-	assert((*base_it == "/"));
-	assert((*(++base_it) == "url"));
-	assert((*(++base_it) == "/"));
-	assert((base_conf.http.server[0].upload.second == "/real/path/"));
+	assert((*base_it++ == "/"));
+	assert((*(base_it++) == "path"));
+	assert((*(base_it++) == "/"));
+	assert((*(base_it++) == "url"));
+	assert((*(base_it) == "/"));
+	assert((base_conf.http.server[0].upload.second == "/path/real/path/"));
 }
 
 void test_parse_server_inheritance()
@@ -343,7 +345,7 @@ void test_parse_server_inheritance()
 	base_lst.push_back(";");
 	base_lst.push_back("}");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.http.max_body_size == 11));
 	assert((base_conf.http.server[0].max_body_size == 11));
@@ -367,7 +369,7 @@ void test_parse_types()
 	base_lst.push_back(";");
 	base_lst.push_back("}");
 	base_lst.push_back("}");
-	ConfigParser base_c(base_lst, "placeholder_file");
+	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 	config_t base_conf = base_c.parse();
 	assert((base_conf.http.types.at("css") == "text/css"));
 	assert((base_conf.http.types.at("html") == "text/html"));
@@ -379,7 +381,7 @@ void test_full_text_config()
 {
 	ConfigLexer lexer("test_data/config/full_config");
 	std::list<string> full_lst = lexer.lex();
-	ConfigParser full_c(full_lst, "test_data/config/full_config");
+	ConfigParser full_c(full_lst, "test_data/config/full_config", "/path/webserv");
 	config_t full_conf = full_c.parse();
 	assert((full_conf.events.max_connections == 3));
 
@@ -412,7 +414,7 @@ void test_full_text_config()
 	assert((std::strcmp(full_conf.http.error_page[404].c_str(), err_404) == 0)); 
 	assert((full_conf.http.keepalive_timeout == 10)); 
 	assert((full_conf.http.max_body_size == 1048576)); 
-	assert((std::strcmp(full_conf.http.root.c_str(), "/servers/") == 0)); 
+	assert((std::strcmp(full_conf.http.root.c_str(), "/path/servers/") == 0)); 
 	// Doesn't test all types.
 	assert((std::strcmp(full_conf.http.types["html"].c_str(), "text/html") == 0)); 
 	assert((std::strcmp(full_conf.http.types["htm"].c_str(), "text/html") == 0)); 
@@ -428,7 +430,7 @@ void test_full_text_config()
 	assert((std::strcmp(server.error_page[500].c_str(), err_50x) == 0)); 
 	assert((server.listen[0].ip == 0x7F000001)); 
 	assert((server.listen[0].port == 4242)); 
-	assert((std::strcmp(server.root.c_str(), "/servers/test/html/") == 0)); 
+	assert((std::strcmp(server.root.c_str(), "/path/servers/test/html/") == 0)); 
 	assert((server.max_body_size == 16384)); 
 	assert((server.redirection.first == 301)); 
 	assert((std::strcmp(server.redirection.second.c_str(), "/newpage") == 0)); 
@@ -461,7 +463,7 @@ void test_full_text_config()
 	assert((location.redirection.first == 301)); 
 	assert((std::strcmp(location.redirection.second.c_str(), "/newpage") == 0)); 
 	// Test field inheritance:
-	assert((std::strcmp(location.root.c_str(), "/servers/test/html/") == 0)); 
+	assert((std::strcmp(location.root.c_str(), "/path/servers/test/html/") == 0)); 
 }
 
 //
