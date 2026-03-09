@@ -174,8 +174,11 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	case moved_temp:
 		os << "moved_temp";
 		break ;
-	case moved_perm_body:
-		os << "moved_perm_body";
+	case temp_redir:
+		os << "temp_redir";
+		break ;
+	case perm_redir:
+		os << "perm_redir";
 		break ;
 	case forbidden:
 		os << "forbidden";

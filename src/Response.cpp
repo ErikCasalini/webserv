@@ -163,6 +163,8 @@ void	Response::generate_response(void)
 		case no_content:
 			break ;
 		case created:
+		case temp_redir:
+		case perm_redir:
 			buf << "Location: " << m_headers.location << CRLF
 				<< "Content-Type: " << m_headers.content_type << CRLF
 				<< "Content-Length: " << m_headers.content_length << CRLF;
@@ -202,6 +204,11 @@ void	Response::set_error(status_t status, const std::string &error_body)
 
 void	Response::set_redirection(status_t status, const std::string &redir_addr)
 {
+	if (status == perm_redir || status == temp_redir) {
+		m_body = m_request.body;
+		m_headers.content_length = m_request.headers.content_length;
+		m_headers.content_type = m_request.headers.content_type;
+	}
 	m_headers.location = redir_addr;
 	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = status;
@@ -232,7 +239,10 @@ void	Response::handle_static_request(const location_t &location)
 			return ;
 		case dir:
 			if (m_target.at(m_target.size() - 1) != '/') {
-				set_redirection(moved_perm, m_path + '/');
+				if (m_request.method == post)
+					set_redirection(perm_redir, m_path + '/');
+				else
+					set_redirection(moved_perm, m_path + '/');
 				return ;
 			}
 			break ;
@@ -276,7 +286,10 @@ void	Response::handle_static_request(const location_t &location)
 				break ;
 			case dir:
 				if (index_testing.at(index_testing.size() - 1) != '/') {
-					set_redirection(moved_perm, m_path + location.index + '/');
+					if (m_request.method == post)
+						set_redirection(perm_redir, m_path + location.index + '/');
+					else
+						set_redirection(moved_perm, m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
@@ -505,6 +518,8 @@ std::map<int, std::string>	Response::init_status_codes(void)
 	status_codes.insert(std::make_pair(204, std::string("No content")));
 	status_codes.insert(std::make_pair(301, std::string("Moved permanently")));
 	status_codes.insert(std::make_pair(302, std::string("Moved temporarily")));
+	status_codes.insert(std::make_pair(307, std::string("Temporary redirect")));
+	status_codes.insert(std::make_pair(308, std::string("Permanent redirect")));
 	status_codes.insert(std::make_pair(400, std::string("Bad request")));
 	status_codes.insert(std::make_pair(403, std::string("Forbidden")));
 	status_codes.insert(std::make_pair(404, std::string("Not found")));
