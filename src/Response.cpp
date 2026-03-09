@@ -232,7 +232,7 @@ void	Response::handle_static_request(const location_t &location)
 			return ;
 		case dir:
 			if (m_target.at(m_target.size() - 1) != '/') {
-				set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
+				set_redirection(moved_perm, m_path + '/');
 				return ;
 			}
 			break ;
@@ -276,7 +276,7 @@ void	Response::handle_static_request(const location_t &location)
 				break ;
 			case dir:
 				if (index_testing.at(index_testing.size() - 1) != '/') {
-					set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + location.index + '/');
+					set_redirection(moved_perm, m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
@@ -457,7 +457,7 @@ void	Response::process(const config_t &config, Sockets &sockets)
 			return ;
 		}
 		else if (location.redirection.first) {
-			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
+			set_redirection(location.redirection.first, location.redirection.second);
 			generate_response();
 			return ;
 		}
