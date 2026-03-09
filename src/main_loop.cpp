@@ -312,11 +312,6 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 	}
 }
 
-void	reap_children(void)
-{
-	while (waitpid(-1, NULL, WNOHANG) > 0);
-}
-
 void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses, config_t &config)
 {
 	for (size_t i = 0; i < responses.size(); i++) {

@@ -45,6 +45,7 @@ SRC := request_parser.cpp \
 	   signals_handling.cpp \
 	   Cgi.cpp \
 	   ConfigLexer.cpp \
+	   ConfigParser.cpp \
 	   Storage.cpp \
 	   general_utils.cpp \
 	   parse_uri_utils.cpp \

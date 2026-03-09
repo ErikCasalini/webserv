@@ -50,7 +50,8 @@ enum status_t {
 	no_content = 204,
 	moved_perm = 301,
 	moved_temp = 302,
-	moved_perm_body = 308,
+	temp_redir = 307,
+	perm_redir = 308,
 	bad_request = 400,
 	forbidden = 403,
 	not_found = 404,
@@ -118,7 +119,7 @@ enum sock_type {
 std::ostream& operator<<(std::ostream &os, sock_type s);
 
 struct cgi_uri_infos_t {
-	cgi_uri_infos_t(const location_t &location, std::list<std::string> path);
+	int init(const location_t &location, std::list<std::string> path);
 	std::string script_name;
 	std::string script_dir;
 	std::string path_info;

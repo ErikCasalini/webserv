@@ -174,8 +174,11 @@ std::ostream& operator<<(std::ostream& os, const status_t& s)
 	case moved_temp:
 		os << "moved_temp";
 		break ;
-	case moved_perm_body:
-		os << "moved_perm_body";
+	case temp_redir:
+		os << "temp_redir";
+		break ;
+	case perm_redir:
+		os << "perm_redir";
 		break ;
 	case forbidden:
 		os << "forbidden";
@@ -389,21 +392,19 @@ void pipes_t::clear()
 	}
 }
 
-cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::string> path) // assumes location_path ends with and begins with '/'
+int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> path) // assumes location_path ends with and begins with '/'
 {
 	std::list<std::string>::const_iterator	it_loc = location.path.begin();
 
 	if (is_exact_match(location.path, path)) {
-		if (location.index == "")
-			throw (Cgi::cgi_error("Default script name is empty"));
-		else {
-			script_name = location.index;
-			path_info = "";
-		}
+		script_name = location.index;
+		path_info = "";
 	}
 	else {
-		while (*it_loc == *path.begin())
+		while (*it_loc == *path.begin()) {
 			path.pop_front();
+			it_loc++;
+		}
 		script_name = *path.begin();
 
 		path.pop_front();
@@ -422,4 +423,7 @@ cgi_uri_infos_t::cgi_uri_infos_t(const location_t &location, std::list<std::stri
 	}
 
 	script_abs_path = script_dir + script_name;
+	if (script_name == "")
+		return (-1);
+	return (0);
 }

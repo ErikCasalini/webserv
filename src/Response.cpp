@@ -163,6 +163,8 @@ void	Response::generate_response(void)
 		case no_content:
 			break ;
 		case created:
+		case temp_redir:
+		case perm_redir:
 			buf << "Location: " << m_headers.location << CRLF
 				<< "Content-Type: " << m_headers.content_type << CRLF
 				<< "Content-Length: " << m_headers.content_length << CRLF;
@@ -202,15 +204,19 @@ void	Response::set_error(status_t status, const std::string &error_body)
 
 void	Response::set_redirection(status_t status, const std::string &redir_addr)
 {
+	if (status == perm_redir || status == temp_redir) {
+		m_body = m_request.body;
+		m_headers.content_length = m_request.headers.content_length;
+		m_headers.content_type = m_request.headers.content_type;
+	}
 	m_headers.location = redir_addr;
 	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = status;
 }
 
-status_t	Response::generate_indexing(const location_t &location)
+status_t	Response::generate_indexing(const std::string &directory)
 {
-	(void)location;
-	m_body = "THIS IS INDEXING OF: " + m_target;
+	m_body = "THIS IS INDEXING OF: " + directory;
 	m_headers.content_length = m_body.size();
 	m_headers.content_type = "text/html";
 	m_headers.keep_alive = m_request.headers.keep_alive;
@@ -233,7 +239,10 @@ void	Response::handle_static_request(const location_t &location)
 			return ;
 		case dir:
 			if (m_target.at(m_target.size() - 1) != '/') {
-				set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + '/');
+				if (m_request.method == post)
+					set_redirection(perm_redir, m_path + '/');
+				else
+					set_redirection(moved_perm, m_path + '/');
 				return ;
 			}
 			break ;
@@ -248,7 +257,7 @@ void	Response::handle_static_request(const location_t &location)
 	}
 
 	if (m_request.method == del) {
-		if (type == dir) // || location.delete == false
+		if (type == dir)
 			set_error(forbidden, location.error_page.at(forbidden));
 		else {
 			errno = 0;
@@ -273,16 +282,20 @@ void	Response::handle_static_request(const location_t &location)
 
 		switch (get_file_type(index_testing)) {
 			case file:
+				m_target = index_testing;
 				break ;
 			case dir:
 				if (index_testing.at(index_testing.size() - 1) != '/') {
-					set_redirection(moved_perm, "http://" + m_socket->str_local_interface() + m_path + location.index + '/');
+					if (m_request.method == post)
+						set_redirection(perm_redir, m_path + location.index + '/');
+					else
+						set_redirection(moved_perm, m_path + location.index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					m_status = generate_indexing(location); // IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					m_status = generate_indexing(m_target); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 					if (m_status != ok)
 						set_error(m_status, location.error_page.at(m_status));
 					return ;
@@ -348,7 +361,19 @@ void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
 
 void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 {
-	cgi_uri_infos_t	cgi_uri_infos(location, m_path_segments);
+	cgi_uri_infos_t	cgi_uri_infos;
+
+	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
+	if (cgi_uri_infos.init(location, m_path_segments) == -1) {
+		if (location.autoindex) {
+			m_status = generate_indexing(cgi_uri_infos.script_abs_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+			if (m_status != ok)
+				set_error(m_status, location.error_page.at(m_status));
+		}
+		else
+			set_error(forbidden, location.error_page.at(forbidden));
+		throw Cgi::cgi_error("cgi: script name is empty, attempt to index dir");
+	}
 
 	switch(get_file_type(cgi_uri_infos.script_abs_path)) {
 		case file:
@@ -445,7 +470,7 @@ void	Response::process(const config_t &config, Sockets &sockets)
 			return ;
 		}
 		else if (location.redirection.first) {
-			set_redirection(location.redirection.first, location.redirection.second); // ajouter "http://" si non présent dans config
+			set_redirection(location.redirection.first, location.redirection.second);
 			generate_response();
 			return ;
 		}
@@ -493,6 +518,8 @@ std::map<int, std::string>	Response::init_status_codes(void)
 	status_codes.insert(std::make_pair(204, std::string("No content")));
 	status_codes.insert(std::make_pair(301, std::string("Moved permanently")));
 	status_codes.insert(std::make_pair(302, std::string("Moved temporarily")));
+	status_codes.insert(std::make_pair(307, std::string("Temporary redirect")));
+	status_codes.insert(std::make_pair(308, std::string("Permanent redirect")));
 	status_codes.insert(std::make_pair(400, std::string("Bad request")));
 	status_codes.insert(std::make_pair(403, std::string("Forbidden")));
 	status_codes.insert(std::make_pair(404, std::string("Not found")));
