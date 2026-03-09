@@ -57,10 +57,6 @@ SRC_CONFIG_PARSER := $(SRC_COMMON) \
 					 test_ConfigParser.cpp \
 					 ConfigParser.cpp \
 					 ConfigLexer.cpp \
-					 Cgi.cpp \
-					 Sockets.cpp \
-					 EpollManager.cpp \
-					 c_network_exception_wrapper.cpp \
 					 http_types.cpp \
 					 Config.cpp \
 					 parse_uri_utils.cpp \
