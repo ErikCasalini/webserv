@@ -341,6 +341,12 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 	env.push_back("SERVER_PROTOCOL=HTTP/1.0");
 	env.push_back("SERVER_SOFTWARE=webserv/2026");
 
+	// DEBUG
+	vector<std::string>::iterator	it = env.begin();
+
+	for (; it != env.end(); it++)
+		std::cout << *it << '\n';
+
 	return (env);
 }
 
@@ -402,7 +408,6 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 	try {
 		m_cgi.exec(cgi_uri_infos.script_name.c_str(),
 				cgi_uri_infos.script_dir.c_str(),
-				(cgi_uri_infos.script_dir + cgi_uri_infos.script_name).c_str(),
 				envp,
 				sockets);
 	}
