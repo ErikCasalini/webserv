@@ -83,7 +83,7 @@ DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 
 all: $(BUILD_DIR) $(RUNNERS)
 
-run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; ./$$i; done
+run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; valgrind --quiet ./$$i; done
 run: all
 	@$(call run_all,$(RUNNERS))
 
