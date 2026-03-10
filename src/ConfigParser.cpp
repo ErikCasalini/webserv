@@ -619,15 +619,15 @@ config_t ConfigParser::parse()
 	return (m_config);
 }
 
-ConfigParser::ConfigParser(const std::list<std::string>& tokens,
-							string conf_path,
-							std::string executable_path)
-	: m_tokens(tokens)
-	, m_tok_it(m_tokens.begin())
-	, m_depth(1)
+ConfigParser::ConfigParser(string conf_path, string executable_path)
+	: m_depth(1)
 	, m_conf_path(conf_path)
 	, m_exec_path(executable_path)
-{};
+{
+	ConfigLexer lexer(m_conf_path);
+	m_tokens = lexer.lex();
+	m_tok_it = m_tokens.begin();
+};
 
 ConfigParser::UnexpectedToken::UnexpectedToken(string msg)
 	: std::runtime_error(

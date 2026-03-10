@@ -28,9 +28,7 @@
 
 class ConfigParser {
 public:
-	ConfigParser(const std::list<std::string>& tokens,
-					std::string conf_path,
-					std::string executable_path);
+	ConfigParser(std::string conf_path, std::string executable_path);
 
 	config_t parse();
 
