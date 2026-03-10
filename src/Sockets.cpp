@@ -5,7 +5,7 @@
 #include <vector>
 #include <sstream>
 
-Sockets::Sockets(int socket_limit)
+Sockets::Sockets(size_t socket_limit)
 : m_epoll(socket_limit),
   m_socket_limit(socket_limit),
   m_size(0)
@@ -15,7 +15,7 @@ Sockets::Sockets(int socket_limit)
 
 Sockets::~Sockets(void)
 {
-	for (int i = 0; i < m_socket_limit; i++) {
+	for (size_t i = 0; i < m_socket_limit; i++) {
 		if (m_sockets.at(i).fd != -1)
 			::close(m_sockets.at(i).fd);
 	}
@@ -23,7 +23,7 @@ Sockets::~Sockets(void)
 
 void	Sockets::close(socket_t &socket)
 {
-	for (int i = 0; i < m_socket_limit; i++) {
+	for (size_t i = 0; i < m_socket_limit; i++) {
 		if (m_sockets.at(i) == socket) {
 			::close(m_sockets.at(i).fd);
 			m_sockets.at(i).clear();
@@ -37,7 +37,7 @@ void	Sockets::close(socket_t &socket)
 // Do not clear
 void	Sockets::close_all(void)
 {
-	for (int i = 0; i < m_socket_limit; i++) {
+	for (size_t i = 0; i < m_socket_limit; i++) {
 		if (m_sockets.at(i).fd != -1) {
 			::close(m_sockets.at(i).fd);
 			m_sockets.at(i).fd = -1;
@@ -53,7 +53,7 @@ void	Sockets::close_epoll(void)
 int	Sockets::add(socket_t &socket)
 {
 	if (m_size < m_socket_limit) {
-		for (int i = 0; i < m_socket_limit; i++) {
+		for (size_t i = 0; i < m_socket_limit; i++) {
 			if (m_sockets.at(i).fd == -1) {
 				m_sockets.at(i) = socket;
 				m_size++;
@@ -69,12 +69,12 @@ socket_t	&Sockets::at(int i)
 	return (m_sockets.at(i));
 }
 
-int	Sockets::limit(void) const
+size_t	Sockets::limit(void) const
 {
 	return (m_socket_limit);
 }
 
-int	Sockets::size(void) const
+size_t	Sockets::size(void) const
 {
 	return (m_size);
 }
@@ -107,7 +107,7 @@ socket_t	Sockets::debugFd(int i) const
 
 bool	Sockets::exist(int fd) const
 {
-	for (int i = 0; i < m_socket_limit; i++) {
+	for (size_t i = 0; i < m_socket_limit; i++) {
 		if (m_sockets.at(i).fd == fd) {
 			return (true);
 		}
