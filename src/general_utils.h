@@ -1,5 +1,5 @@
 #ifndef GENERAL_UTILS_H
-# define GENRAL_UTILS_H
+# define GENERAL_UTILS_H
 
 # include "http_types.h"
 # include <string>

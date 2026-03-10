@@ -28,7 +28,7 @@
 
 class ConfigParser {
 public:
-	ConfigParser(const std::list<std::string>& tokens, std::string conf_path);
+	ConfigParser(std::string conf_path, std::string executable_path);
 
 	config_t parse();
 
@@ -50,7 +50,8 @@ private:
 	std::list<std::string>::iterator m_tok_it;
 	int m_depth;
 	config_t m_config;
-	std::string m_conf_path;
+	const std::string m_conf_path;
+	const std::string m_exec_path;
 
 	void advance();
 	void advance(std::string symbol);
@@ -86,7 +87,7 @@ private:
 	unsigned int parse_keepalive_timeout();
 	listen_t parse_listen();
 	unsigned int parse_max_body_size();
-	std::string prepare_path_slicing(std::string path);
+	std::string prepare_path(std::string path);
 	std::string parse_root();
 	u_int32_t ip_to_ui32(std::string ip);
 	u_int16_t port_to_ui16(std::string port);

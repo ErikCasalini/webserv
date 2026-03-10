@@ -22,6 +22,7 @@ SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  request_parser_states.cpp \
 					  http_types.cpp \
 					  cctype_cast.cpp \
+					  Headers.cpp \
 					  general_utils.cpp
 
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
@@ -82,7 +83,7 @@ DEP_FILES := $(OBJ_REQUEST_PARSER:.o=.d) \
 
 all: $(BUILD_DIR) $(RUNNERS)
 
-run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; ./$$i; done
+run_all = @for i in $(1); do echo "\033[1m$$i:\033[0m"; valgrind --quiet ./$$i; done
 run: all
 	@$(call run_all,$(RUNNERS))
 

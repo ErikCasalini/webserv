@@ -60,8 +60,7 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 	if (request->m_socket == NULL)
 		throw (std::logic_error("attempt to read unset socket"));
 	ssize_t ret = _Request::read_socket(request->m_socket->fd,
-										request->m_buffer,
-										request->m_recv_buf_size);
+										request->m_buffer);
 #else
 	ssize_t ret = 1;
 #endif

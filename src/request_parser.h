@@ -7,6 +7,10 @@
 # include <string>
 # include <sys/types.h>
 
+# ifndef REQUEST_RECV_SIZE
+#  define REQUEST_RECV_SIZE 51200 // 50 KO
+# endif
+
 // TODO: add an init function that creates the method and protocol maps
 class Request {
 public:
@@ -47,9 +51,7 @@ public:
 private:
 	request_t m_infos;
 	std::string m_buffer;
-	size_t m_recv_buf_size;
 	size_t m_pos;
-	// bool m_extracting_body;
 	RequestState* m_state;
 	void set_state(RequestState* state);
 	void erase_parsed();
@@ -63,7 +65,7 @@ namespace _Request {
 
 	typedef std::map<string, string> raw_headers_t;
 
-	ssize_t read_socket(int sockfd, string& buffer, size_t read_size);
+	ssize_t read_socket(int sockfd, string& buffer);
 
 	void consume_sp(const string& buffer, size_t& pos);
 	void consume_crlf(const string& buffer, size_t& pos);
@@ -73,11 +75,7 @@ namespace _Request {
 	string parse_target(const string& buffer, size_t& pos);
 	protocol_t parse_protocol(const string& buffer, size_t& pos);
 
-	string extract_key(const string& buffer, size_t& pos);
-	string extract_values(const string& buffer, size_t& pos);
-	raw_headers_t extract_headers(const string& m_buffer, size_t& pos);
-	long parse_content_length(const raw_headers_t& raw_headers);
-	bool parse_connection(const raw_headers_t& raw_headers);
+	std::string extract_headers(const string& m_buffer, size_t& pos);
 	headers_t parse_headers(
 			const string& buffer,
 			size_t& pos,

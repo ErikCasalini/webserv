@@ -12,15 +12,21 @@ ConfigLexer::ConfigLexer(const string& filename)
 {};
 
 namespace config_files {
+	string extract_path_part(string filepath)
+	{
+		string::size_type end = filepath.rfind("/");
+		if (end != string::npos)
+			filepath = filepath.substr(0, end);
+		return (filepath);
+	}
+
 	string resolve_include_path(string incpath, string filepath)
 	{
 		// If the include path is absolute
 		// we don't need to prepend the config path to it.
 		if (incpath.at(0) == '/')
 			return (incpath);
-		string::size_type end = filepath.rfind("/");
-		if (end != string::npos)
-			filepath = filepath.substr(0, end); 
+		filepath = extract_path_part(filepath);
 		incpath = filepath + "/" + incpath;
 		return (incpath);
 	}
@@ -48,16 +54,6 @@ namespace _config_lexer {
 			throw std::runtime_error("file_to_string: error trying to open file");
 		sstream << file.rdbuf();
 	}
-
-	// static string file_to_string(const string& filename)
-	// {
-	// 	std::ifstream file(filename.c_str());
-	// 	if (!file.good())
-	// 		throw std::runtime_error("file_to_string: error trying to open file");
-	// 	std::stringstream content;
-	// 	content << file.rdbuf();
-	// 	return (content.str());
-	// }
 
 	// Remove comments and replace each newlines by a space
 	string remove_comments_nl(std::istream& config)
@@ -129,8 +125,16 @@ namespace _config_lexer {
 			config.insert(it, tokens.begin(), tokens.end());
 
 			// Remove the three include nodes ('include', file, ';')
-			for (int i = 0; i < 3; ++i)
+			for (int i = 0; i < 2; ++i) {
 				config.erase(it++);
+				if (it == config.end())
+					throw std::runtime_error("config: unexpected end of file");
+			}
+			if (it == config.end())
+				throw std::runtime_error("config: unexpected end of file");
+			else if (*it != ";")
+				throw std::runtime_error("config: missing ';'");
+			config.erase(it++);
 		}
 	}
 }
