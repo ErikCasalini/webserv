@@ -101,7 +101,6 @@ void test_expand_includes()
 	cmp.push_back("{");
 	cmp.push_back("test");
 	cmp.push_back("t");
-	cmp.push_back(";");
 	cmp.push_back("}");
 
 	std::list<string> base;
@@ -129,22 +128,24 @@ void test_expand_includes()
 	assert((comments == cmp));
 
 	cmp.clear();
-	cmp.push_back("test");
-	cmp.push_back("t");
-	std::list<string> only_inc;
-	only_inc.push_back("include");
-	only_inc.push_back("test.types");
-	expand_includes(only_inc, "test_data/config/config");
-	// for (std::list<string>::iterator it = only_inc.begin(); it != only_inc.end(); ++it)
-	// 	std::cout << '|' << *it << "|\n";
-	assert((only_inc == cmp));
-
-	cmp.clear();
 	std::list<string> empty;
 	expand_includes(empty, "test_data/config/config");
 	// for (std::list<string>::iterator it = empty.begin(); it != empty.end(); ++it)
 	// 	std::cout << '|' << *it << "|\n";
 	assert((empty == cmp));
+
+	cmp.clear();
+	cmp.push_back("test");
+	cmp.push_back("t");
+	std::list<string> only_inc;
+	only_inc.push_back("include");
+	only_inc.push_back("test.types");
+	try {
+		expand_includes(only_inc, "test_data/config/config");
+		assert((false && "only_inc"));
+	} catch (const std::runtime_error& e) {
+		assert((std::strcmp(e.what(), "config: unexpected end of file") == 0));
+	}
 
 	cmp.clear();
 	std::list<string> no_path;
