@@ -26,6 +26,7 @@ public:
 	size_t									get_buf_size(void) const;
 	status_t								get_status(void) const;
 	cgi_status_t							get_cgi_status(void) const;
+	headers_t								&get_headers(void);
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
 	void									set_storage_infos(upload_t *upload);
@@ -46,7 +47,6 @@ private:
 
 	void									generate_target(const location_t &location);
 	void									generate_response(void);
-	status_t								generate_indexing(const std::string &directory);
 	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
 	void									set_error(status_t status, const std::string &error_body);
 	void									handle_static_request(const location_t &location);

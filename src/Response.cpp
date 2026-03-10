@@ -78,6 +78,11 @@ status_t	Response::get_status(void) const
 	return (m_status);
 }
 
+headers_t	&Response::get_headers(void)
+{
+	return (m_headers);
+}
+
 cgi_status_t	Response::get_cgi_status(void) const
 {
 	return (m_cgi.get_status());
@@ -134,7 +139,7 @@ void	Response::parse_uri(void)
 
 std::string	Response::get_current_date(void)
 {
-	size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
+	const size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
 	char buf[buf_len];
 	const char *format = "%a, %d %b %Y %H:%M:%S GMT";
 
@@ -198,8 +203,6 @@ void	Response::set_error(status_t status, const std::string &error_body)
 	m_headers.content_type = "text/html";
 	if (status == bad_request)
 		m_headers.keep_alive = false;
-	else
-		m_headers.keep_alive = m_request.headers.keep_alive;
 }
 
 void	Response::set_redirection(status_t status, const std::string &redir_addr)
@@ -210,17 +213,7 @@ void	Response::set_redirection(status_t status, const std::string &redir_addr)
 		m_headers.content_type = m_request.headers.content_type;
 	}
 	m_headers.location = redir_addr;
-	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = status;
-}
-
-status_t	Response::generate_indexing(const std::string &directory)
-{
-	m_body = "THIS IS INDEXING OF: " + directory;
-	m_headers.content_length = m_body.size();
-	m_headers.content_type = "text/html";
-	m_headers.keep_alive = m_request.headers.keep_alive;
-	return (ok);
 }
 
 void	Response::handle_static_request(const location_t &location)
@@ -295,9 +288,13 @@ void	Response::handle_static_request(const location_t &location)
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (location.autoindex) {
-					m_status = generate_indexing(m_target); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					m_status = generate_indexing(m_target, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 					if (m_status != ok)
 						set_error(m_status, location.error_page.at(m_status));
+					else {
+						m_headers.content_length = m_body.size();
+						m_headers.content_type = "text/html";
+					}
 					return ;
 				}
 				else
@@ -310,7 +307,6 @@ void	Response::handle_static_request(const location_t &location)
 				return ;
 		}
 	}
-	m_headers.keep_alive = m_request.headers.keep_alive;
 	m_status = read_file_to_body(m_target, m_body);
 	if (m_status != ok)
 		set_error(m_status, location.error_page.at(m_status));
@@ -366,9 +362,13 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
 	if (cgi_uri_infos.init(location, m_path_segments) == -1) {
 		if (location.autoindex) {
-			m_status = generate_indexing(cgi_uri_infos.script_abs_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+			m_status = generate_indexing(cgi_uri_infos.script_abs_path, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 			if (m_status != ok)
 				set_error(m_status, location.error_page.at(m_status));
+			else {
+				m_headers.content_length = m_body.size();
+				m_headers.content_type = "text/html";
+			}
 		}
 		else
 			set_error(forbidden, location.error_page.at(forbidden));
