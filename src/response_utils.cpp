@@ -4,6 +4,8 @@
 #include <fstream>
 #include <vector>
 #include <list>
+#include <sys/types.h>
+#include <dirent.h>
 #include "Config.h"
 
 using std::vector;
@@ -101,4 +103,40 @@ bool	is_bad_method(method_t method, vector<method_t> &limit_except)
 			return (false);
 	}
 	return (true);
+}
+
+status_t	generate_indexing(const std::string &directory, std::string &body, const std::string &uri_path)
+{
+	std::string		indexing;
+	DIR				*dir_stream;
+	struct dirent	*dir_data;
+
+	errno = 0;
+	dir_stream = opendir(directory.c_str());
+	if (dir_stream == NULL) {
+		if (errno == EACCES)
+			return (forbidden);
+		return (internal_err);
+	}
+
+	while ((dir_data = readdir(dir_stream))) {
+		if (errno != 0)
+			return (internal_err);
+		indexing.append("<a href=\"");
+		indexing.append(dir_data->d_name);
+		if (dir_data->d_type == DT_DIR)
+			indexing.append("/");
+		indexing.append("\">");
+		indexing.append(dir_data->d_name);
+		if (dir_data->d_type == DT_DIR)
+			indexing.append("/");
+		indexing.append("</a>\n");
+	}
+	body = "<html>\n<body>\n<h1>Index of ";
+	body.append(uri_path);
+	body.append("</h1><hr><pre>");
+	body.append(indexing);
+	body.append("</pre><hr></body>\n</html>");
+	closedir(dir_stream);
+	return (ok);
 }

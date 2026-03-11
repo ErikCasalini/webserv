@@ -57,6 +57,7 @@ void	Cgi::delete_envp(char*** envp)
 }
 
 // PUBLIC FUNCTIONS
+
 Cgi::Cgi(socket_t *response_socket)
 : epoll_item_t(cgi),
   m_status(init),
@@ -170,7 +171,7 @@ bool	Cgi::timeout(void)
 	return (false);
 }
 
-void	Cgi::exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, Sockets &sockets)
+void	Cgi::exec(const char* script_name, const char* script_dir, char** envp, Sockets &sockets)
 {
 	int cgi_pipe_in[2];
 	int cgi_pipe_out[2];
@@ -191,7 +192,6 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 
 		// CHILD
 		case 0:
-
 			m_is_child = true;
 			sockets.close_all();
 			close(sockets.epoll_inst());
@@ -221,7 +221,7 @@ void	Cgi::exec(const char* script_name, const char* script_dir, const char* scri
 			argv[0] = script_name;
 			argv[1] = NULL;
 
-			if (execve(script_path, const_cast<char**>(argv), envp) == -1) {
+			if (execve(script_name, const_cast<char**>(argv), envp) == -1) {
 				delete_envp(&envp);
 				throw ChildCriticalError("\033[1;31m[CHILD CRITICAL ERROR]\033[0m: execve() failed");
 			}

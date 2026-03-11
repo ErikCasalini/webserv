@@ -23,7 +23,7 @@ public:
 
 private:
 
-	void		set_new_file_location(headers_t &headers) const;
+	string		get_new_file_location(void) const;
 	status_t	store(const string &request_body, string &response_body, headers_t &headers) const;
 	status_t	retrive(string &body, headers_t &headers) const;
 	status_t	suppress(void) const;

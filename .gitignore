@@ -8,3 +8,4 @@ webserv
 compile_commands.json
 .cache/
 gdb.conf
+.vscode

@@ -47,7 +47,7 @@ public:
 	void			set_socket(socket_t *socket);
 	void			reset_child_pid(void);
 
-	void			exec(const char* script_name, const char* script_dir, const char* script_path, char** envp, Sockets &sockets);
+	void			exec(const char* script_name, const char* script_dir, char** envp, Sockets &sockets);
 	int				write_body_to_child(int epoll_inst);
 	int				read_child_response(int epoll_inst);
 	bool			timeout(void);

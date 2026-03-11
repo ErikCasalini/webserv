@@ -32,6 +32,9 @@ int	Storage::init(list<string> &uri)
 	list<string>::const_iterator	it_path = m_storage_infos->first.begin();
 	list<string>::const_iterator	it_uri = uri.begin();
 
+	if (uri == m_storage_infos->first)
+		return (0);
+
 	if (uri.size() != m_storage_infos->first.size() + 1)
 		return (-1);
 
@@ -46,24 +49,39 @@ int	Storage::init(list<string> &uri)
 
 status_t	Storage::exec(const request_t &request, string &response_body, headers_t &headers) const
 {
-	if (request.headers.keep_alive)
-		headers.keep_alive = true;
+	status_t	ret;
 
 	switch (request.method) {
 		case get:
-			return (retrive(response_body, headers));
+			ret =retrive(response_body, headers);
+			break ;
 		case post:
-			return (store(request.body, response_body, headers));
+			ret = store(request.body, response_body, headers);
+			break ;
 		case del:
-			return (suppress());
+			ret = suppress();
+			break ;
 		default:
 			throw std::logic_error("storage: invalid exec method");
 	}
+	if (ret == bad_request)
+		headers.keep_alive = false;
+
+	return (ret);
 }
 
 status_t	Storage::retrive(string &body, headers_t &headers) const
 {
 	status_t	ret;
+
+	if (m_file_path == "") {
+		ret = generate_indexing(m_storage_infos->second, body, get_new_file_location());
+		if (ret == ok) {
+			headers.content_length = body.size();
+			headers.content_type = "text/html";
+		}
+		return (ret);
+	}
 
 	ret = read_file_to_body(m_file_path, body);
 	if (ret == ok)
@@ -71,20 +89,23 @@ status_t	Storage::retrive(string &body, headers_t &headers) const
 	return (ret);
 }
 
-void	Storage::set_new_file_location(headers_t &headers) const
+string	Storage::get_new_file_location(void) const
 {
 	list<string>::const_iterator	it = m_storage_infos->first.begin();
-
-	headers.location.clear();
+	string							ret;
 	while (it != m_storage_infos->first.end()) {
-		headers.location += *it;
+		ret += *it;
 		it++;
 	}
-	headers.location += m_file_name;
+	ret += m_file_name;
+	return (ret);
 }
 
 status_t	Storage::store(const string &request_body, string &response_body, headers_t &headers) const
 {
+	if (m_file_name == "")
+		return (bad_request);
+
 	switch (get_file_type(m_file_path)) {
 		case dir:
 		case bad_perms:
@@ -110,13 +131,16 @@ status_t	Storage::store(const string &request_body, string &response_body, heade
 		return (internal_err);
 
 	response_body = request_body;
-	set_new_file_location(headers);
+	headers.location = get_new_file_location();
 	set_body_headers(headers, response_body, m_file_path);
 	return (created);
 }
 
 status_t	Storage::suppress(void) const
 {
+	if (m_file_name == "")
+		return (bad_request);
+
 	switch (get_file_type(m_file_path)) {
 		case dir:
 		case bad_perms:

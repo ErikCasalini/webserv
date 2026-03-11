@@ -230,7 +230,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		if (socket->socktype == passive)
 			throw std::runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
 		// CLOSE
-		std::cout << "\033[1;32m[PEER CLOSED]\033[0m " << *socket << '\n'; // pour debug
+		std::cout << "\033[1;35m[PEER CLOSED]\033[0m " << *socket << '\n'; // pour debug
 		close_connection(socket, sockets, requests, responses);
 	}
 	else if (item->type == cgi) {
@@ -287,9 +287,11 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 			if (responses.at(i).get_status() == sending_resp)
 			// CONTINUE SENDING...
 				return ;
-			if (responses.at(i).get_request().headers.keep_alive == false)
+			if (responses.at(i).get_headers().keep_alive == false) {
 			// DONE --> CLOSE
+				std::cout << "\033[1;35m[CONNECTION CLOSED]\033[0m " << *sock << '\n';
 				close_connection(sock, sockets, requests, responses);
+			}
 			else {
 			// DONE --> KEEP ALIVE
 				event.events = EPOLLIN;

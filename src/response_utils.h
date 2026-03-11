@@ -32,5 +32,6 @@ const location_t	&find_location(const list<string> &path, const vector<location_
 status_t			read_file_to_body(const string &file_name, string &body);
 void				set_body_headers(headers_t &headers, string body, string file_name);
 bool				is_bad_method(method_t method, vector<method_t> &limit_except);
+status_t			generate_indexing(const std::string &directory, std::string &body, const std::string &path);
 
 #endif
