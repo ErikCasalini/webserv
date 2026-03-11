@@ -33,7 +33,7 @@ Response::Response(const config_t &config)
   m_config(config),
   m_status(ok),
   m_version("HTTP/1.0"),
-  m_cgi(m_socket, config),
+  m_cgi(m_socket, config, this),
   m_location(NULL)
 {}
 

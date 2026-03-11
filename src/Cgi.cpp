@@ -9,6 +9,7 @@
 #include <ctime>
 #include "Sockets.hpp"
 #include "response_utils.h"
+#include "Response.hpp"
 #include "../include/c_network_exception.h"
 
 // HELPER FUNCTIONS
@@ -58,8 +59,9 @@ void	Cgi::delete_envp(char*** envp)
 
 // PUBLIC FUNCTIONS
 
-Cgi::Cgi(socket_t *response_socket, const config_t &config)
+Cgi::Cgi(socket_t *response_socket, const config_t &config, Response *instance)
 : epoll_item_t(cgi),
+  m_response(instance),
   m_config(config),
   m_location(NULL),
   m_status(init),

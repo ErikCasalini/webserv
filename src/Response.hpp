@@ -44,6 +44,8 @@ public:
 	socket_t								*m_socket;
 	static const char						authorized_chars[];
 
+	friend class Cgi;
+
 private:
 
 	void									generate_target(void);

@@ -11,6 +11,7 @@
 #  define CGI_TIMEOUT 3
 # endif
 
+class Response;
 struct config_t;
 
 class	Cgi : public epoll_item_t
@@ -33,7 +34,7 @@ public:
 			{};
 	};
 
-						Cgi(socket_t *response_socket, const config_t &config);
+						Cgi(socket_t *response_socket, const config_t &config, Response	*m_response);
 						~Cgi(void);
 	Cgi					&operator=(const Cgi &rhs);
 	void				clear(void);
@@ -64,6 +65,7 @@ private:
 
 	void				close_pipes(int *p1, int *p2);
 
+	Response			*m_response;
 	const config_t		&m_config;
 	const location_t	*m_location;
 	cgi_status_t		m_status;
