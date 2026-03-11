@@ -21,16 +21,15 @@ $input
 length=$(printf "%s" "$body" | wc -c)
 
 # Emit full HTTP response
-printf "HTTP/1.0 200 OK
-"
-printf "Content-Type: text/html
-"
-printf "Content-Length: %d
-" "$length"
-printf "Connection: close
-"
-printf "
-"
+echo -en "Status: 200 OK\r\n"
+echo -en "Content-Type: text/html\r\n"
+echo -en "\r\n"
+# printf "Content-Length: %d
+# " "$length"
+# printf "Connection: close
+# "
+# printf "
+# "
 
 # Emit body
 printf "%s" "$body"

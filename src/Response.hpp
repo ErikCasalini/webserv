@@ -45,6 +45,7 @@ public:
 	static const char						authorized_chars[];
 
 	friend class Cgi;
+	friend class CgiParser;
 
 private:
 

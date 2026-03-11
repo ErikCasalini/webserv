@@ -45,6 +45,7 @@ SRC := request_parser.cpp \
 	   Config.cpp \
 	   signals_handling.cpp \
 	   Cgi.cpp \
+	   CgiParser.cpp \
 	   ConfigLexer.cpp \
 	   ConfigParser.cpp \
 	   Storage.cpp \
@@ -81,7 +82,7 @@ usan: all
 gdb: CXX := g++
 gdb: CXXFLAGS := $(CXXFLAGS_GDB)
 gdb: all
-	make gdb -C test/
+# 	make gdb -C test/
 
 # Only print a message if actually removing files/folders
 rm_wrapper = rm -r $(1) 2>/dev/null && echo $(2) || true

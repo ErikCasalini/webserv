@@ -32,6 +32,16 @@ Headers& Headers::operator=(const Headers& src)
 	return (*this);
 }
 
+headers_map_t::size_type Headers::count(const std::string& key)
+{
+	return (m_map.count(key));
+}
+
+const std::string& Headers::at(const std::string& key)
+{
+	return (m_map.at(key));
+}
+
 headers_map_t Headers::string_to_map(const std::string& headers_str,
 										const std::string& nl)
 {
@@ -48,7 +58,28 @@ headers_map_t Headers::string_to_map(const std::string& headers_str,
 	return (map);
 }
 
-// std::string Headers::map_to_string(const headers_map_t& headers_map);
+std::string Headers::key_to_string(const headers_map_t::const_iterator& key,
+									const std::string& nl)
+{
+	std::string str;
+	str.append(key->first);
+	str.append(": ");
+	str.append(key->second);
+	str.append(nl);
+	return (str);
+}
+
+std::string Headers::map_to_string(const headers_map_t& headers_map,
+									const std::string& nl)
+{
+	std::string str;
+	headers_map_t::const_iterator end = headers_map.end();
+	headers_map_t::const_iterator it = headers_map.begin();
+	for ( ; it != end; ++it) {
+		key_to_string(it, nl);
+	}
+	return (str);
+}
 
 std::string Headers::extract_key(const std::string& buffer, size_t& pos)
 {
@@ -85,6 +116,11 @@ std::string Headers::extract_value(const std::string& buffer,
 			++pos;
 		// Push the full string without any checks,
 		// actual parsing is done after only if the key is recognized.
+		while (buffer.at(start) == ' ') {
+			++start;
+			if (start >= buffer.size())
+				throw Headers::BadHeader("empty value");
+		}
 		val = buffer.substr(start, pos - start);
 		pos += 2;
 		return (val);
