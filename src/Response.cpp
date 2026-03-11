@@ -28,15 +28,35 @@ const char	Response::authorized_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 							"!$&'()*+,;=" // Reserved sub-delims
 							"%"; // Url encoding
 
-Response::Response(void)
+Response::Response(const config_t &config)
 : m_socket(NULL),
+  m_config(config),
   m_status(ok),
   m_version("HTTP/1.0"),
-  m_cgi(m_socket)
+  m_cgi(m_socket, config)
 {}
 
 Response::~Response(void)
 {}
+
+Response	&Response::operator=(const Response &rhs)
+{
+	if (this != &rhs) {
+		m_request = rhs.m_request;
+		m_buffer = rhs.m_buffer;
+		m_querry = rhs.m_querry;
+		m_path = rhs.m_path;
+		m_path_segments = rhs.m_path_segments;
+		m_target = rhs.m_target;
+		m_headers = rhs.m_headers;
+		m_status = rhs.m_status;
+		m_version = rhs.m_version;
+		m_body = rhs.m_body;
+		m_cgi = rhs.m_cgi;
+		m_storage = rhs.m_storage;
+	}
+	return (*this);
+}
 
 request_t	&Response::get_request(void)
 {
@@ -340,17 +360,10 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 	env.push_back("SERVER_PORT=" + m_socket->str_local_port());
 	env.push_back("SERVER_PROTOCOL=HTTP/1.0");
 	env.push_back("SERVER_SOFTWARE=webserv/2026");
-
-	// DEBUG
-	vector<std::string>::iterator	it = env.begin();
-
-	for (; it != env.end(); it++)
-		std::cout << *it << '\n';
-
 	return (env);
 }
 
-void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
+void	Response::handle_cgi_error(Sockets &sockets)
 {
 	epoll_event	new_event = EpollManager::create(m_socket, EPOLLOUT);
 
@@ -358,7 +371,7 @@ void	Response::handle_cgi_error(Sockets &sockets, config_t &config)
 	std::cout << "\033[1;31m[CGI INTERNAL ERROR]\033[0m " << *m_socket << '\n';
 	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, m_socket->fd, &new_event);
 	set_status(internal_err);
-	process(config, sockets);
+	process(sockets);
 }
 
 void	Response::handle_cgi(const location_t &location, Sockets &sockets)
@@ -433,17 +446,17 @@ void	Response::generate_target(const location_t &location)
 	m_target.append(m_path);
 }
 
-void	Response::process(const config_t &config, Sockets &sockets)
+void	Response::process(Sockets &sockets)
 {
 	location_t	location;
 
 	switch (m_status) {
 		case bad_request:
-			set_error(bad_request, config.http.server.at(m_socket->server_id).error_page.at(bad_request));
+			set_error(bad_request, m_config.http.server.at(m_socket->server_id).error_page.at(bad_request));
 			generate_response();
 			return ;
 		case internal_err:
-			set_error(internal_err, config.http.server.at(m_socket->server_id).error_page.at(internal_err));
+			set_error(internal_err, m_config.http.server.at(m_socket->server_id).error_page.at(internal_err));
 			generate_response();
 			return ;
 		default:
@@ -454,17 +467,17 @@ void	Response::process(const config_t &config, Sockets &sockets)
 	if (m_storage.init(m_path_segments) == 0) {
 		m_status = m_storage.exec(m_request, m_body, m_headers);
 		if (m_status != ok && m_status != no_content && m_status != created)
-			set_error(m_status, config.http.server.at(m_socket->server_id).error_page.at(m_status));
+			set_error(m_status, m_config.http.server.at(m_socket->server_id).error_page.at(m_status));
 	}
 	// NORMAL LOCATION PROCESSING
 	else
 	{
 		try {
-			location = find_location(m_path_segments, config.http.server.at(m_socket->server_id).locations);
+			location = find_location(m_path_segments, m_config.http.server.at(m_socket->server_id).locations);
 		}
 		catch (bad_location &e) {
 			(void)e;
-			set_error(not_found, config.http.server.at(m_socket->server_id).error_page.at(not_found));
+			set_error(not_found, m_config.http.server.at(m_socket->server_id).error_page.at(not_found));
 			generate_response();
 			return ;
 		}

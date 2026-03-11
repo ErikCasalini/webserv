@@ -9,10 +9,12 @@ class	ActiveMessages
 {
 	public:
 
-		ActiveMessages(int socket_limit)
-		: m_socket_limit(socket_limit)
+		ActiveMessages(const config_t &config)
+		: m_socket_limit(config.events.max_connections)
 		{
-			m_messages_lst.resize(m_socket_limit);
+			T	sample(config);
+
+			m_messages_lst.resize(config.events.max_connections, sample);
 		}
 
 		~ActiveMessages(void)

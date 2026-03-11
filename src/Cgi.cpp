@@ -58,8 +58,9 @@ void	Cgi::delete_envp(char*** envp)
 
 // PUBLIC FUNCTIONS
 
-Cgi::Cgi(socket_t *response_socket)
+Cgi::Cgi(socket_t *response_socket, const config_t &config)
 : epoll_item_t(cgi),
+  m_config(config),
   m_status(init),
   m_response_socket(response_socket),
   m_child_pid(-1),
@@ -75,6 +76,21 @@ Cgi::~Cgi(void)
 	if (!m_is_child) {
 		terminate_child();
 	}
+}
+
+Cgi	&Cgi::operator=(const Cgi &rhs)
+{
+	if (this != &rhs) {
+		m_status = rhs.m_status;
+		m_response_socket = rhs.m_response_socket;
+		m_child_pid = rhs.m_child_pid;
+		m_pipes = rhs.m_pipes;
+		m_request_body = rhs.m_request_body;
+		m_response_buf = rhs.m_response_buf;
+		m_last_activity = rhs.m_last_activity;
+		m_is_child = rhs.m_is_child;
+	}
+	return (*this);
 }
 
 void	Cgi::reset_state(int epoll_inst)
@@ -314,6 +330,7 @@ int	Cgi::read_child_response(int epoll_inst)
 		// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 		reset_state(epoll_inst);
 		m_status = done;
+		(void)m_config;
 		// parse_response (if NPH on envoie direct sinon on craft)
 		m_last_activity = 0;
 	}

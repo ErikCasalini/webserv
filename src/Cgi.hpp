@@ -33,8 +33,9 @@ public:
 			{};
 	};
 
-					Cgi(socket_t *response_socket);
+					Cgi(socket_t *response_socket, const config_t &config);
 					~Cgi(void);
+	Cgi				&operator=(const Cgi &rhs);
 	void			clear(void);
 	void			reset_state(int epoll_inst);
 	void			terminate_child(void);
@@ -60,6 +61,7 @@ private:
 
 	void			close_pipes(int *p1, int *p2);
 
+	const config_t	&m_config;
 	cgi_status_t	m_status;
 	socket_t		*m_response_socket;
 	pid_t			m_child_pid;

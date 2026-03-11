@@ -15,8 +15,9 @@ class Response
 
 public:
 
-											Response(void);
+											Response(const config_t &config);
 											~Response(void);
+	Response								&operator=(const Response &rhs);
 	void									clear(void);
 
 	request_t								&get_request(void);
@@ -32,10 +33,10 @@ public:
 	void									set_storage_infos(upload_t *upload);
 
 	void									parse_uri(void);
-	void									process(const config_t &config, Sockets &sockets);
+	void									process(Sockets &sockets);
 	void									init_cgi(void);
 	void									reset_cgi(int epoll_inst);
-	void									handle_cgi_error(Sockets &sockets, config_t &config);
+	void									handle_cgi_error(Sockets &sockets);
 	int										send_response(void);
 	bool									cgi_timeout(void);
 
@@ -57,6 +58,7 @@ private:
 	std::string 							get_current_date(void);
 
 
+	const config_t							&m_config;
 	request_t								m_request;
 	std::string								m_buffer;
 	std::string								m_querry;
@@ -69,7 +71,6 @@ private:
 	std::string								m_body;
 	Cgi										m_cgi;
 	Storage									m_storage;
-	// config_t								&m_config;
 };
 
 #endif
