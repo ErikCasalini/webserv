@@ -58,8 +58,10 @@ void	Cgi::delete_envp(char*** envp)
 
 // PUBLIC FUNCTIONS
 
-Cgi::Cgi(socket_t *response_socket)
+Cgi::Cgi(socket_t *response_socket, const config_t &config)
 : epoll_item_t(cgi),
+  m_config(config),
+  m_location(NULL),
   m_status(init),
   m_response_socket(response_socket),
   m_child_pid(-1),
@@ -75,6 +77,22 @@ Cgi::~Cgi(void)
 	if (!m_is_child) {
 		terminate_child();
 	}
+}
+
+Cgi	&Cgi::operator=(const Cgi &rhs)
+{
+	if (this != &rhs) {
+		m_location = rhs.m_location;
+		m_status = rhs.m_status;
+		m_response_socket = rhs.m_response_socket;
+		m_child_pid = rhs.m_child_pid;
+		m_pipes = rhs.m_pipes;
+		m_request_body = rhs.m_request_body;
+		m_response_buf = rhs.m_response_buf;
+		m_last_activity = rhs.m_last_activity;
+		m_is_child = rhs.m_is_child;
+	}
+	return (*this);
 }
 
 void	Cgi::reset_state(int epoll_inst)
@@ -112,6 +130,7 @@ void	Cgi::clear(void)
 	m_response_buf = NULL;
 	m_response_socket = NULL;
 	m_last_activity = 0;
+	m_location = NULL;
 }
 
 void	Cgi::set_body(std::string *body)
@@ -129,6 +148,11 @@ void	Cgi::set_socket(socket_t *socket)
 	m_response_socket = socket;
 }
 
+void	Cgi::set_location(const location_t *location)
+{
+	m_location = location;
+}
+
 socket_t	*Cgi::get_socket(void) const
 {
 	return (m_response_socket);
@@ -139,9 +163,19 @@ cgi_status_t	Cgi::get_status(void) const
 	return (m_status);
 }
 
+const config_t		&Cgi::get_config(void) const
+{
+	return (m_config);
+}
+
 pid_t	Cgi::get_child_pid(void) const
 {
 	return (m_child_pid);
+}
+
+const location_t	*Cgi::get_location(void) const
+{
+	return (m_location);
 }
 
 void	Cgi::reset_child_pid(void)
@@ -314,6 +348,8 @@ int	Cgi::read_child_response(int epoll_inst)
 		// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 		reset_state(epoll_inst);
 		m_status = done;
+		(void)m_config; // Const ref
+		(void)m_location; // Pointeur sur const location_t
 		// parse_response (if NPH on envoie direct sinon on craft)
 		m_last_activity = 0;
 	}

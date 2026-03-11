@@ -15,8 +15,9 @@ class Response
 
 public:
 
-											Response(void);
+											Response(const config_t &config);
 											~Response(void);
+	Response								&operator=(const Response &rhs);
 	void									clear(void);
 
 	request_t								&get_request(void);
@@ -29,13 +30,13 @@ public:
 	headers_t								&get_headers(void);
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
-	void									set_storage_infos(upload_t *upload);
+	void									set_storage_infos(const upload_t *upload);
 
 	void									parse_uri(void);
-	void									process(const config_t &config, Sockets &sockets);
+	void									process(Sockets &sockets);
 	void									init_cgi(void);
 	void									reset_cgi(int epoll_inst);
-	void									handle_cgi_error(Sockets &sockets, config_t &config);
+	void									handle_cgi_error(Sockets &sockets);
 	int										send_response(void);
 	bool									cgi_timeout(void);
 
@@ -45,18 +46,19 @@ public:
 
 private:
 
-	void									generate_target(const location_t &location);
+	void									generate_target(void);
 	void									generate_response(void);
 	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
 	void									set_error(status_t status, const std::string &error_body);
-	void									handle_static_request(const location_t &location);
-	void									handle_cgi(const location_t &location, Sockets &sockets);
+	void									handle_static_request(void);
+	void									handle_cgi(Sockets &sockets);
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
 	void									set_redirection(status_t status, const std::string &redir_addr);
 	std::string 							get_current_date(void);
 
 
+	const config_t							&m_config;
 	request_t								m_request;
 	std::string								m_buffer;
 	std::string								m_querry;
@@ -69,7 +71,7 @@ private:
 	std::string								m_body;
 	Cgi										m_cgi;
 	Storage									m_storage;
-	// config_t								&m_config;
+	const location_t						*m_location;
 };
 
 #endif

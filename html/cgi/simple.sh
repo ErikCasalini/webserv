@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 
 # Build body
+ENVIRONMENT=$(env)
+
 body="<!DOCTYPE html>
 <html>
 <body>
 <pre>
-THIS IS SIMPLE TEXT
+ENVIRONMENT:
+
+$ENVIRONMENT
 </pre>
 </body>
 </html>"

@@ -129,7 +129,7 @@ void	close_connection(socket_t *socket, Sockets &sockets, ActiveMessages<Request
 	sockets.close(*socket);
 }
 
-void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
+void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 
@@ -153,11 +153,11 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
 		// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
-		responses.at(i).handle_cgi_error(sockets, config);
+		responses.at(i).handle_cgi_error(sockets);
 	}
 }
 
-void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
+void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 	status_t		req_status;
@@ -187,7 +187,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			if (req_status != parsing) {
 				// CREATING RESPONSE
 				requests.at(i_req).m_socket->last_activity = std::time(NULL);
-				int i_resp = responses.add(sock, requests.at(i_req).get_infos(), config);// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+				int i_resp = responses.add(sock, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
 				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
@@ -196,7 +196,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 					responses.at(i_req).set_status(bad_request);
 				else
 					responses.at(i_resp).parse_uri();
-				responses.at(i_resp).process(config, sockets); // unset tracking of socket fd if CGI
+				responses.at(i_resp).process(sockets); // unset tracking of socket fd if CGI
 			}
 		}
 	}
@@ -208,7 +208,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			throw std::logic_error("Attempt to dereference nonexistent Response");
 
 		if (cgi->timeout() || cgi->read_child_response(sockets.epoll_inst()) == -1)
-			responses.at(i).handle_cgi_error(sockets, config);
+			responses.at(i).handle_cgi_error(sockets);
 		else if (cgi->get_status() == done) {
 			// READING FROM CHILD DONE -> ADD SOCKET TRACKING AGAIN AND HANDLE RESPONSE
 			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
@@ -217,7 +217,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 	}
 }
 
-void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
+void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 
@@ -242,7 +242,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 
 		if (cgi->get_status() == write_to_child)
 			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
-			responses.at(i).handle_cgi_error(sockets, config);
+			responses.at(i).handle_cgi_error(sockets);
 		else if (cgi->get_status() == read_from_child) {
 			// CHILD CLOSED --> CHECK EXIT STATUS
 			int		wstatus = 0;
@@ -251,11 +251,14 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 			if (w < 0 || !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) != 0) {
 			// CHILD OR WAITPID FAILED --> CLEAN, SET FD TRACKING AGAIN, SEND ERR 500
 				cgi->reset_child_pid();
-				responses.at(i).handle_cgi_error(sockets, config);
+				responses.at(i).handle_cgi_error(sockets);
 				return ;
 			}
 			// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 			cgi->reset_state(sockets.epoll_inst());
+			(void)cgi->get_config(); // Const ref
+			(void)cgi->get_location(); // Pointeur sur const location_t
+		// parse_response (if NPH on envoie direct sinon on craft)
 			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
 			responses.at(i).set_status(sending_resp);
 			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, cgi->get_socket()->fd, &new_event);
@@ -265,7 +268,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 	}
 }
 
-void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, config_t &config)
+void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 	int				i;
@@ -310,15 +313,15 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 
 		if (cgi->timeout() || cgi->write_body_to_child(sockets.epoll_inst()) == -1)
 			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
-			responses.at(i).handle_cgi_error(sockets, config);
+			responses.at(i).handle_cgi_error(sockets);
 	}
 }
 
-void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses, config_t &config)
+void	terminate_pending_cgi(Sockets &sockets, ActiveMessages<Response> &responses)
 {
 	for (size_t i = 0; i < responses.size(); i++) {
 		if (responses.at(i).cgi_timeout())
-			responses.at(i).handle_cgi_error(sockets, config);
+			responses.at(i).handle_cgi_error(sockets);
 	}
 }
 
@@ -340,8 +343,8 @@ void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
 	Sockets						sockets(config.events.max_connections); // throws
-	ActiveMessages<Request>		requests(config.events.max_connections); // throws
-	ActiveMessages<Response>	responses(config.events.max_connections); // throws
+	ActiveMessages<Request>		requests(config); // throws
+	ActiveMessages<Response>	responses(config); // throws
 
 	init_listen_sockets(config.http.server, sockets); // throws
 	while(1) {
@@ -353,19 +356,19 @@ void	main_server_loop(config_t &config)
 				return ;
 			}
 			if (sockets.events_at(i).events & EPOLLERR)
-				handle_error(sockets.events_at(i), sockets, requests, responses, config);
+				handle_error(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLIN)
-				handle_read_event(sockets.events_at(i), sockets, requests, responses, config);
+				handle_read_event(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLHUP)
-				handle_client_disconnected(sockets.events_at(i), sockets, requests, responses, config);
+				handle_client_disconnected(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLOUT)
-				handle_write_event(sockets.events_at(i), sockets, requests, responses, config);
+				handle_write_event(sockets.events_at(i), sockets, requests, responses);
 		}
 		if (int_signal) {
 				std::cout << "\nQuitting...\n";
 				return ;
 		}
-		terminate_pending_cgi(sockets, responses, config);
+		terminate_pending_cgi(sockets, responses);
 		close_pending_connections(sockets, requests, responses, config);
 	}
 }
