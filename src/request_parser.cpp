@@ -42,15 +42,17 @@
 using std::string;
 using std::map;
 
-Request::Request()
+Request::Request(const config_t& config)
 	: m_socket(NULL)
+	, m_config(config)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
 {}
 
 // For testing purposes
-Request::Request(string buffer)
+Request::Request(const config_t& config, string buffer)
 	: m_socket(NULL)
+	, m_config(config)
 	, m_buffer(buffer)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
@@ -58,6 +60,7 @@ Request::Request(string buffer)
 
 Request::Request(const Request& src)
 	: m_socket(src.m_socket)
+	, m_config(src.m_config)
 	, m_infos(src.m_infos)
 	, m_buffer(src.m_buffer)
 	, m_pos(src.m_pos)

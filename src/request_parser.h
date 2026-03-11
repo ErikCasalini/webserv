@@ -14,8 +14,8 @@
 // TODO: add an init function that creates the method and protocol maps
 class Request {
 public:
-	Request();
-	Request(std::string buffer); // For testing purposes
+	Request(const config_t& config);
+	Request(const config_t& config, std::string buffer); // For testing purposes
 	Request(const Request& src);
 	Request& operator=(const Request& src);
 
@@ -49,6 +49,8 @@ public:
 	friend class RequestStates::Done;
 	friend class RequestStates::Invalid;
 private:
+	Request();
+	const config_t& m_config;
 	request_t m_infos;
 	std::string m_buffer;
 	size_t m_pos;
