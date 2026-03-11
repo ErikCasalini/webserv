@@ -85,9 +85,10 @@ class	ActiveMessages
 
 	private:
 
-	const config_t	&m_config;
-	std::vector<T>	m_messages_lst;
-	int				m_socket_limit;
+		const config_t	&m_config;
+		std::vector<T>	m_messages_lst;
+		int				m_socket_limit;
+		// std::vector<T(const config_t& conf)>	m_messages_lst;
 
 };
 

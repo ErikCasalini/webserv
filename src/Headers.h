@@ -23,7 +23,10 @@ public:
 
 	static headers_map_t string_to_map(const std::string& headers_str,
 										const std::string& nl);
-	static std::string map_to_string(const headers_map_t& headers_map);
+	static std::string key_to_string(const headers_map_t::const_iterator& key,
+										const std::string& nl);
+	static std::string map_to_string(const headers_map_t& headers_map,
+										const std::string& nl = CRLF);
 
 	static std::string extract_key(const std::string& buffer, size_t& pos);
 	static std::string extract_value(const std::string& buffer,
@@ -34,6 +37,8 @@ public:
 			= static_cast<unsigned long>(std::numeric_limits<long>::max()));
 	std::string parse_content_type();
 	bool parse_connection();
+	headers_map_t::size_type count(const std::string& key);
+	const std::string& at(const std::string& key);
 
 	headers_t get_struct();
 	headers_map_t get_map();

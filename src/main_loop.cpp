@@ -1,4 +1,5 @@
 #include "main_loop.hpp"
+#include "CgiParser.h"
 #include "Sockets.hpp"
 #include "ActiveMessages.hpp"
 #include "request_parser.h"
@@ -258,7 +259,12 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 			cgi->reset_state(sockets.epoll_inst());
 			(void)cgi->get_config(); // Const ref
 			(void)cgi->get_location(); // Pointeur sur const location_t
-		// parse_response (if NPH on envoie direct sinon on craft)
+
+			// if (!response.at(i).location.cgi_nph) {
+			CgiParser cgi_response(&responses.at(i));
+			cgi_response.parse();
+			// }
+
 			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
 			responses.at(i).set_status(sending_resp);
 			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, cgi->get_socket()->fd, &new_event);

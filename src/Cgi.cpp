@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
+#include "CgiParser.h"
 #include "Sockets.hpp"
 #include "response_utils.h"
 #include "Response.hpp"
@@ -350,9 +351,15 @@ int	Cgi::read_child_response(int epoll_inst)
 		// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 		reset_state(epoll_inst);
 		m_status = done;
+
 		(void)m_config; // Const ref
 		(void)m_location; // Pointeur sur const location_t
 		// parse_response (if NPH on envoie direct sinon on craft)
+		// if (!m_response->location.cgi_nph) {
+		CgiParser cgi_response(m_response);
+		cgi_response.parse();
+		// }
+
 		m_last_activity = 0;
 	}
 	return (0);
