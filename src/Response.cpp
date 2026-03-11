@@ -33,7 +33,8 @@ Response::Response(const config_t &config)
   m_config(config),
   m_status(ok),
   m_version("HTTP/1.0"),
-  m_cgi(m_socket, config)
+  m_cgi(m_socket, config),
+  m_location(NULL)
 {}
 
 Response::~Response(void)
@@ -54,6 +55,7 @@ Response	&Response::operator=(const Response &rhs)
 		m_body = rhs.m_body;
 		m_cgi = rhs.m_cgi;
 		m_storage = rhs.m_storage;
+		m_location = rhs.m_location;
 	}
 	return (*this);
 }
@@ -68,7 +70,7 @@ void	Response::set_request(const request_t &request)
 	m_request = request;
 }
 
-void	Response::set_storage_infos(upload_t *upload)
+void	Response::set_storage_infos(const upload_t *upload)
 {
 	m_storage.set_storage_infos(upload);
 }
@@ -133,6 +135,7 @@ void	Response::clear(void)
 	m_status = ok;
 	m_cgi.clear();
 	m_storage.clear();
+	m_location = NULL;
 }
 
 void	Response::parse_uri(void)
@@ -236,19 +239,19 @@ void	Response::set_redirection(status_t status, const std::string &redir_addr)
 	m_status = status;
 }
 
-void	Response::handle_static_request(const location_t &location)
+void	Response::handle_static_request()
 {
 	file_stat	type = get_file_type(m_target);
 
 	switch (type) {
 		case nonexistent:
-			set_error(not_found, location.error_page.at(not_found));
+			set_error(not_found, m_location->error_page.at(not_found));
 			return ;
 		case bad_perms:
-			set_error(forbidden, location.error_page.at(forbidden));
+			set_error(forbidden, m_location->error_page.at(forbidden));
 			return ;
 		case error:
-			set_error(internal_err, location.error_page.at(internal_err));
+			set_error(internal_err, m_location->error_page.at(internal_err));
 			return ;
 		case dir:
 			if (m_target.at(m_target.size() - 1) != '/') {
@@ -265,13 +268,13 @@ void	Response::handle_static_request(const location_t &location)
 
 	if (m_request.method == post) { // on est surs ?
 		m_headers.allow = "GET, DELETE";
-		set_error(method_not_allowed, location.error_page.at(method_not_allowed));
+		set_error(method_not_allowed, m_location->error_page.at(method_not_allowed));
 		return;
 	}
 
 	if (m_request.method == del) {
 		if (type == dir)
-			set_error(forbidden, location.error_page.at(forbidden));
+			set_error(forbidden, m_location->error_page.at(forbidden));
 		else {
 			errno = 0;
 			std::remove(m_target.c_str());
@@ -281,17 +284,17 @@ void	Response::handle_static_request(const location_t &location)
 					break ;
 				case EPERM:
 				case EACCES:
-					set_error(forbidden, location.error_page.at(forbidden));
+					set_error(forbidden, m_location->error_page.at(forbidden));
 					break ;
 				default:
-					set_error(internal_err, location.error_page.at(internal_err));
+					set_error(internal_err, m_location->error_page.at(internal_err));
 			}
 		}
 		return ;
 	}
 
 	if (type == dir) {
-		std::string	index_testing(m_target + location.index);
+		std::string	index_testing(m_target + m_location->index);
 
 		switch (get_file_type(index_testing)) {
 			case file:
@@ -300,17 +303,17 @@ void	Response::handle_static_request(const location_t &location)
 			case dir:
 				if (index_testing.at(index_testing.size() - 1) != '/') {
 					if (m_request.method == post)
-						set_redirection(perm_redir, m_path + location.index + '/');
+						set_redirection(perm_redir, m_path + m_location->index + '/');
 					else
-						set_redirection(moved_perm, m_path + location.index + '/');
+						set_redirection(moved_perm, m_path + m_location->index + '/');
 					return ;
 				}
 				__attribute__((fallthrough));
 			case nonexistent:
-				if (location.autoindex) {
+				if (m_location->autoindex) {
 					m_status = generate_indexing(m_target, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 					if (m_status != ok)
-						set_error(m_status, location.error_page.at(m_status));
+						set_error(m_status, m_location->error_page.at(m_status));
 					else {
 						m_headers.content_length = m_body.size();
 						m_headers.content_type = "text/html";
@@ -320,16 +323,16 @@ void	Response::handle_static_request(const location_t &location)
 				else
 					__attribute__((fallthrough));
 			case bad_perms:
-				set_error(forbidden, location.error_page.at(forbidden));
+				set_error(forbidden, m_location->error_page.at(forbidden));
 				return ;
 			case error:
-				set_error(internal_err, location.error_page.at(internal_err));
+				set_error(internal_err, m_location->error_page.at(internal_err));
 				return ;
 		}
 	}
 	m_status = read_file_to_body(m_target, m_body);
 	if (m_status != ok)
-		set_error(m_status, location.error_page.at(m_status));
+		set_error(m_status, m_location->error_page.at(m_status));
 	set_body_headers(m_headers, m_body, m_target);
 }
 
@@ -338,6 +341,7 @@ void	Response::init_cgi(void)
 	m_cgi.set_body(&m_request.body);
 	m_cgi.set_response_buf(&m_buffer);
 	m_cgi.set_socket(m_socket);
+	m_cgi.set_location(m_location);
 }
 
 const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_infos) const
@@ -374,42 +378,42 @@ void	Response::handle_cgi_error(Sockets &sockets)
 	process(sockets);
 }
 
-void	Response::handle_cgi(const location_t &location, Sockets &sockets)
+void	Response::handle_cgi(Sockets &sockets)
 {
 	cgi_uri_infos_t	cgi_uri_infos;
 
 	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
-	if (cgi_uri_infos.init(location, m_path_segments) == -1) {
-		if (location.autoindex) {
+	if (cgi_uri_infos.init(*m_location, m_path_segments) == -1) {
+		if (m_location->autoindex) {
 			m_status = generate_indexing(cgi_uri_infos.script_abs_path, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
 			if (m_status != ok)
-				set_error(m_status, location.error_page.at(m_status));
+				set_error(m_status, m_location->error_page.at(m_status));
 			else {
 				m_headers.content_length = m_body.size();
 				m_headers.content_type = "text/html";
 			}
 		}
 		else
-			set_error(forbidden, location.error_page.at(forbidden));
+			set_error(forbidden, m_location->error_page.at(forbidden));
 		throw Cgi::cgi_error("cgi: script name is empty, attempt to index dir");
 	}
 
 	switch(get_file_type(cgi_uri_infos.script_abs_path)) {
 		case file:
 			if (access(cgi_uri_infos.script_abs_path.c_str(), X_OK) < 0) {
-				set_error(forbidden, location.error_page.at(forbidden));
+				set_error(forbidden, m_location->error_page.at(forbidden));
 				throw Cgi::cgi_error("cgi: can't open script");
 			}
 			break ;
 		case dir:
 		case nonexistent:
-			set_error(not_found, location.error_page.at(not_found));
+			set_error(not_found, m_location->error_page.at(not_found));
 			throw Cgi::cgi_error("cgi: can't open script");
 		case bad_perms:
-			set_error(forbidden, location.error_page.at(forbidden));
+			set_error(forbidden, m_location->error_page.at(forbidden));
 			throw Cgi::cgi_error("cgi: can't open script");
 		case error:
-			set_error(internal_err, location.error_page.at(internal_err));
+			set_error(internal_err, m_location->error_page.at(internal_err));
 			throw Cgi::cgi_error("cgi: can't open script");
 		default:
 			throw CriticalException("cgi: get_cgi_file() returned unexpected file type");
@@ -426,7 +430,7 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 	}
 	catch (internal_error &e) {
 		m_cgi.delete_envp(&envp);
-		set_error(internal_err, location.error_page.at(internal_err));
+		set_error(internal_err, m_location->error_page.at(internal_err));
 		throw Cgi::cgi_error("cgi: execution failed");
 	}
 	catch (CriticalException &e) {
@@ -438,9 +442,9 @@ void	Response::handle_cgi(const location_t &location, Sockets &sockets)
 	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolved
 }
 
-void	Response::generate_target(const location_t &location)
+void	Response::generate_target()
 {
-	m_target = location.root; // root doit commencer par '/'
+	m_target = m_location->root; // root doit commencer par '/'
 	if (m_target.at(m_target.size() - 1) == '/')
 		m_target.resize(m_target.size() - 1);
 	m_target.append(m_path);
@@ -448,15 +452,19 @@ void	Response::generate_target(const location_t &location)
 
 void	Response::process(Sockets &sockets)
 {
-	location_t	location;
-
 	switch (m_status) {
 		case bad_request:
-			set_error(bad_request, m_config.http.server.at(m_socket->server_id).error_page.at(bad_request));
+			if (m_location)
+				set_error(bad_request, m_location->error_page.at(bad_request));
+			else
+				set_error(bad_request, m_config.http.server.at(m_socket->server_id).error_page.at(bad_request));
 			generate_response();
 			return ;
 		case internal_err:
-			set_error(internal_err, m_config.http.server.at(m_socket->server_id).error_page.at(internal_err));
+			if (m_location)
+				set_error(internal_err, m_location->error_page.at(internal_err));
+			else
+				set_error(internal_err, m_config.http.server.at(m_socket->server_id).error_page.at(internal_err));
 			generate_response();
 			return ;
 		default:
@@ -473,7 +481,7 @@ void	Response::process(Sockets &sockets)
 	else
 	{
 		try {
-			location = find_location(m_path_segments, m_config.http.server.at(m_socket->server_id).locations);
+			m_location = find_location(m_path_segments, m_config.http.server.at(m_socket->server_id).locations);
 		}
 		catch (bad_location &e) {
 			(void)e;
@@ -482,22 +490,22 @@ void	Response::process(Sockets &sockets)
 			return ;
 		}
 
-		if (is_bad_method(m_request.method, location.limit_except)) {
-			set_error(forbidden, location.error_page.at(forbidden));
+		if (is_bad_method(m_request.method, m_location->limit_except)) {
+			set_error(forbidden, m_location->error_page.at(forbidden));
 			generate_response();
 			return ;
 		}
-		else if (location.redirection.first) {
-			set_redirection(location.redirection.first, location.redirection.second);
+		else if (m_location->redirection.first) {
+			set_redirection(m_location->redirection.first, m_location->redirection.second);
 			generate_response();
 			return ;
 		}
-		else if (!location.cgi)
-			generate_target(location);
+		else if (!m_location->cgi)
+			generate_target();
 
-		if (location.cgi) {
+		if (m_location->cgi) {
 			try {
-				handle_cgi(location, sockets);
+				handle_cgi(sockets);
 				return ;
 			}
 			catch (Cgi::cgi_error &e) {
@@ -506,7 +514,7 @@ void	Response::process(Sockets &sockets)
 			}
 		}
 		else
-			handle_static_request(location);
+			handle_static_request();
 	}
 	generate_response();
 }

@@ -21,7 +21,7 @@ void	Storage::clear(void)
 }
 
 // Should rename uplodat to storage
-void	Storage::set_storage_infos(upload_t *upload)
+void	Storage::set_storage_infos(const upload_t *upload)
 {
 	m_storage_infos = upload;
 }

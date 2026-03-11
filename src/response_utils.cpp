@@ -33,7 +33,7 @@ int	evaluate_path_matching(const list<string> &path, const list<string> &locatio
 	return (match_rate);
 }
 
-const location_t	&find_location(const list<string> &path, const vector<location_t> &locations) // assume location path starts with '/'
+const location_t	*find_location(const list<string> &path, const vector<location_t> &locations) // assume location path starts with '/'
 {
 	vector<location_t>::const_iterator	it_loc = locations.begin();
 	vector<location_t>::const_iterator	ret = locations.end();
@@ -41,7 +41,7 @@ const location_t	&find_location(const list<string> &path, const vector<location_
 	for (int best_match = 0, match_rate; it_loc < locations.end(); it_loc++) {
 		if (it_loc->exact_match) {
 			if (is_exact_match(path, it_loc->path))
-				return (*it_loc);
+				return (&(*it_loc));
 		}
 		else {
 			match_rate = evaluate_path_matching(path, it_loc->path);
@@ -54,7 +54,7 @@ const location_t	&find_location(const list<string> &path, const vector<location_
 	if (ret == locations.end())
 		throw (bad_location("Uri matchs no locations"));
 
-	return (*ret);
+	return (&(*ret));
 }
 
 status_t	read_file_to_body(const string &file_name, string &body)
@@ -96,7 +96,7 @@ void	set_body_headers(headers_t &headers, string body, string file_name)
 	headers.content_type = "text/html"; // remplacer par fonction qui cherche (si trouve pas -> bit stream)
 }
 
-bool	is_bad_method(method_t method, vector<method_t> &limit_except)
+bool	is_bad_method(method_t method, const vector<method_t> &limit_except)
 {
 	for (vector<method_t>::const_iterator it = limit_except.begin(); it != limit_except.end(); it++) {
 		if (method == *it)

@@ -10,7 +10,8 @@ class	ActiveMessages
 	public:
 
 		ActiveMessages(const config_t &config)
-		: m_socket_limit(config.events.max_connections)
+		: m_config(config),
+		  m_socket_limit(config.events.max_connections)
 		{
 			T	sample(config);
 
@@ -33,7 +34,7 @@ class	ActiveMessages
 			throw std::logic_error("Attempt to add Message while ActiveMessage is full");
 		}
 
-		int	add(socket_t *socket, const request_t &request, config_t &config) // for Responses only
+		int	add(socket_t *socket, const request_t &request) // for Responses only
 		{
 			if (socket == NULL)
 				throw std::logic_error("Attempt to add invalid socket");
@@ -42,7 +43,7 @@ class	ActiveMessages
 					m_messages_lst.at(i).m_socket = socket;
 					m_messages_lst.at(i).set_request(request);
 					m_messages_lst.at(i).get_headers().keep_alive = request.headers.keep_alive;
-					m_messages_lst.at(i).set_storage_infos(&config.http.server.at(socket->server_id).upload);
+					m_messages_lst.at(i).set_storage_infos(&m_config.http.server.at(socket->server_id).upload);
 					return (i);
 				}
 			}
@@ -84,8 +85,9 @@ class	ActiveMessages
 
 	private:
 
-		std::vector<T>	m_messages_lst;
-		int				m_socket_limit;
+	const config_t	&m_config;
+	std::vector<T>	m_messages_lst;
+	int				m_socket_limit;
 
 };
 

@@ -30,7 +30,7 @@ public:
 	headers_t								&get_headers(void);
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
-	void									set_storage_infos(upload_t *upload);
+	void									set_storage_infos(const upload_t *upload);
 
 	void									parse_uri(void);
 	void									process(Sockets &sockets);
@@ -46,12 +46,12 @@ public:
 
 private:
 
-	void									generate_target(const location_t &location);
+	void									generate_target(void);
 	void									generate_response(void);
 	const std::vector<std::string>			generate_cgi_env(const cgi_uri_infos_t &uri_infos) const;
 	void									set_error(status_t status, const std::string &error_body);
-	void									handle_static_request(const location_t &location);
-	void									handle_cgi(const location_t &location, Sockets &sockets);
+	void									handle_static_request(void);
+	void									handle_cgi(Sockets &sockets);
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
 	void									set_redirection(status_t status, const std::string &redir_addr);
@@ -71,6 +71,7 @@ private:
 	std::string								m_body;
 	Cgi										m_cgi;
 	Storage									m_storage;
+	const location_t						*m_location;
 };
 
 #endif
