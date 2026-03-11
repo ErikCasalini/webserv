@@ -12,8 +12,9 @@ class Storage {
 
 public:
 
-				Storage(void);
+				Storage(const config_t &config);
 				~Storage(void);
+	Storage		&operator=(const Storage &rhs);
 	void		clear(void);
 
 	void		set_storage_infos(const upload_t *upload);
@@ -31,6 +32,7 @@ private:
 	string			m_file_name;
 	string			m_file_path;
 	const upload_t	*m_storage_infos; // both Storage path and root should end and start by '/'
+	const config_t	&m_config;
 
 };
 

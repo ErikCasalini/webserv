@@ -6,12 +6,23 @@
 #include <sys/stat.h>
 #include <cstdio>
 
-Storage::Storage(void)
-: m_storage_infos(NULL)
+Storage::Storage(const config_t &config)
+: m_storage_infos(NULL),
+  m_config(config)
 {}
 
 Storage::~Storage(void)
 {}
+
+Storage		&Storage::operator=(const Storage &rhs)
+{
+	if (this != &rhs) {
+		m_file_name = rhs.m_file_name;
+		m_file_path = rhs.m_file_path;
+		m_storage_infos = rhs.m_storage_infos;
+	}
+	return (*this);
+}
 
 void	Storage::clear(void)
 {
@@ -53,7 +64,7 @@ status_t	Storage::exec(const request_t &request, string &response_body, headers_
 
 	switch (request.method) {
 		case get:
-			ret =retrive(response_body, headers);
+			ret = retrive(response_body, headers);
 			break ;
 		case post:
 			ret = store(request.body, response_body, headers);
@@ -85,7 +96,7 @@ status_t	Storage::retrive(string &body, headers_t &headers) const
 
 	ret = read_file_to_body(m_file_path, body);
 	if (ret == ok)
-		set_body_headers(headers, body, m_file_path);
+		set_body_headers(headers, body, m_file_path, m_config);
 	return (ret);
 }
 
@@ -132,7 +143,7 @@ status_t	Storage::store(const string &request_body, string &response_body, heade
 
 	response_body = request_body;
 	headers.location = get_new_file_location();
-	set_body_headers(headers, response_body, m_file_path);
+	set_body_headers(headers, response_body, m_file_path, m_config);
 	return (created);
 }
 
