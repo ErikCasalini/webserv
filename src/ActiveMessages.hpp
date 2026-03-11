@@ -2,6 +2,7 @@
 # define ACTIVEMESSAGES_HPP
 
 # include "Config.h"
+# include "Cookies.hpp"
 # include <vector>
 
 template <typename T>
@@ -34,7 +35,7 @@ class	ActiveMessages
 			throw std::logic_error("Attempt to add Message while ActiveMessage is full");
 		}
 
-		int	add(socket_t *socket, const request_t &request) // for Responses only
+		int	add(socket_t *socket, const request_t &request, Cookies *cookies) // for Responses only
 		{
 			if (socket == NULL)
 				throw std::logic_error("Attempt to add invalid socket");
@@ -44,6 +45,7 @@ class	ActiveMessages
 					m_messages_lst.at(i).set_request(request);
 					m_messages_lst.at(i).get_headers().keep_alive = request.headers.keep_alive;
 					m_messages_lst.at(i).set_storage_infos(&m_config.http.server.at(socket->server_id).upload);
+					m_messages_lst.at(i).set_cookies(cookies);
 					return (i);
 				}
 			}

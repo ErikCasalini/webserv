@@ -51,7 +51,8 @@ SRC := request_parser.cpp \
 	   Storage.cpp \
 	   general_utils.cpp \
 	   parse_uri_utils.cpp \
-	   response_utils.cpp
+	   response_utils.cpp \
+	   Cookies.cpp
 
 BUILD_DIR := build
 OBJ := $(SRC:%.cpp=$(BUILD_DIR)/%.o)

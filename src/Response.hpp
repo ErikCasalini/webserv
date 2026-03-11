@@ -9,6 +9,7 @@
 # include "EpollManager.hpp"
 # include "Cgi.hpp"
 # include "Storage.hpp"
+# include "Cookies.hpp"
 
 class Response
 {
@@ -28,6 +29,8 @@ public:
 	status_t								get_status(void) const;
 	cgi_status_t							get_cgi_status(void) const;
 	headers_t								&get_headers(void);
+	Cookies									*get_cookies(void);
+	void									set_cookies(Cookies *cookies);
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
 	void									set_storage_infos(const upload_t *upload);
@@ -58,8 +61,6 @@ private:
 	static std::map<int, std::string>		init_status_codes(void);
 	static const std::map<int, std::string>	&get_status_codes(void);
 	void									set_redirection(status_t status, const std::string &redir_addr);
-	std::string 							get_current_date(void);
-
 
 	const config_t							&m_config;
 	request_t								m_request;
@@ -75,6 +76,8 @@ private:
 	Cgi										m_cgi;
 	Storage									m_storage;
 	const location_t						*m_location;
+	Cookies									*m_cookies;
+
 };
 
 #endif

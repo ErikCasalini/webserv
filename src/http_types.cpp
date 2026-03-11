@@ -21,6 +21,7 @@ headers_t::headers_t(const headers_t& src)
 	, server(src.server)
 	, if_modified_since(src.if_modified_since)
 	, allow(src.allow)
+	, set_cookie(src.set_cookie)
 {}
 
 headers_t& headers_t::operator=(const headers_t& src)
@@ -35,6 +36,7 @@ headers_t& headers_t::operator=(const headers_t& src)
 		server = src.server;
 		if_modified_since = src.if_modified_since;
 		allow = src.allow;
+		set_cookie = set_cookie;
 	}
 	return (*this);
 }
@@ -50,6 +52,7 @@ void headers_t::clear()
 	server = "Webserver_2026";
 	if_modified_since.clear();
 	allow.clear();
+	set_cookie.clear();
 }
 
 std::ostream& operator<<(std::ostream& os, const headers_t& h)

@@ -35,7 +35,8 @@ Response::Response(const config_t &config)
   m_version("HTTP/1.0"),
   m_cgi(m_socket, config, this),
   m_storage(config),
-  m_location(NULL)
+  m_location(NULL),
+  m_cookies(NULL)
 {}
 
 Response::~Response(void)
@@ -57,6 +58,7 @@ Response	&Response::operator=(const Response &rhs)
 		m_cgi = rhs.m_cgi;
 		m_storage = rhs.m_storage;
 		m_location = rhs.m_location;
+		m_cookies = rhs.m_cookies;
 	}
 	return (*this);
 }
@@ -75,6 +77,17 @@ void	Response::set_storage_infos(const upload_t *upload)
 {
 	m_storage.set_storage_infos(upload);
 }
+
+Cookies	*Response::get_cookies(void)
+{
+	return (m_cookies);
+}
+
+void	Response::set_cookies(Cookies *cookies)
+{
+	m_cookies = cookies;
+}
+
 
 const char	*Response::get_buf(void) const
 {
@@ -137,6 +150,7 @@ void	Response::clear(void)
 	m_cgi.clear();
 	m_storage.clear();
 	m_location = NULL;
+	m_cookies = NULL;
 }
 
 void	Response::parse_uri(void)
@@ -159,18 +173,6 @@ void	Response::parse_uri(void)
 	}
 	m_path = create_path(m_path_segments);
 	m_status = ok;
-}
-
-std::string	Response::get_current_date(void)
-{
-	const size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
-	char buf[buf_len];
-	const char *format = "%a, %d %b %Y %H:%M:%S GMT";
-
-	std::time_t	res = std::time(NULL);
-	std::strftime(buf, buf_len, format, std::localtime(&res));
-
-	return (buf);
 }
 
 bool	Response::cgi_timeout(void)
@@ -210,7 +212,9 @@ void	Response::generate_response(void)
 		}
 		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << CRLF
 		<< "Server: " << m_headers.server << CRLF
-		<< "Date: " << get_current_date() << CRLF
+		<< "Date: " << get_date(std::time(NULL)) << CRLF;
+		if (m_headers.set_cookie.size())
+			buf << "Set-Cookie: " << m_headers.set_cookie << CRLF
 		<< CRLF;
 
 	if (m_body.size())
@@ -471,6 +475,21 @@ void	Response::process(Sockets &sockets)
 		default:
 			break ;
 	}
+
+	// COOKIE HANDLING
+	if (m_cookies->find(m_request.headers.cookies)) {
+		std::time_t	curr_time = std::time(NULL);
+		if (m_cookies->at(m_request.headers.cookies).exp_date <= curr_time) {
+			m_cookies->erase(m_request.headers.cookies);
+			m_headers.set_cookie = m_cookies->create();
+		}
+		else {
+			m_cookies->at(m_request.headers.cookies).last_visit = curr_time;
+			m_cookies->at(m_request.headers.cookies).last_visit_str = get_date(curr_time);
+		}
+	}
+	else
+		m_headers.set_cookie = m_cookies->create();
 
 	// STORAGE
 	if (m_storage.init(m_path_segments) == 0) {
