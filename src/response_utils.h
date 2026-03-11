@@ -30,7 +30,7 @@ class	internal_error : public std::runtime_error
 int					evaluate_path_matching(const list<string> &path, const list<string> &location);
 const location_t	*find_location(const list<string> &path, const vector<location_t> &locations);
 status_t			read_file_to_body(const string &file_name, string &body);
-void				set_body_headers(headers_t &headers, string body, string file_name);
+void				set_body_headers(headers_t &headers, string body, string file_name, const config_t &config);
 bool				is_bad_method(method_t method, const vector<method_t> &limit_except);
 status_t			generate_indexing(const std::string &directory, std::string &body, const std::string &path);
 

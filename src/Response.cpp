@@ -34,6 +34,7 @@ Response::Response(const config_t &config)
   m_status(ok),
   m_version("HTTP/1.0"),
   m_cgi(m_socket, config, this),
+  m_storage(config),
   m_location(NULL)
 {}
 
@@ -333,7 +334,7 @@ void	Response::handle_static_request()
 	m_status = read_file_to_body(m_target, m_body);
 	if (m_status != ok)
 		set_error(m_status, m_location->error_page.at(m_status));
-	set_body_headers(m_headers, m_body, m_target);
+	set_body_headers(m_headers, m_body, m_target, m_config);
 }
 
 void	Response::init_cgi(void)
