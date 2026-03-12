@@ -64,7 +64,6 @@ namespace _config_lexer {
 			pos = consume_spaces(line, pos);
 			if (pos == line.length() || line[pos] == '#')
 				continue;
-			// line.erase(0, pos);
 			string::size_type f = line.find_first_of("#");
 			if (f == string::npos)
 				pre.append(line);

@@ -48,7 +48,6 @@ public:
 	headers_t get_struct();
 	headers_map_t get_map();
 	void set_map(const headers_map_t& raw_headers);
-	// void set_str(const std::string& headers_str);
 
 private:
 	headers_map_t m_map;

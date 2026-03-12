@@ -24,6 +24,7 @@ http_t::http_t()
 	error_page[402] = DEFAULT_ERROR_402;
 	error_page[403] = DEFAULT_ERROR_403;
 	error_page[404] = DEFAULT_ERROR_404;
+	error_page[405] = DEFAULT_ERROR_405;
 	error_page[500] = DEFAULT_ERROR_500;
 	error_page[501] = DEFAULT_ERROR_501;
 	error_page[502] = DEFAULT_ERROR_502;

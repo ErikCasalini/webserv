@@ -7,7 +7,6 @@ class Request;
 
 class RequestState {
 public:
-	// virtual ~RequestState();
 	virtual void clear(Request* request) = 0;
 	virtual void clear_infos(Request* request) = 0;
 	virtual void parse(Request* request) = 0;

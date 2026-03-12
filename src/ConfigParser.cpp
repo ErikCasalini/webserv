@@ -139,11 +139,6 @@ static string error_file_to_string(const string& filename)
 	return (content);
 }
 
-// TODO(PERF): Avoid error pages duplicates in config_t.
-// Make it a class and store all the errors pages in a map
-// with their path as a key and content as value.
-// Make the error_pages fields in config_t be pointers to the
-// corresponding errors content.
 void ConfigParser::parse_error_page(error_page_t& error_page)
 {
 	consume();
@@ -170,7 +165,6 @@ void ConfigParser::parse_error_page(error_page_t& error_page)
 		if (error_page.size() > ERROR_PAGE_MAX)
 			throw ConfigParser::InvalidValue(
 					"too many error_pages number");
-		// TODO: PERF: only load the file once and make all the numbers point to the same file
 		error_page[err_nums[i]] = page;
 	}
 	consume(";");
@@ -582,7 +576,6 @@ void ConfigParser::parse_http()
 			case 2:
 				if (*m_tok_it == "server") {
 					m_config.http.server.push_back(parse_server());
-				// ERASE BLOCK AFTER PARSING
 				} else if (*m_tok_it == "types") {
 					m_config.http.types = parse_types();
 				} else if (*m_tok_it == "}") {

@@ -1,7 +1,6 @@
 #include "../src/ConfigLexer.h"
 #include "lib_test.h"
 #include <cstring>
-#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -40,58 +39,6 @@ void test_remove_comments_nl()
 	config << " 	#comment  \n    location\n   #comment\n/ {\n";
 	string mix = remove_comments_nl(config);
 	assert((mix == "    location / { "));
-
-// EXEMPLE CONFIG RESULT
-// 	config.str("");
-// 	config.clear();
-// 	config << 
-// "# Comments '#' can be everywhere on the line, all subsequent chars will be ignored until '\\n'.\n"
-// "# Spaces are not semantic (outside of key value separators) and can be either SP ot HTAB.\n"
-// "events {\n"
-// "	# the max number of simultaneous connections (client + server conections)\n"
-// "	# open sockets, Nginx use 2 connections at start\n"
-// "	worker_connections 3;\n"
-// "}\n"
-// "\n"
-// "http {\n"
-// "	# include raw file content (must be structured)\n"
-// "	include			mime.types; # fill 'types' block\n"
-// "	default_type	application/octet-stream;\n"
-// "\n"
-// "	keepalive_timeout	10;\n"
-// "\n"
-// "	server {\n"
-// "		listen 127.0.0.1:4242;\n"
-// "		# server_name test_serv;\n"
-// "		location / {\n"
-// "			# root filesystem, absolute form or relative to server executable file\n"
-// "			# (if symlink resolve to source)\n"
-// "			root	/home/juportie/Documents/webserv/html;\n"
-// "			# file to serve for '/' path\n"
-// "			index	index.html;\n"
-// "		}\n"
-// "		# if call /src return redirect\n"
-// "		# if call /src/ return index or list directory if autoindex on\n"
-// "		location /src {\n"
-// "			# root filesystem, absolute form or relative to server executable file\n"
-// "			# (if symlink resolve to source)\n"
-// "			root	/home/juportie/Documents/webserv;\n"
-// "			# file to serve for '/' path\n"
-// "			index	Config.h;\n"
-// "			# list directory tree\n"
-// "			autoindex on;\n"
-// "			# limit location to methods\n"
-// "			limit_except GET {\n"
-// "				allow 127.0.0.1;\n"
-// "				deny all;\n"
-// "			}\n"
-// "		}\n"
-// "        # redirect server error pages to the static page /404.html\n"
-// "        error_page	404	/404.html;\n"
-// "	}\n"
-// "}\n";
-// 	string full = remove_comments_nl(config);
-// 	std::cout << full << '\n';
 }
 
 void test_expand_includes()
@@ -111,8 +58,6 @@ void test_expand_includes()
 	base.push_back(";");
 	base.push_back("}");
 	expand_includes(base, "test_data/config/config");
-	// for (std::list<string>::iterator it = base.begin(); it != base.end(); ++it)
-	// 	std::cout << '|' << *it << "|\n";
 	assert((base == cmp));
 
 	std::list<string> comments;
@@ -123,15 +68,11 @@ void test_expand_includes()
 	comments.push_back(";");
 	comments.push_back("}");
 	expand_includes(comments, "test_data/config/config");
-	// for (std::list<string>::iterator it = comments.begin(); it != comments.end(); ++it)
-	// 	std::cout << '|' << *it << "|\n";
 	assert((comments == cmp));
 
 	cmp.clear();
 	std::list<string> empty;
 	expand_includes(empty, "test_data/config/config");
-	// for (std::list<string>::iterator it = empty.begin(); it != empty.end(); ++it)
-	// 	std::cout << '|' << *it << "|\n";
 	assert((empty == cmp));
 
 	cmp.clear();
@@ -181,23 +122,6 @@ void test_tokenize_config()
 	cmp.push_back("value");
 	std::list<string> end_val = tokenize_config("http {	 key value; } key value");
 	assert((end_val == cmp));
-
-	// std::list<string> complex = tokenize_config(
-	// 	"http {\n"
-	// 	"	include			test_data/config/mime.types;\n"
-	// 	"	default_type	application/octet-stream;\n"
-	// 	"\n"
-	// 	"	server {\n"
-	// 	"		listen 127.0.0.1:4242;\n"
-	// 	"		location / {\n"
-	// 	"			root	/home/juportie/Documents/webserv/html;\n"
-	// 	"			index	index.html;\n"
-	// 	"		}\n"
-	// 	"	}\n"
-	// 	"}\n");
-	// for (std::list<string>::iterator it = complex.begin(); it != complex.end(); ++it) { 
-	// 	std::cout << *it << '\n';
-	// }
 }
 
 int main(void)
