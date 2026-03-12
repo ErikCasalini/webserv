@@ -8,7 +8,7 @@
     <h1>Send Requests</h1>
 
     <!-- POST form -->
-    <form action="/cgi/" method="POST">
+    <form action="/cgi/cgi.sh/path_info/%5Bdtest?query_%5Bstring/test???wtf!!ok%00#no" method="POST">
 
 		<label>
         Body:
@@ -21,6 +21,11 @@
     <!-- GET form -->
     <form action="/src/" method="GET">
       <button type="submit">Send GET Request</button>
+    </form>
+
+	<!-- GET form -->
+    <form action="/cgi/" method="GET">
+      <button type="submit">Send python script cgi</button>
     </form>
 
   </body>

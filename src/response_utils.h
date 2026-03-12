@@ -41,5 +41,6 @@ status_t			read_file_to_body(const string &file_name, string &body);
 void				set_body_headers(headers_t &headers, const string &body, const string &file_name, const config_t &config);
 bool				is_bad_method(method_t method, const vector<method_t> &limit_except);
 status_t			generate_indexing(const std::string &directory, std::string &body, const std::string &path);
+bool				is_good_script_extension(const std::string &script_name);
 
 #endif

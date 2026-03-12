@@ -99,7 +99,6 @@ size_t	Sockets::events_size(void) const
 	return (m_epoll.events_size());
 }
 
-//DEBUG
 socket_t	Sockets::debugFd(int i) const
 {
 	return (m_sockets.at(i));

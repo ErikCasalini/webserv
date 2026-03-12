@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "Config.h"
+#include "Cgi.hpp"
 
 using std::vector;
 using std::list;
@@ -145,4 +146,17 @@ status_t	generate_indexing(const std::string &directory, std::string &body, cons
 	body.append("</pre><hr></body>\n</html>");
 	closedir(dir_stream);
 	return (ok);
+}
+
+bool	is_good_script_extension(const std::string &script_name)
+{
+	std::string::size_type	tmp = script_name.rfind('.');
+	if (tmp == std::string::npos)
+		return (false);
+
+	const std::string		extension = script_name.substr(tmp + 1);
+	if	(extension != "sh" && extension != "py")
+		return (false);
+		
+	return (true);
 }

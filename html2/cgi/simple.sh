@@ -5,7 +5,7 @@ body="<!DOCTYPE html>
 <html>
 <body>
 <pre>
-THIS IS SIMPLE TEXT OF TEST_ROUTE
+THIS IS SIMPLE TEXT HTML2/
 </pre>
 </body>
 </html>"

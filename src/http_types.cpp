@@ -300,8 +300,8 @@ std::string	socket_t::str_peer_interface(void) const
 	uint32_t			ip;
 	uint16_t			port;
 
-	ip = ntohl(this->peer_data.sin_addr.s_addr); // convert ip to system endian (little)
-	port = ntohs(this->peer_data.sin_port); // convert port to system endian (little)
+	ip = ntohl(this->peer_data.sin_addr.s_addr); // convert ip to system endian
+	port = ntohs(this->peer_data.sin_port); // convert port to system endian
 		ret << ((ip >> 24) & 0XFF)
 		<< '.'
 		<< ((ip >> 16) & 0XFF)
@@ -345,8 +345,8 @@ std::string	socket_t::str_local_interface(void) const
 	uint32_t			ip;
 	uint16_t			port;
 
-	ip = ntohl(this->local_data.sin_addr.s_addr); // convert ip to system endian (little)
-	port = ntohs(this->local_data.sin_port); // convert port to system endian (little)
+	ip = ntohl(this->local_data.sin_addr.s_addr); // convert ip to system endian
+	port = ntohs(this->local_data.sin_port); // convert port to system endian
 		ret << ((ip >> 24) & 0XFF)
 		<< '.'
 		<< ((ip >> 16) & 0XFF)
@@ -391,7 +391,7 @@ void pipes_t::clear()
 	}
 }
 
-int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> path) // assumes location_path ends with and begins with '/'
+int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> path)
 {
 	std::list<std::string>::const_iterator	it_loc = location.path.begin();
 

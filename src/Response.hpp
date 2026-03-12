@@ -66,9 +66,9 @@ private:
 	request_t								m_request;
 	std::string								m_buffer;
 	std::string								m_querry;
-	std::string								m_path; //
-	std::list<std::string>					m_path_segments; // besoin des 3 champs path?
-	std::string								m_target; //
+	std::string								m_path;
+	std::list<std::string>					m_path_segments;
+	std::string								m_target;
 	headers_t								m_headers;
 	status_t								m_status;
 	std::string								m_version;
