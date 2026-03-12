@@ -2,6 +2,7 @@
 #include "request_parser.h"
 #include "../include/cctype_cast.h"
 #include "Headers.h"
+#include "Cookies.hpp"
 #include <cstring>
 #include <stdexcept>
 #include <string>
@@ -42,12 +43,14 @@
 using std::string;
 using std::map;
 
-Request::Request(const config_t& config)
+Request::Request(const config_t& config, Cookies &cookie_jar)
 	: m_socket(NULL)
 	, m_config(config)
 	, m_pos(0)
 	, m_state(RequestStates::Init::get_instance())
-{}
+{
+	(void)cookie_jar;
+}
 
 // For testing purposes
 Request::Request(const config_t& config, string buffer)

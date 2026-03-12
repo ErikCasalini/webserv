@@ -16,7 +16,7 @@ class Response
 
 public:
 
-											Response(const config_t &config);
+											Response(const config_t &config, Cookies &cookie_jar);
 											~Response(void);
 	Response								&operator=(const Response &rhs);
 	void									clear(void);
@@ -29,8 +29,7 @@ public:
 	status_t								get_status(void) const;
 	cgi_status_t							get_cgi_status(void) const;
 	headers_t								&get_headers(void);
-	Cookies									*get_cookies(void);
-	void									set_cookies(Cookies *cookies);
+	Cookies									&get_cookies(void);
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
 	void									set_storage_infos(const upload_t *upload);
@@ -76,7 +75,7 @@ private:
 	Cgi										m_cgi;
 	Storage									m_storage;
 	const location_t						*m_location;
-	Cookies									*m_cookies;
+	Cookies									&m_cookies;
 
 };
 

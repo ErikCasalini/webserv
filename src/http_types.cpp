@@ -36,7 +36,7 @@ headers_t& headers_t::operator=(const headers_t& src)
 		server = src.server;
 		if_modified_since = src.if_modified_since;
 		allow = src.allow;
-		set_cookie = set_cookie;
+		set_cookie = src.set_cookie;
 	}
 	return (*this);
 }

@@ -20,6 +20,7 @@
 #include "response_utils.h"
 #include "general_utils.h"
 #include "../include/c_network_exception.h"
+#include "Cookies.hpp"
 
 using std::vector;
 
@@ -28,7 +29,7 @@ const char	Response::authorized_chars[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 							"!$&'()*+,;=" // Reserved sub-delims
 							"%"; // Url encoding
 
-Response::Response(const config_t &config)
+Response::Response(const config_t &config, Cookies &cookie_jar)
 : m_socket(NULL),
   m_config(config),
   m_status(ok),
@@ -36,7 +37,7 @@ Response::Response(const config_t &config)
   m_cgi(m_socket, config, this),
   m_storage(config),
   m_location(NULL),
-  m_cookies(NULL)
+  m_cookies(cookie_jar)
 {}
 
 Response::~Response(void)
@@ -78,16 +79,10 @@ void	Response::set_storage_infos(const upload_t *upload)
 	m_storage.set_storage_infos(upload);
 }
 
-Cookies	*Response::get_cookies(void)
+Cookies	&Response::get_cookies(void)
 {
 	return (m_cookies);
 }
-
-void	Response::set_cookies(Cookies *cookies)
-{
-	m_cookies = cookies;
-}
-
 
 const char	*Response::get_buf(void) const
 {
@@ -150,7 +145,6 @@ void	Response::clear(void)
 	m_cgi.clear();
 	m_storage.clear();
 	m_location = NULL;
-	m_cookies = NULL;
 }
 
 void	Response::parse_uri(void)
@@ -477,19 +471,19 @@ void	Response::process(Sockets &sockets)
 	}
 
 	// COOKIE HANDLING
-	if (m_cookies->find(m_request.headers.cookies)) {
+	if (m_cookies.find(m_request.headers.cookies)) {
 		std::time_t	curr_time = std::time(NULL);
-		if (m_cookies->at(m_request.headers.cookies).exp_date <= curr_time) {
-			m_cookies->erase(m_request.headers.cookies);
-			m_headers.set_cookie = m_cookies->create();
+		if (m_cookies.at(m_request.headers.cookies).exp_date <= curr_time) {
+			m_cookies.erase(m_request.headers.cookies);
+			m_headers.set_cookie = m_cookies.create();
 		}
 		else {
-			m_cookies->at(m_request.headers.cookies).last_visit = curr_time;
-			m_cookies->at(m_request.headers.cookies).last_visit_str = get_date(curr_time);
+			m_cookies.at(m_request.headers.cookies).last_visit = curr_time;
+			m_cookies.at(m_request.headers.cookies).last_visit_str = get_date(curr_time);
 		}
 	}
 	else
-		m_headers.set_cookie = m_cookies->create();
+		m_headers.set_cookie = m_cookies.create();
 
 	// STORAGE
 	if (m_storage.init(m_path_segments) == 0) {

@@ -164,7 +164,7 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 	}
 }
 
-void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses, vector<Cookies> &cookie_box)
+void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 	status_t		req_status;
@@ -194,7 +194,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			if (req_status != parsing) {
 				// CREATING RESPONSE
 				requests.at(i_req).m_socket->last_activity = std::time(NULL);
-				int i_resp = responses.add(sock, requests.at(i_req).get_infos(), &cookie_box.at(sock->server_id));// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+				int i_resp = responses.add(sock, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
 				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
@@ -354,10 +354,10 @@ void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &reques
 void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
-	vector<Cookies>				cookie_box(config.http.server.size()); // One map of Cookie for each Server
+	Cookies						cookie_jar;
 	Sockets						sockets(config.events.max_connections); // throws
-	ActiveMessages<Request>		requests(config); // throws
-	ActiveMessages<Response>	responses(config); // throws
+	ActiveMessages<Request>		requests(config, cookie_jar); // throws
+	ActiveMessages<Response>	responses(config, cookie_jar); // throws
 
 	init_listen_sockets(config.http.server, sockets); // throws
 	while(1) {
@@ -371,7 +371,7 @@ void	main_server_loop(config_t &config)
 			if (sockets.events_at(i).events & EPOLLERR)
 				handle_error(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLIN)
-				handle_read_event(sockets.events_at(i), sockets, requests, responses, cookie_box);
+				handle_read_event(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLHUP)
 				handle_client_disconnected(sockets.events_at(i), sockets, requests, responses);
 			else if (sockets.events_at(i).events & EPOLLOUT)
