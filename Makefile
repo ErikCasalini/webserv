@@ -8,19 +8,15 @@ CXX := c++
 # FLAGS #
 #########
 STD_FLAGS :=	-std=c++98
-# -Wconversion and -Wsign-conversion check for implicit conversion
-# that may result in data loss (bigger to smaller and signed to unsigned).
-WARNINGS :=		-Wall -Werror -Wextra \
-				-Wconversion -Wno-error=conversion \
-				-Wsign-conversion -Wno-error=sign-conversion
+WARNINGS :=		-Wall -Werror -Wextra
 CXXFLAGS :=		$(STD_FLAGS) $(WARNINGS)
 CXXFLAGS_DB :=	$(STD_FLAGS) $(WARNINGS) -g3
-CXXFLAGS_NE :=	$(STD_FLAGS) -Wall -Wextra -Wconversion -Wsign-conversion -g3
+CXXFLAGS_NE :=	$(STD_FLAGS) -Wall -Wextra -g3
 CXXFLAGS_AS :=	$(STD_FLAGS) $(WARNINGS) -g3 \
 				-fsanitize=address
 CXXFLAGS_US :=	$(STD_FLAGS) $(WARNINGS) -g3 \
 				-fsanitize=undefined
-CXXFLAGS_GDB :=	$(STD_FLAGS) -ggdb -Wall -Wextra -Wconversion -Wsign-conversion
+CXXFLAGS_GDB :=	$(STD_FLAGS) -ggdb -Wall -Wextra
 DEP_FLAGS := 	-MMD
 
 #########
@@ -83,7 +79,6 @@ usan: all
 gdb: CXX := g++
 gdb: CXXFLAGS := $(CXXFLAGS_GDB)
 gdb: all
-# 	make gdb -C test/
 
 # Only print a message if actually removing files/folders
 rm_wrapper = rm -r $(1) 2>/dev/null && echo $(2) || true
