@@ -7,7 +7,7 @@
 # include <stdexcept>
 
 # define COOKIE_LEN 32
-# define COOKIE_MAX_AGE 30 // minutes
+# define COOKIE_MAX_AGE 1 // minutes
 
 using std::map;
 using std::string;
@@ -43,6 +43,7 @@ public:
 	string		create(void);
 	cookie_t	&at(string id);
 	void		erase(string id);
+	void		remove_expired(void);
 
 private:
 

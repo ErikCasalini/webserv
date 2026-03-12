@@ -383,5 +383,6 @@ void	main_server_loop(config_t &config)
 		}
 		terminate_pending_cgi(sockets, responses);
 		close_pending_connections(sockets, requests, responses, config);
+		cookie_jar.remove_expired();
 	}
 }

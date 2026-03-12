@@ -33,7 +33,7 @@ cookie_t::cookie_t(void)
 
 	id = "id=" + string(reinterpret_cast<char*>(res));
 	last_visit = std::time(NULL);
-	exp_date = last_visit + (60 * COOKIE_MAX_AGE);
+	exp_date = last_visit + (6 * COOKIE_MAX_AGE);
 	exp_date_str = "Expires=" + get_date(exp_date);
 	last_visit_str = get_date(last_visit);
 }
@@ -59,4 +59,19 @@ cookie_t	&Cookies::at(string id)
 void	Cookies::erase(string id)
 {
 	m_cookies.erase(id);
+}
+
+void		Cookies::remove_expired(void)
+{
+	std::map<string, cookie_t>::iterator	it = m_cookies.begin();
+	std::vector<string>						expired;
+
+	for(; it != m_cookies.end(); it++) {
+		if (it->second.exp_date <= std::time(NULL))
+			expired.push_back(it->first);
+	}
+
+	std::vector<string>::iterator	exp_it = expired.begin();
+	for (; exp_it != expired.end(); exp_it++)
+		m_cookies.erase(*exp_it);
 }
