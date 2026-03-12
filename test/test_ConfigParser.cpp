@@ -303,14 +303,14 @@ using std::list;
 // 	}
 // }
 //
-// void test_parse_upload()
+// void test_parse_storage()
 // {
 // 	list<string> base_lst;
 // 	base_lst.push_back("http");
 // 	base_lst.push_back("{");
 // 	base_lst.push_back("server");
 // 	base_lst.push_back("{");
-// 	base_lst.push_back("upload");
+// 	base_lst.push_back("storage");
 // 	base_lst.push_back("url");
 // 	base_lst.push_back("real/path/");
 // 	base_lst.push_back(";");
@@ -318,13 +318,13 @@ using std::list;
 // 	base_lst.push_back("}");
 // 	ConfigParser base_c(base_lst, "placeholder_file", "/path/webserv");
 // 	config_t base_conf = base_c.parse();
-// 	list<string>::iterator base_it = base_conf.http.server[0].upload.first.begin();
+// 	list<string>::iterator base_it = base_conf.http.server[0].storage.first.begin();
 // 	assert((*base_it++ == "/"));
 // 	assert((*(base_it++) == "path"));
 // 	assert((*(base_it++) == "/"));
 // 	assert((*(base_it++) == "url"));
 // 	assert((*(base_it) == "/"));
-// 	assert((base_conf.http.server[0].upload.second == "/path/real/path/"));
+// 	assert((base_conf.http.server[0].storage.second == "/path/real/path/"));
 // }
 //
 // void test_parse_server_inheritance()
@@ -435,14 +435,14 @@ void test_full_text_config(char* exec_path)
 	assert((server.max_body_size == 16384));
 	assert((server.redirection.first == 301));
 	assert((std::strcmp(server.redirection.second.c_str(), "/newpage") == 0));
-	// assert((std::strcmp(server.upload.first.c_str(), "/newpage") == 0));
-	std::list<string>::iterator upload_it = server.upload.first.begin();
-	assert((std::strcmp((*upload_it++).c_str(), "/") == 0));
-	assert((std::strcmp((*upload_it++).c_str(), "data") == 0));
-	assert((std::strcmp((*upload_it++).c_str(), "/") == 0));
-	assert((std::strcmp((*upload_it++).c_str(), "upload") == 0));
-	assert((std::strcmp((*upload_it++).c_str(), "/") == 0));
-	assert((std::strcmp(server.upload.second.c_str(), "/real/path/") == 0));
+	// assert((std::strcmp(server.storage.first.c_str(), "/newpage") == 0));
+	std::list<string>::iterator storage_it = server.storage.first.begin();
+	assert((std::strcmp((*storage_it++).c_str(), "/") == 0));
+	assert((std::strcmp((*storage_it++).c_str(), "data") == 0));
+	assert((std::strcmp((*storage_it++).c_str(), "/") == 0));
+	assert((std::strcmp((*storage_it++).c_str(), "storage") == 0));
+	assert((std::strcmp((*storage_it++).c_str(), "/") == 0));
+	assert((std::strcmp(server.storage.second.c_str(), "/real/path/") == 0));
 
 	location_t location = full_conf.http.server[0].locations[0];
 	assert((location.exact_match == true));
@@ -929,7 +929,7 @@ int main(int argc, char *argv[])
 	// TEST(test_parse_events);
 	// TEST(test_parse_http);
 	// TEST(test_parse_listen);
-	// TEST(test_parse_upload);
+	// TEST(test_parse_storage);
 	// TEST(test_parse_server_inheritance);
 	// TEST(test_parse_types);
 	TEST_STR(test_full_text_config, argv[0]);

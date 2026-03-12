@@ -298,17 +298,17 @@ listen_t ConfigParser::parse_listen()
 	return (listen);
 }
 
-upload_t ConfigParser::parse_upload()
+storage_t ConfigParser::parse_storage()
 {
-	upload_t upload;
+	storage_t storage;
 	consume();
 	string url = prepare_path(*m_tok_it);
-	upload.first = split_path(url);
+	storage.first = split_path(url);
 	consume();
-	upload.second = prepare_path(*m_tok_it);
+	storage.second = prepare_path(*m_tok_it);
 	consume();
 	consume(";");
-	return (upload);
+	return (storage);
 }
 
 redirection_t ConfigParser::parse_redirection()
@@ -521,8 +521,8 @@ server_t ConfigParser::parse_server()
 			server.redirection = parse_redirection();
 		} else if (*m_tok_it == "root") {
 			server.root = parse_root();
-		} else if (*m_tok_it == "upload") {
-			server.upload = parse_upload();
+		} else if (*m_tok_it == "storage") {
+			server.storage = parse_storage();
 		} else if (*m_tok_it == "}") {
 			++m_tok_it;
 			return (server);

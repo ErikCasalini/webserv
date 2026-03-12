@@ -74,9 +74,9 @@ void	Response::set_request(const request_t &request)
 	m_request = request;
 }
 
-void	Response::set_storage_infos(const upload_t *upload)
+void	Response::set_storage_infos(const storage_t *storage)
 {
-	m_storage.set_storage_infos(upload);
+	m_storage.set_storage_infos(storage);
 }
 
 Cookies	&Response::get_cookies(void)

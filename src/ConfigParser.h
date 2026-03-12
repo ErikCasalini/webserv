@@ -91,7 +91,7 @@ private:
 	std::string parse_root();
 	u_int32_t ip_to_ui32(std::string ip);
 	u_int16_t port_to_ui16(std::string port);
-	upload_t parse_upload();
+	storage_t parse_storage();
 };
 
 #endif
