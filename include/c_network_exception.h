@@ -2,11 +2,12 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
-class CriticalException : public std::runtime_error
+class	CriticalException : public std::runtime_error
 {
 	public:
-	CriticalException(const char* err)
-	: std::runtime_error(err) {};
+		CriticalException(const std::string &str)
+		: std::runtime_error(str)
+		{};
 };
 
 class RecoverableException : public std::runtime_error {};

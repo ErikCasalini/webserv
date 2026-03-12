@@ -270,7 +270,7 @@ void	Response::handle_static_request()
 			break ;
 	}
 
-	if (m_request.method == post) { // on est surs ?
+	if (m_request.method == post) {
 		m_headers.allow = "GET, DELETE";
 		set_error(method_not_allowed, m_location->error_page.at(method_not_allowed));
 		return;
@@ -315,7 +315,7 @@ void	Response::handle_static_request()
 				__attribute__((fallthrough));
 			case nonexistent:
 				if (m_location->autoindex) {
-					m_status = generate_indexing(m_target, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+					m_status = generate_indexing(m_target, m_body, m_path);
 					if (m_status != ok)
 						set_error(m_status, m_location->error_page.at(m_status));
 					else {
@@ -358,7 +358,6 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 		env.push_back("CONTENT_LENGTH=");
 	env.push_back("CONTENT_TYPE=" + m_request.headers.content_type);
 	env.push_back("GATEWAY_INTERFACE=CGI/1.1");
-	// env.push_back("HTTP_COOKIE=") = ;
 	env.push_back("PATH_INFO=" + uri_infos.path_info);
 	env.push_back("QUERY_STRING=" + m_querry);
 	env.push_back("REMOTE_ADDR=" + m_socket->str_peer_addr());
@@ -389,7 +388,7 @@ void	Response::handle_cgi(Sockets &sockets)
 	// IF SCRIPT NAME/INDEX IS EMPTY --> ATTEMPT TO INDEX CGI FOLDER
 	if (cgi_uri_infos.init(*m_location, m_path_segments) == -1) {
 		if (m_location->autoindex) {
-			m_status = generate_indexing(cgi_uri_infos.script_abs_path, m_body, m_path); //+ m_target IF DIR PATH DO NOT EXIST --> NOT FOUND, IF BAD PERM --> FORBIDDEN, ELSE --> INTERNAL ERR
+			m_status = generate_indexing(cgi_uri_infos.script_abs_path, m_body, m_path);
 			if (m_status != ok)
 				set_error(m_status, m_location->error_page.at(m_status));
 			else {
@@ -442,7 +441,7 @@ void	Response::handle_cgi(Sockets &sockets)
 		throw CriticalException("cgi: critical failure of epoll_ctl()");
 	}
 	m_cgi.delete_envp(&envp);
-	init_cgi(); // --> on set NPH ou normal CGI
+	init_cgi();
 	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, m_socket->fd, NULL); // stop report socket fd until CGI is not resolved
 }
 
@@ -450,7 +449,7 @@ void	Response::generate_target()
 {
 	if (m_location->root == "")
 		throw bad_config("generate_target: no root is set");
-	m_target = m_location->root; // root doit commencer par '/'
+	m_target = m_location->root;
 	if (m_target.at(m_target.size() - 1) == '/')
 		m_target.resize(m_target.size() - 1);
 	m_target.append(m_path);
