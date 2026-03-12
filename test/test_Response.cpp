@@ -467,7 +467,9 @@ void	test_create_path(void)
 void	test_parse_uri(void)
 {
 	request_t	req;
-	Response	resp;
+	config_t	config;
+	Cookies		cookie;
+	Response	resp(config, cookie);
 
 	req.target = "//src/test//src//%31/.?%00omg#ok";
 	resp.set_request(req);
@@ -705,7 +707,8 @@ void	test_find_location(void)
 {
 	std::vector<location_t>	locations;
 	std::list<std::string>	uri;
-	location_t				one, two, three, ret;
+	location_t				one, two, three;
+	const location_t*				ret;
 
 	one.path.push_back("/");
 	one.path.push_back("test");
@@ -730,7 +733,7 @@ void	test_find_location(void)
 	uri.push_back("/");
 	uri.push_back("src");
 	ret = find_location(uri, locations);
-	assert((ret.path == three.path));
+	assert((ret->path == three.path));
 
 	one.path.clear();
 	two.path.clear();
@@ -757,7 +760,7 @@ void	test_find_location(void)
 	uri.push_back("/");
 	uri.push_back("src");
 	ret = find_location(uri, locations);
-	assert((ret.path == three.path));
+	assert((ret->path == three.path));
 
 	one.path.clear();
 	two.path.clear();
@@ -784,7 +787,7 @@ void	test_find_location(void)
 	uri.push_back("src");
 	uri.push_back("/");
 	ret = find_location(uri, locations);
-	assert((ret.path == two.path));
+	assert((ret->path == two.path));
 
 	one.path.clear();
 	two.path.clear();

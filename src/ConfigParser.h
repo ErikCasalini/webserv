@@ -75,6 +75,7 @@ private:
 	void parse_exact_match(location_t& location);
 	redirection_t parse_redirection();
 	bool parse_cgi();
+	bool parse_cgi_nph();
 	std::string parse_index();
 	std::vector<method_t> parse_limit_except();
 	std::string parse_default_type();
@@ -91,7 +92,7 @@ private:
 	std::string parse_root();
 	u_int32_t ip_to_ui32(std::string ip);
 	u_int16_t port_to_ui16(std::string port);
-	upload_t parse_upload();
+	storage_t parse_storage();
 };
 
 #endif

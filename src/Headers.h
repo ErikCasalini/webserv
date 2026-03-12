@@ -35,7 +35,7 @@ public:
 
 	long parse_content_length(unsigned long max
 			= static_cast<unsigned long>(std::numeric_limits<long>::max()));
-	std::string parse_content_type();
+	std::string parse_content_type(const std::string& default_type);
 	bool parse_connection();
 	std::string parse_cookie();
 	headers_map_t::size_type count(const std::string& key);

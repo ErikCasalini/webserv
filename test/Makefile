@@ -23,7 +23,8 @@ SRC_REQUEST_PARSER := $(SRC_COMMON) \
 					  http_types.cpp \
 					  cctype_cast.cpp \
 					  Headers.cpp \
-					  general_utils.cpp
+					  general_utils.cpp \
+					  Config.cpp
 
 OBJ_REQUEST_PARSER := $(SRC_REQUEST_PARSER:%.cpp=$(BUILD_DIR)/%.o)
 
@@ -35,12 +36,16 @@ OBJ_LIB_CCTYPE_CAST := $(SRC_LIB_CCTYPE_CAST:%.cpp=$(BUILD_DIR)/%.o)
 SRC_RESPONSE := $(SRC_COMMON) \
 				test_Response.cpp \
 				Response.cpp \
+				Cookies.cpp \
 				http_types.cpp \
 				Config.cpp \
 				EpollManager.cpp \
 				c_network_exception_wrapper.cpp \
 				signals_handling.cpp \
 				Cgi.cpp \
+				CgiParser.cpp \
+				Headers.cpp \
+			  	cctype_cast.cpp \
 				Sockets.cpp \
 				Storage.cpp \
 				parse_uri_utils.cpp \

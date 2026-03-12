@@ -1,5 +1,6 @@
 #include "../src/request_parser.h"
 #include "../src/http_types.h"
+#include "../src/Config.h"
 #include "lib_test.h"
 
 // TODO: export obsolete (commented) test to test_Headers.cpp
@@ -384,7 +385,6 @@ void test_parse_headers()
 	// std::string b_all = "content-length: 123" CRLF
 	// 	"cookie: theme=light; sessionToken=abc123" CRLF
 	// 	"connection: keep_alive" CRLF
-	// 	"if_modified_since: Wed, 9 Jun 2021 10:18:14 GMT" CRLF;
 	// request_t request;
 	// request.method = get;
 	// request.target = "/";
@@ -393,36 +393,36 @@ void test_parse_headers()
 	// assert((all.content_length == 123));
 	// assert((all.cookies == "theme=light; sessionToken=abc123"));
 	// assert((all.keep_alive == true));
-	// assert((all.if_modified_since == "Wed, 9 Jun 2021 10:18:14 GMT"));
 
 	std::string b_alive = "connection: keep-alive" CRLF CRLF;
 	pos = 0;
-	headers_t alive = parse_headers(b_alive, pos, request);
+	config_t config;
+	headers_t alive = parse_headers(b_alive, pos, request, config);
 	assert((alive.keep_alive == true));
 
 	std::string b_alive_trail = "connection: keep-alive" CRLF CRLF
 		"anything: random" CRLF CRLF;
 	pos = 0;
-	headers_t alive_trail = parse_headers(b_alive_trail, pos, request);
+	headers_t alive_trail = parse_headers(b_alive_trail, pos, request, config);
 	assert((alive_trail.keep_alive == true));
 
 	std::string b_alive_lead = "anything: random" CRLF
 		"connection: keep-alive" CRLF CRLF;
 	pos = 0;
-	headers_t alive_lead = parse_headers(b_alive_lead, pos, request);
+	headers_t alive_lead = parse_headers(b_alive_lead, pos, request, config);
 	assert((alive_lead.keep_alive == true));
 
 	std::string b_length = "content-length: 123" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length = parse_headers(b_length, pos, request);
+	headers_t length = parse_headers(b_length, pos, request, config);
 	assert((length.content_length == 123));
 
 	std::string b_length_alive = "content-length: 123" CRLF
 		"connection: keep-alive" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length_alive = parse_headers(b_length_alive, pos, request);
+	headers_t length_alive = parse_headers(b_length_alive, pos, request, config);
 	assert((length_alive.content_length == 123));
 	assert((length_alive.keep_alive == true));
 
@@ -434,20 +434,20 @@ void test_parse_headers()
 		"anything: random" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length_alive_rand = parse_headers(b_length_alive_rand, pos, request);
+	headers_t length_alive_rand = parse_headers(b_length_alive_rand, pos, request, config);
 	assert((length_alive_rand.content_length == 123));
 	assert((length_alive_rand.keep_alive == true));
 
 	std::string b_no_headers = CRLF CRLF;
 	pos = 0;
 	request.method = get;
-	headers_t no_headers = parse_headers(b_no_headers, pos, request);
+	headers_t no_headers = parse_headers(b_no_headers, pos, request, config);
 	assert((no_headers.content_length == 0));
 	assert((no_headers.keep_alive == false));
 
 	std::string b_merged = "connection: keep-alive" "anything: random" "content-length: 123" CRLF CRLF;
 	pos = 0;
-	headers_t merged = parse_headers(b_merged, pos, request);
+	headers_t merged = parse_headers(b_merged, pos, request, config);
 	// nginx don't parse it like that it just checks the substring "keep-alive" and return true
 	// but I think it's more clean to do it like we do.
 	assert((merged.keep_alive == false));
@@ -456,7 +456,7 @@ void test_parse_headers()
 	std::string b_no_colon = "connection keep-alive" CRLF CRLF;
 	pos = 0;
 	try {
-		headers_t no_colon = parse_headers(b_no_colon, pos, request);
+		headers_t no_colon = parse_headers(b_no_colon, pos, request, config);
 		assert((false && "no_colon"));
 	}
 	catch (const Request::BadRequest& e) {}
@@ -464,7 +464,7 @@ void test_parse_headers()
 	std::string b_one_crlf = "connection: keep-alive" CRLF;
 	pos = 0;
 	try {
-		headers_t one_crlf = parse_headers(b_one_crlf, pos, request);
+		headers_t one_crlf = parse_headers(b_one_crlf, pos, request, config);
 		assert((false && "one_crlf"));
 	}
 	catch (const Request::BadRequest& e) {}
@@ -510,8 +510,9 @@ void test_extract_body()
 
 void test_parse()
 {
+	config_t config;
 	// correct inputs
-	Request s_l("GET / HTTP/1.0" CRLF CRLF);
+	Request s_l(config, "GET / HTTP/1.0" CRLF CRLF);
 	s_l.parse();
 	request_t start_line = s_l.get_infos();
 	assert((start_line.method == get));
@@ -519,7 +520,7 @@ void test_parse()
 	assert((start_line.protocol == one));
 	assert((start_line.status == ok));
 
-	Request l_crlf(CRLF CRLF CRLF "GET / HTTP/1.0" CRLF CRLF);
+	Request l_crlf(config, CRLF CRLF CRLF "GET / HTTP/1.0" CRLF CRLF);
 	l_crlf.parse();
 	request_t leading_crlf = l_crlf.get_infos();
 	assert((leading_crlf.method == get));
@@ -527,7 +528,7 @@ void test_parse()
 	assert((leading_crlf.protocol == one));
 	assert((leading_crlf.status == ok));
 
-	Request o_o("GET / HTTP/1.1" CRLF CRLF);
+	Request o_o(config, "GET / HTTP/1.1" CRLF CRLF);
 	o_o.parse();
 	request_t oneone = o_o.get_infos();
 	assert((oneone.method == get));
@@ -535,7 +536,7 @@ void test_parse()
 	assert((oneone.protocol == one_one));
 	assert((oneone.status == ok));
 
-	Request c_l("POST / HTTP/1.0" CRLF
+	Request c_l(config, "POST / HTTP/1.0" CRLF
 				"content-length: 2" CRLF
 				CRLF
 				"ok");
@@ -548,7 +549,7 @@ void test_parse()
 	assert((content_length.headers.content_length == 2));
 	assert((content_length.body == "ok"));
 
-	Request r_h("POST / HTTP/1.0" CRLF
+	Request r_h(config, "POST / HTTP/1.0" CRLF
 				"rand0: asd" CRLF
 				"rand1: asd" CRLF
 				"rand2:" CRLF
@@ -565,7 +566,7 @@ void test_parse()
 	assert((random_headers.headers.content_length == 2));
 	assert((content_length.body == "ok"));
 
-	Request d_r("POST / HTTP/1.0" CRLF
+	Request d_r(config, "POST / HTTP/1.0" CRLF
 				"content-length: 2" CRLF
 				CRLF
 				"ok"
@@ -579,7 +580,7 @@ void test_parse()
 	assert((double_request.headers.content_length == 2));
 	assert((content_length.body == "ok"));
 
-	Request p_b("POST / HTTP/1.0" CRLF
+	Request p_b(config, "POST / HTTP/1.0" CRLF
 				"content-length: 123" CRLF
 				CRLF
 				"ok");
@@ -594,12 +595,12 @@ void test_parse()
 
 	// wrong inputs (expected, no exceptions)
 	// buffer filling in progress
-	Request o_cl("GET / HTTP/1.0" CRLF);
+	Request o_cl(config, "GET / HTTP/1.0" CRLF);
 	o_cl.parse();
 	request_t one_crlf = o_cl.get_infos();
 	assert((one_crlf.status == parsing));
 
-	Request o_n("GET /" CRLF CRLF);
+	Request o_n(config, "GET /" CRLF CRLF);
 	o_n.parse();
 	request_t o_nine = o_n.get_infos();
 	assert((o_nine.method == get));
@@ -607,13 +608,13 @@ void test_parse()
 	assert((o_nine.protocol == zero_nine));
 	assert((o_nine.status == not_implemented));
 
-	Request j_t_c("" CRLF CRLF);
+	Request j_t_c(config, "" CRLF CRLF);
 	j_t_c.parse();
 	request_t just_two_crlf = j_t_c.get_infos();
 	assert((just_two_crlf.status == bad_request));
 
 	// Multiple recv requests
-	Request m("GET / HTTP/1.0" CRLF);
+	Request m(config, "GET / HTTP/1.0" CRLF);
 	m.parse();
 	request_t multiple = m.get_infos();
 	assert((multiple.status == parsing));

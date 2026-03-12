@@ -31,10 +31,9 @@ void	Storage::clear(void)
 	m_file_path.clear();
 }
 
-// Should rename uplodat to storage
-void	Storage::set_storage_infos(const upload_t *upload)
+void	Storage::set_storage_infos(const storage_t *storage)
 {
-	m_storage_infos = upload;
+	m_storage_infos = storage;
 }
 
 // Location path must end with '/'

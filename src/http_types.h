@@ -83,8 +83,6 @@ struct headers_t {
 	std::string date;
 	std::string location;
 	std::string server;
-	// TODO: store it as a date type? What format to handle
-	std::string if_modified_since;
 	std::string allow;
 	std::string set_cookie;
 };

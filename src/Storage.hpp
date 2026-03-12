@@ -17,7 +17,7 @@ public:
 	Storage		&operator=(const Storage &rhs);
 	void		clear(void);
 
-	void		set_storage_infos(const upload_t *upload);
+	void		set_storage_infos(const storage_t *storage);
 
 	int			init(list<string> &uri);
 	status_t	exec(const request_t &request, string &body, headers_t &headers) const;
@@ -31,7 +31,7 @@ private:
 
 	string			m_file_name;
 	string			m_file_path;
-	const upload_t	*m_storage_infos; // both Storage path and root should end and start by '/'
+	const storage_t	*m_storage_infos; // both Storage path and root should end and start by '/'
 	const config_t	&m_config;
 
 };

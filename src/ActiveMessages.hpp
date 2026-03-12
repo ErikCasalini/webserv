@@ -44,7 +44,7 @@ class	ActiveMessages
 					m_messages_lst.at(i).m_socket = socket;
 					m_messages_lst.at(i).set_request(request);
 					m_messages_lst.at(i).get_headers().keep_alive = request.headers.keep_alive;
-					m_messages_lst.at(i).set_storage_infos(&m_config.http.server.at(socket->server_id).upload);
+					m_messages_lst.at(i).set_storage_infos(&m_config.http.server.at(socket->server_id).storage);
 					return (i);
 				}
 			}

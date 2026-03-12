@@ -223,7 +223,6 @@ server_t ConfigParser::inherit_from_http()
 	server_t server;
 	server.autoindex = m_config.http.autoindex;
 	server.error_page = m_config.http.error_page;
-	server.max_body_size = m_config.http.max_body_size;
 	server.root = m_config.http.root;
 	return (server);
 }
@@ -298,17 +297,17 @@ listen_t ConfigParser::parse_listen()
 	return (listen);
 }
 
-upload_t ConfigParser::parse_upload()
+storage_t ConfigParser::parse_storage()
 {
-	upload_t upload;
+	storage_t storage;
 	consume();
 	string url = prepare_path(*m_tok_it);
-	upload.first = split_path(url);
+	storage.first = split_path(url);
 	consume();
-	upload.second = prepare_path(*m_tok_it);
+	storage.second = prepare_path(*m_tok_it);
 	consume();
 	consume(";");
-	return (upload);
+	return (storage);
 }
 
 redirection_t ConfigParser::parse_redirection()
@@ -360,6 +359,15 @@ void ConfigParser::parse_exact_match(location_t& location)
 }
 
 bool ConfigParser::parse_cgi()
+{
+	consume();
+	bool val = extract_boolean();
+	consume();
+	consume(";");
+	return (val);
+}
+
+bool ConfigParser::parse_cgi_nph()
 {
 	consume();
 	bool val = extract_boolean();
@@ -453,6 +461,8 @@ void ConfigParser::parse_location(location_t& location)
 			location.autoindex = parse_autoindex();
 		} else if (*m_tok_it == "cgi") {
 			location.cgi = parse_cgi();
+		} else if (*m_tok_it == "cgi_nph") {
+			location.cgi_nph = parse_cgi_nph();
 		} else if (*m_tok_it == "error_page") {
 			parse_error_page(location.error_page);
 		} else if (*m_tok_it == "index") {
@@ -515,14 +525,12 @@ server_t ConfigParser::parse_server()
 			server.listen.push_back(parse_listen());
 		} else if (*m_tok_it == "location") {
 			skip_block();
-		} else if (*m_tok_it == "max_body_size") {
-			server.max_body_size = parse_max_body_size();
 		} else if (*m_tok_it == "return") {
 			server.redirection = parse_redirection();
 		} else if (*m_tok_it == "root") {
 			server.root = parse_root();
-		} else if (*m_tok_it == "upload") {
-			server.upload = parse_upload();
+		} else if (*m_tok_it == "storage") {
+			server.storage = parse_storage();
 		} else if (*m_tok_it == "}") {
 			++m_tok_it;
 			return (server);

@@ -19,7 +19,6 @@ headers_t::headers_t(const headers_t& src)
 	, date(src.date)
 	, location(src.location)
 	, server(src.server)
-	, if_modified_since(src.if_modified_since)
 	, allow(src.allow)
 	, set_cookie(src.set_cookie)
 {}
@@ -34,7 +33,6 @@ headers_t& headers_t::operator=(const headers_t& src)
 		date = src.date;
 		location = src.location;
 		server = src.server;
-		if_modified_since = src.if_modified_since;
 		allow = src.allow;
 		set_cookie = src.set_cookie;
 	}
@@ -50,7 +48,6 @@ void headers_t::clear()
 	date.clear();
 	location.clear();
 	server = "Webserver_2026";
-	if_modified_since.clear();
 	allow.clear();
 	set_cookie.clear();
 }
@@ -65,8 +62,7 @@ std::ostream& operator<<(std::ostream& os, const headers_t& h)
 		<< "\tkeep_alive: " << (h.keep_alive ? "true\n" : "false\n")
 		<< "\tdate: " << h.date << '\n'
 		<< "\tlocation: " << h.location << '\n'
-		<< "\tserver: " << h.server << '\n'
-		<< "\tif_modified_since: " << h.if_modified_since << "\n\t]\n";
+		<< "\tserver: " << h.server << "\n\t]\n";
 	return (os);
 }
 

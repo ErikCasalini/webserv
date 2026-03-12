@@ -190,8 +190,6 @@ namespace _Request {
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("unexpected EOL in place of sp");
 		}
-
-
 	}
 
 	void consume_crlf(const string& buffer, size_t& pos)
@@ -296,20 +294,20 @@ namespace _Request {
 		return (headers);
 	}
 
-	headers_t parse_headers(
-				const string& buffer,
-				size_t& pos,
-				const request_t& request)
+	headers_t parse_headers(const string& buffer,
+							size_t& pos,
+							const request_t& request,
+							const config_t& config)
 	{
 		headers_t headers;
 		try {
 			Headers raw_headers(extract_headers(buffer, pos), CRLF);
 			headers.keep_alive = raw_headers.parse_connection();
-			headers.content_type = raw_headers.parse_content_type();
+			headers.content_type = raw_headers.parse_content_type(
+									config.http.default_type);
 			headers.cookies = raw_headers.parse_cookie();
-			// if (request.method == get)
-			// 	headers.if_modified_since = raw_headers.parse_if_modified_since(raw_headers);
-			const long cl = raw_headers.parse_content_length();
+			const long cl = raw_headers.parse_content_length(
+									config.http.max_body_size);
 			if (cl == -1) {
 				if (request.method == post)
 					throw Request::BadRequest("missing content-length value");

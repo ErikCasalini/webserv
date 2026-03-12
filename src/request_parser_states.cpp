@@ -130,7 +130,7 @@ void RequestStates::ParsingHead::parse(Request* request)
 		_Request::consume_crlf(buffer, pos);
 
 		// headers
-		infos.headers = _Request::parse_headers(buffer, pos, infos);
+		infos.headers = _Request::parse_headers(buffer, pos, infos, request->m_config);
 		_Request::consume_crlf(buffer, pos);
 		if (infos.headers.content_length > 0) {
 			request->set_state(RequestStates::ExtractingBody::get_instance());

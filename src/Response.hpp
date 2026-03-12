@@ -30,9 +30,10 @@ public:
 	cgi_status_t							get_cgi_status(void) const;
 	headers_t								&get_headers(void);
 	Cookies									&get_cookies(void);
+	const location_t						*get_location(void) const;
 	void									set_request(const request_t &request);
 	void									set_status(status_t status);
-	void									set_storage_infos(const upload_t *upload);
+	void									set_storage_infos(const storage_t *storage);
 
 	void									parse_uri(void);
 	void									process(Sockets &sockets);

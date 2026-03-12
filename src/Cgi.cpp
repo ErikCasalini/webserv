@@ -352,13 +352,11 @@ int	Cgi::read_child_response(int epoll_inst)
 		reset_state(epoll_inst);
 		m_status = done;
 
-		(void)m_config; // Const ref
-		(void)m_location; // Pointeur sur const location_t
-		// parse_response (if NPH on envoie direct sinon on craft)
-		// if (!m_response->location.cgi_nph) {
-		CgiParser cgi_response(m_response);
-		cgi_response.parse();
-		// }
+		// If NPH send directly.
+		if (!m_response->m_location->cgi_nph) {
+			CgiParser cgi_response(m_response);
+			cgi_response.parse();
+		}
 
 		m_last_activity = 0;
 	}

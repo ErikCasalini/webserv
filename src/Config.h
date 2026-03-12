@@ -107,7 +107,7 @@
 
 typedef std::pair<status_t, std::string> redirection_t;
 typedef std::map<int, std::string> error_page_t;
-typedef std::pair<std::list<std::string>, std::string> upload_t; // url, real_path
+typedef std::pair<std::list<std::string>, std::string> storage_t; // url, real_path
 
 struct listen_t {
 	listen_t();
@@ -119,6 +119,7 @@ struct location_t {
 	location_t();
 	bool autoindex;
 	bool cgi;
+	bool cgi_nph;
 	error_page_t error_page;
 	bool exact_match;
 	std::string index;
@@ -134,10 +135,9 @@ struct server_t {
 	error_page_t error_page;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
-	unsigned int max_body_size;
 	redirection_t redirection;
 	std::string root;
-	upload_t upload; // url, real_path
+	storage_t storage; // url, real_path
 };
 
 struct http_t {

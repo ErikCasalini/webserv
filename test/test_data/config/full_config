@@ -30,14 +30,14 @@ http {
 		error_page			404	html/404.html;
 		listen				127.0.0.1:4242;
 		root				servers/test/html;
-		max_body_size		16384;
 		return 				301 /newpage;
 
-		upload /data/upload/ /real/path;
+		storage /data/storage/ /real/path;
 
 		location = / {
 			autoindex		false;
 			cgi				false;
+			cgi_nph			true;
 			error_page		403	html/403.html;
 			# ONLY IN CONFIG STRUCT # exact_match 	true; # If equal sign after location key
 			index			index.html;

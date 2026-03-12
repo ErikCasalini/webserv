@@ -3,7 +3,8 @@
 
 # include "http_types.h"
 # include "request_parser_states.h"
-#include "Cookies.hpp"
+# include "Cookies.hpp"
+# include "Config.h"
 # include <stdexcept>
 # include <string>
 # include <sys/types.h>
@@ -79,10 +80,10 @@ namespace _Request {
 	protocol_t parse_protocol(const string& buffer, size_t& pos);
 
 	std::string extract_headers(const string& m_buffer, size_t& pos);
-	headers_t parse_headers(
-			const string& buffer,
-			size_t& pos,
-			const request_t& request);
+	headers_t parse_headers(const string& buffer,
+							size_t& pos,
+							const request_t& request,
+							const config_t& config);
 	string extract_body(
 			const string& buffer,
 			size_t& pos,
