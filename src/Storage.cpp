@@ -42,6 +42,10 @@ int	Storage::init(list<string> &uri)
 	list<string>::const_iterator	it_path = m_storage_infos->first.begin();
 	list<string>::const_iterator	it_uri = uri.begin();
 
+	if (m_storage_infos->first.size() == 0
+		|| m_storage_infos->second == "")
+		return (-1);
+
 	if (uri == m_storage_infos->first)
 		return (0);
 

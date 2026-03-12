@@ -448,6 +448,8 @@ void	Response::handle_cgi(Sockets &sockets)
 
 void	Response::generate_target()
 {
+	if (m_location->root == "")
+		throw bad_config("generate_target: no root is set");
 	m_target = m_location->root; // root doit commencer par '/'
 	if (m_target.at(m_target.size() - 1) == '/')
 		m_target.resize(m_target.size() - 1);
@@ -478,7 +480,7 @@ void	Response::process(Sockets &sockets)
 	// COOKIE HANDLING
 	if (m_cookies.find(m_request.headers.cookies)) {
 		std::time_t	curr_time = std::time(NULL);
-		
+
 		m_cookies.at(m_request.headers.cookies).last_visit = curr_time;
 		m_cookies.at(m_request.headers.cookies).last_visit_str = get_date(curr_time);
 	}
@@ -498,7 +500,6 @@ void	Response::process(Sockets &sockets)
 			m_location = find_location(m_path_segments, m_config.http.server.at(m_socket->server_id).locations);
 		}
 		catch (bad_location &e) {
-			(void)e;
 			set_error(not_found, m_config.http.server.at(m_socket->server_id).error_page.at(not_found));
 			generate_response();
 			return ;
@@ -514,8 +515,16 @@ void	Response::process(Sockets &sockets)
 			generate_response();
 			return ;
 		}
-		else if (!m_location->cgi)
-			generate_target();
+		else if (!m_location->cgi) {
+			try {
+				generate_target();
+			}
+			catch (bad_config &e) {
+				set_error(not_found, m_config.http.server.at(m_socket->server_id).error_page.at(not_found));
+				generate_response();
+				return ;
+			}
+		}
 
 		if (m_location->cgi) {
 			try {

@@ -1,10 +1,5 @@
 #include "Config.h"
 
-listen_t::listen_t()
-	: ip(DEFAULT_IP)
-	, port(DEFAULT_PORT)
-{};
-
 location_t::location_t()
 	: autoindex(false)
 	, cgi(false)

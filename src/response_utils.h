@@ -27,6 +27,14 @@ class	internal_error : public std::runtime_error
 		{};
 };
 
+class	bad_config : public std::runtime_error
+{
+	public:
+		bad_config(const std::string &str)
+		: std::runtime_error(str)
+		{};
+};
+
 int					evaluate_path_matching(const list<string> &path, const list<string> &location);
 const location_t	*find_location(const list<string> &path, const vector<location_t> &locations);
 status_t			read_file_to_body(const string &file_name, string &body);
