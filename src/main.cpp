@@ -20,7 +20,6 @@ int	main(int argc, char *argv[])
 			config = parser.parse();
 		}
 		set_signal_handlers();
-		std::cout << "PID: " << getpid() << "\n";
 		main_server_loop(config);
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << '\n';
