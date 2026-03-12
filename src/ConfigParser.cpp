@@ -159,6 +159,10 @@ void ConfigParser::parse_error_page(error_page_t& error_page)
 		err_nums.push_back(static_cast<int>(n));
 		consume();
 	}
+	if (err_nums.size() == 0)
+		throw ConfigParser::InvalidValue(
+				"missing error status number(s) before " + *filename_it);
+
 	const string filename = config_files::resolve_include_path(*filename_it, m_conf_path);
 	string page = error_file_to_string(filename);
 	consume();
