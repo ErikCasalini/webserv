@@ -151,15 +151,16 @@ long Headers::parse_content_length(unsigned long max)
 	return (-1);
 }
 
-std::string Headers::parse_content_type()
+std::string Headers::parse_content_type(const std::string& default_type)
 {
 	try {
 		std::string val = m_map.at("content-type");
 		strtrim(val);
 		std::transform(val.begin(), val.end(), val.begin(), to_lower);
 		return (val);
-	} catch (const std::out_of_range& e) {}
-	return ("application/octet-stream");
+	} catch (const std::out_of_range& e) {
+		return (default_type);
+	}
 }
 
 bool Headers::parse_connection()

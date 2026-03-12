@@ -396,32 +396,33 @@ void test_parse_headers()
 
 	std::string b_alive = "connection: keep-alive" CRLF CRLF;
 	pos = 0;
-	headers_t alive = parse_headers(b_alive, pos, request);
+	config_t config;
+	headers_t alive = parse_headers(b_alive, pos, request, config);
 	assert((alive.keep_alive == true));
 
 	std::string b_alive_trail = "connection: keep-alive" CRLF CRLF
 		"anything: random" CRLF CRLF;
 	pos = 0;
-	headers_t alive_trail = parse_headers(b_alive_trail, pos, request);
+	headers_t alive_trail = parse_headers(b_alive_trail, pos, request, config);
 	assert((alive_trail.keep_alive == true));
 
 	std::string b_alive_lead = "anything: random" CRLF
 		"connection: keep-alive" CRLF CRLF;
 	pos = 0;
-	headers_t alive_lead = parse_headers(b_alive_lead, pos, request);
+	headers_t alive_lead = parse_headers(b_alive_lead, pos, request, config);
 	assert((alive_lead.keep_alive == true));
 
 	std::string b_length = "content-length: 123" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length = parse_headers(b_length, pos, request);
+	headers_t length = parse_headers(b_length, pos, request, config);
 	assert((length.content_length == 123));
 
 	std::string b_length_alive = "content-length: 123" CRLF
 		"connection: keep-alive" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length_alive = parse_headers(b_length_alive, pos, request);
+	headers_t length_alive = parse_headers(b_length_alive, pos, request, config);
 	assert((length_alive.content_length == 123));
 	assert((length_alive.keep_alive == true));
 
@@ -433,20 +434,20 @@ void test_parse_headers()
 		"anything: random" CRLF CRLF;
 	pos = 0;
 	request.method = post;
-	headers_t length_alive_rand = parse_headers(b_length_alive_rand, pos, request);
+	headers_t length_alive_rand = parse_headers(b_length_alive_rand, pos, request, config);
 	assert((length_alive_rand.content_length == 123));
 	assert((length_alive_rand.keep_alive == true));
 
 	std::string b_no_headers = CRLF CRLF;
 	pos = 0;
 	request.method = get;
-	headers_t no_headers = parse_headers(b_no_headers, pos, request);
+	headers_t no_headers = parse_headers(b_no_headers, pos, request, config);
 	assert((no_headers.content_length == 0));
 	assert((no_headers.keep_alive == false));
 
 	std::string b_merged = "connection: keep-alive" "anything: random" "content-length: 123" CRLF CRLF;
 	pos = 0;
-	headers_t merged = parse_headers(b_merged, pos, request);
+	headers_t merged = parse_headers(b_merged, pos, request, config);
 	// nginx don't parse it like that it just checks the substring "keep-alive" and return true
 	// but I think it's more clean to do it like we do.
 	assert((merged.keep_alive == false));
@@ -455,7 +456,7 @@ void test_parse_headers()
 	std::string b_no_colon = "connection keep-alive" CRLF CRLF;
 	pos = 0;
 	try {
-		headers_t no_colon = parse_headers(b_no_colon, pos, request);
+		headers_t no_colon = parse_headers(b_no_colon, pos, request, config);
 		assert((false && "no_colon"));
 	}
 	catch (const Request::BadRequest& e) {}
@@ -463,7 +464,7 @@ void test_parse_headers()
 	std::string b_one_crlf = "connection: keep-alive" CRLF;
 	pos = 0;
 	try {
-		headers_t one_crlf = parse_headers(b_one_crlf, pos, request);
+		headers_t one_crlf = parse_headers(b_one_crlf, pos, request, config);
 		assert((false && "one_crlf"));
 	}
 	catch (const Request::BadRequest& e) {}
