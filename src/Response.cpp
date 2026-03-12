@@ -407,6 +407,10 @@ void	Response::handle_cgi(Sockets &sockets)
 				set_error(forbidden, m_location->error_page.at(forbidden));
 				throw Cgi::cgi_error("cgi: can't open script");
 			}
+			if (!is_good_script_extension(cgi_uri_infos.script_abs_path)) {
+				set_error(forbidden, m_location->error_page.at(forbidden));
+				throw Cgi::cgi_error("cgi: bad script extension");
+			}
 			break ;
 		case dir:
 		case nonexistent:

@@ -30,14 +30,13 @@ class Sockets
 
 	private:
 
+		socket_t				debugFd(int i) const;
+		bool					exist(int fd) const;
+
 		EpollManager			m_epoll;
 		const size_t			m_socket_limit;
 		size_t					m_size;
 		std::vector<socket_t>	m_sockets;
-
-	// DEBUG
-		socket_t	debugFd(int i) const;
-		bool		exist(int fd) const;
 };
 
 #endif

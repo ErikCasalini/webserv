@@ -14,6 +14,7 @@
 #include "../include/c_network_exception.h"
 
 // HELPER FUNCTIONS
+
 void	Cgi::close_pipes(int *p1, int *p2)
 {
 	if (!p1 || !p2)
@@ -352,7 +353,7 @@ int	Cgi::read_child_response(int epoll_inst)
 		reset_state(epoll_inst);
 		m_status = done;
 
-		// If NPH send directly.
+		// IF NPH SEND DIRECTLY
 		if (!m_response->m_location->cgi_nph) {
 			CgiParser cgi_response(m_response);
 			cgi_response.parse();

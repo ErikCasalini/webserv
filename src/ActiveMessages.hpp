@@ -76,7 +76,7 @@ class	ActiveMessages
 
 		T	&at(int index)
 		{
-			return (m_messages_lst.at(index)); // throw
+			return (m_messages_lst.at(index));
 		}
 
 		size_t	size(void)

@@ -8,7 +8,7 @@
     <h1>Send Requests</h1>
 
     <!-- POST form -->
-    <form action="/cgi/cgi.sh/path_info/%5Bde_ouf?query_%5Bstring/hyper_bien???wtf!!ok%00#no" method="POST">
+    <form action="/cgi/cgi.sh/" method="POST">
 
 		<label>
         Body:
@@ -19,8 +19,28 @@
     </form>
 
     <!-- GET form -->
-    <form action="/src/?query#ok" method="GET">
-      <button type="submit">Send GET Request</button>
+    <form action="/src/" method="GET">
+      <button type="submit">Send redirection loop</button>
+    </form>
+
+	 <!-- GET form -->
+    <form action="/src/dir1/" method="GET">
+      <button type="submit">Send simple request</button>
+    </form>
+
+	 <!-- GET form -->
+    <form action="/redirection/" method="GET">
+      <button type="submit">Send simple redirection</button>
+    </form>
+
+	<!-- GET form -->
+    <form action="/cgi/" method="GET">
+      <button type="submit">Send simple CGI</button>
+    </form>
+
+	<!-- GET form -->
+    <form action="/redirection/redirection2/" method="GET">
+      <button type="submit">Send redirection to other internal site</button>
     </form>
 
   </body>

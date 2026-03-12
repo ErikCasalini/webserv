@@ -31,7 +31,7 @@ private:
 
 	string			m_file_name;
 	string			m_file_path;
-	const storage_t	*m_storage_infos; // both Storage path and root should end and start by '/'
+	const storage_t	*m_storage_infos;
 	const config_t	&m_config;
 
 };

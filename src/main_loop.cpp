@@ -66,7 +66,7 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 
 void	set_active_socket(socket_t &new_socket, Sockets &sockets)
 {
-	int			i = sockets.add(new_socket); // Le check de socket.size() est fait avant, on ne peut pas etre ici si sockets est full
+	int			i = sockets.add(new_socket);
 	epoll_event	event = EpollManager::create(&sockets.at(i), EPOLLIN);
 
 	errno = 0;
