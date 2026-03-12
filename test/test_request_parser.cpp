@@ -503,9 +503,6 @@ void test_extract_body()
 	assert((pos == 3));
 	assert((less_b[pos] == '\0'));
 	assert((less_r.status == parsing));
-
-	// TODO: test parsing beginning in "extracting_body" mode
-	// wrong inputs (expected, no exceptions)
 }
 
 void test_parse()

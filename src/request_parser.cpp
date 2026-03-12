@@ -233,12 +233,9 @@ namespace _Request {
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("unexpected EOL in method");
 		}
-		// TODO: replace this exception by NotImplemented when the method is uppercase but not found in the map
 		throw Request::BadRequest("illformed method");
 	}
 
-	// TODO: do we need to handle absolute form (e.g. http://example.com/index.html?q=now)
-	// Only handles target as origin form (e.g /index.html)
 	string parse_target(const string& buffer, size_t& pos)
 	{
 		string target;
@@ -249,6 +246,8 @@ namespace _Request {
 			}
 			if (pos == start)
 				throw Request::BadRequest("missing target");
+			if (pos - start > MAX_URI_LEN)
+				throw Request::BadRequest("uri too long");
 			target = buffer.substr(start, pos - start);
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("non terminated target");

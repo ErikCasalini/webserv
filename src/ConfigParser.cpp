@@ -159,6 +159,10 @@ void ConfigParser::parse_error_page(error_page_t& error_page)
 		err_nums.push_back(static_cast<int>(n));
 		consume();
 	}
+	if (err_nums.size() == 0)
+		throw ConfigParser::InvalidValue(
+				"missing error status number(s) before " + *filename_it);
+
 	const string filename = config_files::resolve_include_path(*filename_it, m_conf_path);
 	string page = error_file_to_string(filename);
 	consume();
@@ -379,8 +383,11 @@ bool ConfigParser::parse_cgi_nph()
 string ConfigParser::parse_index()
 {
 	consume();
-	if ((*m_tok_it).find("\\") != string::npos)
-		throw ConfigParser::InvalidValue("index path cannot contain '\\'");
+	if ((*m_tok_it).find("\\") != string::npos
+			|| (*m_tok_it).find("/") != string::npos
+			|| *m_tok_it == "."
+			|| *m_tok_it == "..")
+		throw ConfigParser::InvalidValue("invalid characters in index path");
 	string index = *m_tok_it;
 	consume();
 	consume(";");
@@ -624,6 +631,8 @@ config_t ConfigParser::parse()
 		++m_depth;
 		m_tok_it = m_tokens.begin();
 	}
+	if (m_config.events.max_connections < m_config.http.server.size() + 1)
+		throw ConfigParser::InvalidValue("not enough allowed connections");
 	return (m_config);
 }
 

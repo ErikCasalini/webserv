@@ -10,7 +10,11 @@
 # include <sys/types.h>
 
 # ifndef REQUEST_RECV_SIZE
-#  define REQUEST_RECV_SIZE 51200 // 50 KO
+#  define REQUEST_RECV_SIZE 51200 // 50KB
+# endif
+
+# ifndef MAX_URI_LEN
+#  define MAX_URI_LEN 8192 // 8KB
 # endif
 
 // TODO: add an init function that creates the method and protocol maps
@@ -43,7 +47,6 @@ public:
 	socket_t* m_socket;
 
 	// Give the state machine access to the private members of Request.
-	// TODO: rename Init to a better name
 	friend class RequestStates::Init;
 	friend class RequestStates::ReadingBuffer;
 	friend class RequestStates::ParsingHead;

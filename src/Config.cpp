@@ -30,5 +30,5 @@ http_t::http_t()
 };
 
 events_t::events_t()
-	: max_connections(256)
+	: max_connections(DEFAULT_MAX_CONNECTIONS)
 {};

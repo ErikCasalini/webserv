@@ -8,9 +8,9 @@
 # ifndef CONNECTIONS_MAX
 #  define CONNECTIONS_MAX 2048
 # endif
-// TODO: set as nbr of listen + 1 (iter listen vec in server vec)
+
 # ifndef CONNECTIONS_MIN
-#  define CONNECTIONS_MIN 1
+#  define CONNECTIONS_MIN 2
 # endif
 
 # ifndef KEEP_ALIVE_TIMEOUT_MAX
