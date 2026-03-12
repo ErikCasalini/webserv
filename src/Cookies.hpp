@@ -43,6 +43,7 @@ public:
 	string		create(void);
 	cookie_t	&at(string id);
 	void		erase(string id);
+	void		remove_expired(void);
 
 private:
 

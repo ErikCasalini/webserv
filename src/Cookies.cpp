@@ -60,3 +60,18 @@ void	Cookies::erase(string id)
 {
 	m_cookies.erase(id);
 }
+
+void		Cookies::remove_expired(void)
+{
+	std::map<string, cookie_t>::iterator	it = m_cookies.begin();
+	std::vector<string>						expired;
+
+	for(; it != m_cookies.end(); it++) {
+		if (it->second.exp_date <= std::time(NULL))
+			expired.push_back(it->first);
+	}
+
+	std::vector<string>::iterator	exp_it = expired.begin();
+	for (; exp_it != expired.end(); exp_it++)
+		m_cookies.erase(*exp_it);
+}
