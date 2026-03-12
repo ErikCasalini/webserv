@@ -37,10 +37,10 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 		vector<listen_t>::const_iterator lis_it = serv_it->listen.begin();
 		if (lis_it == serv_it->listen.end())
 			throw CriticalException("\033[1;31mNo listen interface for declared server\033[0m");
-			
+
 		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
 			socket_t socket;
-			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0); // throws
+			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 			socket.local_data.sin_family = AF_INET;
 			socket.local_data.sin_addr.s_addr = htonl(lis_it->ip);
 			socket.local_data.sin_port = htons(lis_it->port);
@@ -51,12 +51,12 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 			int opt = 1;
 			setsockopt(socket.fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-			bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data)); // throws
-			listen_ex(socket.fd, 1024); // throws
+			bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data));
+			listen_ex(socket.fd, 1024);
 
 			int i = sockets.add(socket);
 			event = EpollManager::create(&sockets.at(i), EPOLLIN);
-			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, socket.fd, &event); // throws
+			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, socket.fd, &event);
 			lis_it++;
 		}
 		serv_it++;
@@ -82,7 +82,7 @@ void	set_active_socket(socket_t &new_socket, Sockets &sockets)
 			errno = 0;
 			break;
 		default:
-			throw CriticalException(strerror(errno));
+			throw CriticalException(string("epoll_ctl(): ") + strerror(errno));
 	}
 }
 
@@ -103,7 +103,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 				new_socket.server_id = listen_socket->server_id;
 				getsockname(new_socket.fd, reinterpret_cast<sockaddr*>(&new_socket.local_data), &new_socket.local_data_len);
 				new_socket.last_activity = std::time(NULL);
-				set_active_socket(new_socket, sockets); // throws
+				set_active_socket(new_socket, sockets);
 				break;
 			case ECONNABORTED:
 			case EPERM:
@@ -125,7 +125,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 				stop_draining = true;
 				break;
 			default:
-				throw CriticalException(strerror(errno));
+				throw CriticalException(string("accept(): ") + strerror(errno));
 		}
 	}
 }
@@ -135,7 +135,7 @@ void	close_connection(socket_t *socket, Sockets &sockets, ActiveMessages<Request
 	if (socket == NULL)
 		throw logic_error("Invalid socket address");
 
-	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, socket->fd, NULL); // throws
+	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, socket->fd, NULL);
 	requests.clear(socket); // if address is present
 	responses.clear(socket); // if address is present
 	sockets.close(*socket);
@@ -181,17 +181,17 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		socket_t	*sock = static_cast<socket_t*>(item);
 
 		if (sock->socktype == passive)
-			accept_new_connections(sock, sockets); // throws
+			accept_new_connections(sock, sockets);
 		else {
 			// CHECK REQUEST
 			int	i_req = requests.search(sock);
 			if (i_req == -1)
-				i_req = requests.add(sock); // throws
+				i_req = requests.add(sock);
 			try {
 				requests.at(i_req).parse();
 				}
 			catch (Request::ConnectionClosed &e) {
-				std::cout << "\033[1;35m[PEER CLOSED]\033[0m " << *sock << '\n'; // pour debug
+				std::cout << "\033[1;35m[PEER CLOSED]\033[0m " << *sock << '\n';
 				close_connection(sock, sockets, requests, responses);
 				return ;
 			}
@@ -199,7 +199,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 			if (req_status != parsing) {
 				// CREATING RESPONSE
 				requests.at(i_req).m_socket->last_activity = std::time(NULL);
-				int i_resp = responses.add(sock, requests.at(i_req).get_infos());// throws if full, vue que aucun READ ne peut arriver tant qu'on a pas send et effacée la response, ca ne peut pas arriver (1 response par fd max)
+				int i_resp = responses.add(sock, requests.at(i_req).get_infos());
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
 				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
@@ -358,14 +358,14 @@ void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
 	Cookies						cookie_jar;
-	Sockets						sockets(config.events.max_connections); // throws
-	ActiveMessages<Request>		requests(config, cookie_jar); // throws
-	ActiveMessages<Response>	responses(config, cookie_jar); // throws
+	Sockets						sockets(config.events.max_connections);
+	ActiveMessages<Request>		requests(config, cookie_jar);
+	ActiveMessages<Response>	responses(config, cookie_jar);
 
-	init_listen_sockets(config.http.server, sockets); // throws
+	init_listen_sockets(config.http.server, sockets);
 	while(1) {
 		errno = 0;
-		ready_fds = epoll_wait_ex(sockets.epoll_inst(), sockets.events_addr(), sockets.events_size(), 0); // throws
+		ready_fds = epoll_wait_ex(sockets.epoll_inst(), sockets.events_addr(), sockets.events_size(), 0);
 		for (int i = 0; i < ready_fds; i++) {
 			if (int_signal) {
 				std::cout << "\nQuitting...\n";
