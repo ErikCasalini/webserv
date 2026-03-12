@@ -7,6 +7,7 @@
 # include <stdexcept>
 
 # define COOKIE_LEN 32
+# define COOKIE_MAX_AGE 30 // minutes
 
 using std::map;
 using std::string;

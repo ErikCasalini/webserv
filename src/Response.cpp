@@ -208,8 +208,8 @@ void	Response::generate_response(void)
 		<< "Server: " << m_headers.server << CRLF
 		<< "Date: " << get_date(std::time(NULL)) << CRLF;
 		if (m_headers.set_cookie.size())
-			buf << "Set-Cookie: " << m_headers.set_cookie << CRLF
-		<< CRLF;
+			buf << "Set-Cookie: " << m_headers.set_cookie << CRLF;
+		buf << CRLF;
 
 	if (m_body.size())
 		buf << m_body;
