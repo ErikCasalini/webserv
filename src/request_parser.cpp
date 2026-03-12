@@ -249,6 +249,8 @@ namespace _Request {
 			}
 			if (pos == start)
 				throw Request::BadRequest("missing target");
+			if (pos - start > MAX_URI_LEN)
+				throw Request::BadRequest("uri too long");
 			target = buffer.substr(start, pos - start);
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("non terminated target");
