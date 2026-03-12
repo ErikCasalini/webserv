@@ -33,7 +33,7 @@ cookie_t::cookie_t(void)
 
 	id = "id=" + string(reinterpret_cast<char*>(res));
 	last_visit = std::time(NULL);
-	exp_date = last_visit + (6 * COOKIE_MAX_AGE);
+	exp_date = last_visit + (60 * COOKIE_MAX_AGE);
 	exp_date_str = "Expires=" + get_date(exp_date);
 	last_visit_str = get_date(last_visit);
 }
