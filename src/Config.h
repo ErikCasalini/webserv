@@ -135,7 +135,6 @@ struct server_t {
 	error_page_t error_page;
 	std::vector<listen_t> listen;
 	std::vector<location_t> locations;
-	unsigned int max_body_size;
 	redirection_t redirection;
 	std::string root;
 	storage_t storage; // url, real_path

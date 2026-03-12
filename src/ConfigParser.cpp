@@ -223,7 +223,6 @@ server_t ConfigParser::inherit_from_http()
 	server_t server;
 	server.autoindex = m_config.http.autoindex;
 	server.error_page = m_config.http.error_page;
-	server.max_body_size = m_config.http.max_body_size;
 	server.root = m_config.http.root;
 	return (server);
 }
@@ -526,8 +525,6 @@ server_t ConfigParser::parse_server()
 			server.listen.push_back(parse_listen());
 		} else if (*m_tok_it == "location") {
 			skip_block();
-		} else if (*m_tok_it == "max_body_size") {
-			server.max_body_size = parse_max_body_size();
 		} else if (*m_tok_it == "return") {
 			server.redirection = parse_redirection();
 		} else if (*m_tok_it == "root") {

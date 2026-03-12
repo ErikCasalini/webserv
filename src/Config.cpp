@@ -15,14 +15,13 @@ location_t::location_t()
 
 server_t::server_t()
 	: autoindex(false)
-	, max_body_size(1048576) // default 1Mo
 	, redirection(parsing, "")
 {};
 
 http_t::http_t()
 	: autoindex(false)
 	, keepalive_timeout(0)
-	, max_body_size(1048576) // default 1Mo
+	, max_body_size(1048576) // default 1MB
 	, default_type("application/octet-stream")
 {
 	error_page[400] = DEFAULT_ERROR_400;

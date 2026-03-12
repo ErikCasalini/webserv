@@ -431,7 +431,6 @@ void test_full_text_config(char* exec_path)
 	assert((server.listen[0].ip == 0x7F000001));
 	assert((server.listen[0].port == 4242));
 	assert((std::strcmp(server.root.c_str(), (path + "/servers/test/html/").c_str()) == 0));
-	assert((server.max_body_size == 16384));
 	assert((server.redirection.first == 301));
 	assert((std::strcmp(server.redirection.second.c_str(), "/newpage") == 0));
 	// assert((std::strcmp(server.storage.first.c_str(), "/newpage") == 0));
