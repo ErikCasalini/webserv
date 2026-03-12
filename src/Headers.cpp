@@ -174,6 +174,16 @@ bool Headers::parse_connection()
 	return (false);
 }
 
+std::string Headers::parse_cookie()
+{
+	try {
+		std::string val = m_map.at("cookie");
+		strtrim(val);
+		return (val);
+	} catch (const std::out_of_range& e) {}
+		return ("");
+}
+
 headers_t Headers::get_struct()
 {
 	return (m_struct);
