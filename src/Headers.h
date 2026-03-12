@@ -37,6 +37,7 @@ public:
 			= static_cast<unsigned long>(std::numeric_limits<long>::max()));
 	std::string parse_content_type();
 	bool parse_connection();
+	std::string parse_cookie();
 	headers_map_t::size_type count(const std::string& key);
 	const std::string& at(const std::string& key);
 

@@ -86,6 +86,7 @@ struct headers_t {
 	// TODO: store it as a date type? What format to handle
 	std::string if_modified_since;
 	std::string allow;
+	std::string set_cookie;
 };
 std::ostream& operator<<(std::ostream& os, const headers_t& h);
 

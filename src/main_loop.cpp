@@ -15,17 +15,23 @@
 #include <cstring>
 #include <cerrno>
 #include "Config.h"
+#include "Cookies.hpp"
+
+using std::string;
+using std::vector;
+using std::logic_error;
+using std::runtime_error;
 
 extern volatile sig_atomic_t int_signal;
 
-void	init_listen_sockets(std::vector<server_t> &servers, Sockets &sockets)
+void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 {
-	std::vector<server_t>::const_iterator	serv_it = servers.begin();
-	epoll_event								event;
-	int										server_id = 0;
+	vector<server_t>::const_iterator	serv_it = servers.begin();
+	epoll_event							event;
+	int									server_id = 0;
 
 	while (serv_it < servers.end() && sockets.size() < sockets.limit()) {
-		std::vector<listen_t>::const_iterator lis_it = serv_it->listen.begin(); // empecher de lancer si serveur n'a aucun listen (ou pas des serv)
+		vector<listen_t>::const_iterator lis_it = serv_it->listen.begin(); // empecher de lancer si serveur n'a aucun listen (ou pas des serv)
 
 		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
 			socket_t socket;
@@ -81,7 +87,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 	bool		stop_draining = false;
 
 	if (listen_socket == NULL)
-		throw std::logic_error("Invalid socket address");
+		throw logic_error("Invalid socket address");
 
 	while (!stop_draining && sockets.size() < sockets.limit()) {
 		errno = 0;
@@ -122,7 +128,7 @@ void	accept_new_connections(socket_t *listen_socket, Sockets &sockets)
 void	close_connection(socket_t *socket, Sockets &sockets, ActiveMessages<Request> &requests, ActiveMessages<Response> &responses)
 {
 	if (socket == NULL)
-		throw std::logic_error("Invalid socket address");
+		throw logic_error("Invalid socket address");
 
 	epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_DEL, socket->fd, NULL); // throws
 	requests.clear(socket); // if address is present
@@ -135,13 +141,13 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 
 	if (item == NULL)
-		throw std::logic_error("Invalid item address");
+		throw logic_error("Invalid item address");
 
 	if (item->type == sockt) {
 		socket_t	*socket = static_cast<socket_t*>(item);
 
 		if (socket->socktype == passive)
-			throw std::runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
+			throw runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
 		// CLOSE
 		std::cout << "\033[1;31m[SOCKET INTERNAL ERROR]\033[0m " << *socket << " | \033[1;32m[CLOSED]\033[0m\n";
 		close_connection(socket, sockets, requests, responses);
@@ -151,7 +157,7 @@ void	handle_error(epoll_event &event, Sockets &sockets, ActiveMessages<Request> 
 		int			i = responses.search(cgi->get_socket());
 
 		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
+			throw logic_error("Attempt to dereference nonexistent Response");
 
 		// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
 		responses.at(i).handle_cgi_error(sockets);
@@ -206,7 +212,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 		int		i = responses.search(cgi->get_socket());
 
 		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
+			throw logic_error("Attempt to dereference nonexistent Response");
 
 		if (cgi->timeout() || cgi->read_child_response(sockets.epoll_inst()) == -1)
 			responses.at(i).handle_cgi_error(sockets);
@@ -223,13 +229,13 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 	epoll_item_t	*item = static_cast<epoll_item_t*>(event.data.ptr);
 
 	if (item == NULL)
-		throw std::logic_error("Invalid item address");
+		throw logic_error("Invalid item address");
 
 	if (item->type == sockt) {
 		socket_t	*socket = static_cast<socket_t*>(item);
 
 		if (socket->socktype == passive)
-			throw std::runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
+			throw runtime_error("\033[1;31m[FATAL ERROR]\033[0m Listen Socket corrupted");
 		// CLOSE
 		std::cout << "\033[1;35m[PEER CLOSED]\033[0m " << *socket << '\n'; // pour debug
 		close_connection(socket, sockets, requests, responses);
@@ -239,7 +245,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 		int			i = responses.search(cgi->get_socket());
 
 		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
+			throw logic_error("Attempt to dereference nonexistent Response");
 
 		if (cgi->get_status() == write_to_child)
 			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
@@ -270,7 +276,7 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 			epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_ADD, cgi->get_socket()->fd, &new_event);
 		}
 		else
-			throw std::logic_error("Epoll received a Cgi event in a forbidden state");
+			throw logic_error("Epoll received a Cgi event in a forbidden state");
 	}
 }
 
@@ -280,14 +286,14 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 	int				i;
 
 	if (item == NULL)
-		throw std::logic_error("Invalid item address");
+		throw logic_error("Invalid item address");
 
 	if (item->type == sockt) {
 		socket_t	*sock = static_cast<socket_t*>(item);
 		i = responses.search(sock);
 
 		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
+			throw logic_error("Attempt to dereference nonexistent Response");
 
 		if (responses.at(i).send_response() == -1)
 			// ERROR --> CLOSE
@@ -315,7 +321,7 @@ void	handle_write_event(epoll_event &event, Sockets &sockets, ActiveMessages<Req
 		i = responses.search(cgi->get_socket());
 
 		if (i == -1)
-			throw std::logic_error("Attempt to dereference nonexistent Response");
+			throw logic_error("Attempt to dereference nonexistent Response");
 
 		if (cgi->timeout() || cgi->write_body_to_child(sockets.epoll_inst()) == -1)
 			// RESET CGI, TRACK SOCKET AGAIN, SEND ERR 500
@@ -348,9 +354,10 @@ void	close_pending_connections(Sockets &sockets, ActiveMessages<Request> &reques
 void	main_server_loop(config_t &config)
 {
 	int							ready_fds;
+	Cookies						cookie_jar;
 	Sockets						sockets(config.events.max_connections); // throws
-	ActiveMessages<Request>		requests(config); // throws
-	ActiveMessages<Response>	responses(config); // throws
+	ActiveMessages<Request>		requests(config, cookie_jar); // throws
+	ActiveMessages<Response>	responses(config, cookie_jar); // throws
 
 	init_listen_sockets(config.http.server, sockets); // throws
 	while(1) {

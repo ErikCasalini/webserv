@@ -3,6 +3,7 @@
 #include "response_utils.h"
 #include <list>
 #include <cerrno>
+#include <ctime>
 #include <sys/stat.h>
 
 using std::list;
@@ -48,4 +49,15 @@ file_stat	get_file_type(const string &file_name)
 		return (dir);
 	else
 		return (file);
+}
+
+string	get_date(std::time_t time)
+{
+	const size_t buf_len = sizeof("ddd, nn mmm yyyy hh:mm:ss GMT");
+	char buf[buf_len];
+	const char *format = "%a, %d %b %Y %H:%M:%S GMT";
+
+	std::strftime(buf, buf_len, format, std::localtime(&time));
+
+	return (buf);
 }

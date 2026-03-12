@@ -2,6 +2,7 @@
 # define ACTIVEMESSAGES_HPP
 
 # include "Config.h"
+# include "Cookies.hpp"
 # include <vector>
 
 template <typename T>
@@ -9,11 +10,11 @@ class	ActiveMessages
 {
 	public:
 
-		ActiveMessages(const config_t &config)
+		ActiveMessages(const config_t &config, Cookies &cookie_jar)
 		: m_config(config),
 		  m_socket_limit(config.events.max_connections)
 		{
-			T	sample(config);
+			T	sample(config, cookie_jar);
 
 			m_messages_lst.resize(config.events.max_connections, sample);
 		}
@@ -88,7 +89,6 @@ class	ActiveMessages
 		const config_t	&m_config;
 		std::vector<T>	m_messages_lst;
 		int				m_socket_limit;
-		// std::vector<T(const config_t& conf)>	m_messages_lst;
 
 };
 

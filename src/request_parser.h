@@ -3,6 +3,7 @@
 
 # include "http_types.h"
 # include "request_parser_states.h"
+#include "Cookies.hpp"
 # include <stdexcept>
 # include <string>
 # include <sys/types.h>
@@ -14,7 +15,7 @@
 // TODO: add an init function that creates the method and protocol maps
 class Request {
 public:
-	Request(const config_t& config);
+	Request(const config_t& config, Cookies &cookie_jar);
 	Request(const config_t& config, std::string buffer); // For testing purposes
 	Request(const Request& src);
 	Request& operator=(const Request& src);
