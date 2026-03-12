@@ -68,7 +68,6 @@ void RequestStates::ReadingBuffer::parse(Request* request)
 		request->set_state(RequestStates::Invalid::get_instance());
 		throw Request::ConnectionClosed("socket closed");
 	}
-	// TODO replace this exception by an io exception (check for Erik's exceptions)
 	if (ret == -1) {
 		request->set_state(RequestStates::Invalid::get_instance());
 		throw std::runtime_error("recv failed");

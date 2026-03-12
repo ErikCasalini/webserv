@@ -47,7 +47,6 @@ public:
 	socket_t* m_socket;
 
 	// Give the state machine access to the private members of Request.
-	// TODO: rename Init to a better name
 	friend class RequestStates::Init;
 	friend class RequestStates::ReadingBuffer;
 	friend class RequestStates::ParsingHead;
