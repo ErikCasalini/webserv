@@ -367,7 +367,7 @@ const vector<std::string> Response::generate_cgi_env(const cgi_uri_infos_t &uri_
 	env.push_back("SERVER_NAME=" + m_socket->str_local_addr());
 	env.push_back("SERVER_PORT=" + m_socket->str_local_port());
 	env.push_back("SERVER_PROTOCOL=HTTP/1.0");
-	env.push_back("SERVER_SOFTWARE=webserv/2026");
+	env.push_back("SERVER_SOFTWARE=" VERSION);
 	return (env);
 }
 

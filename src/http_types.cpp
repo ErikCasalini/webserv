@@ -8,7 +8,7 @@
 headers_t::headers_t()
 	: content_length(0)
 	, keep_alive(false)
-	, server("Webserver_2026")
+	, server(VERSION)
 {}
 
 headers_t::headers_t(const headers_t& src)
@@ -47,7 +47,7 @@ void headers_t::clear()
 	keep_alive = false;
 	date.clear();
 	location.clear();
-	server = "Webserver_2026";
+	server = VERSION;
 	allow.clear();
 	set_cookie.clear();
 }
