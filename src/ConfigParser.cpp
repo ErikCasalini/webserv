@@ -627,6 +627,8 @@ config_t ConfigParser::parse()
 		++m_depth;
 		m_tok_it = m_tokens.begin();
 	}
+	if (m_config.events.max_connections < m_config.http.server.size() + 1)
+		throw ConfigParser::InvalidValue("not enough allowed connections");
 	return (m_config);
 }
 
