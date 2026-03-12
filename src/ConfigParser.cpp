@@ -379,8 +379,11 @@ bool ConfigParser::parse_cgi_nph()
 string ConfigParser::parse_index()
 {
 	consume();
-	if ((*m_tok_it).find("\\") != string::npos)
-		throw ConfigParser::InvalidValue("index path cannot contain '\\'");
+	if ((*m_tok_it).find("\\") != string::npos
+			|| (*m_tok_it).find("/") != string::npos
+			|| *m_tok_it == "."
+			|| *m_tok_it == "..")
+		throw ConfigParser::InvalidValue("invalid characters in index path");
 	string index = *m_tok_it;
 	consume();
 	consume(";");
