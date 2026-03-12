@@ -49,8 +49,11 @@ headers_map_t Headers::string_to_map(const std::string& headers_str,
 	headers_map_t map;
 	try {
 		while (headers_str.substr(pos, nl.size()) != nl && pos < headers_str.length()) {
-			std::string key = extract_key(headers_str, pos);
-			map[key] = extract_value(headers_str, pos, nl);
+			const std::string key = extract_key(headers_str, pos);
+			const std::string val = extract_value(headers_str, pos, nl);
+			if (key.size() + val.size() > MAX_HEADER_LEN)
+				throw Headers::BadHeader("header is too big");
+			map[key] = val;
 		}
 	} catch (const std::out_of_range& e) {
 		throw Headers::BadHeader("unexpected EOL in headers str");

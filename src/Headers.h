@@ -6,6 +6,10 @@
 # include <map>
 # include <string>
 
+# ifndef MAX_HEADER_LEN
+#  define MAX_HEADER_LEN 8192 // 8KB
+# endif
+
 typedef std::map<std::string, std::string> headers_map_t;
 
 class Headers {
