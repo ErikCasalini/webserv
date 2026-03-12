@@ -8,38 +8,6 @@
 #include <string>
 #include <sys/socket.h>
 
-//HEADERS
-// allow
-// "authorization",
-// // can be ignored safely
-// "content-encoding",
-// // IMPLEMENT POST
-// "content-length",
-// // can be ignored safely server side
-// "content-type",
-// // can be ignored
-// "date"
-// // can be ignored without cache
-// "expires"
-// // can be ignored
-// "from"
-// // can be ignored
-// "if-modified-since"
-// // can be ignored
-// "last-modified",
-// // can be ignored
-// "location"
-// // can be ignored
-// "pragma"
-// // can be ignored
-// "referer"
-// //can be ignored
-// "user-agent"
-
-// RESPONSE
-// should be ignored
-// server
-// WWW-Authenticate
 using std::string;
 using std::map;
 
@@ -158,7 +126,6 @@ namespace _Request {
 		return (ret);
 	}
 
-	// TODO: call this function from an init one called from the main
 	static const map<string, method_t> build_method_map()
 	{
 		map<string, method_t> methods;
@@ -169,7 +136,6 @@ namespace _Request {
 		return (methods);
 	}
 
-	// TODO: call this function from an init one called from the main
 	static const map<string, protocol_t> build_protocol_map()
 	{
 		map<string, protocol_t> protocols;
@@ -258,7 +224,6 @@ namespace _Request {
 	// Case sensitive protocol parsing (expect uppercase)
 	protocol_t parse_protocol(const string& buffer, size_t& pos)
 	{
-		// Following rfc9112 the protocol name is case sensitive
 		const string http_name = "HTTP/";
 		try {
 			if (buffer.substr(pos, http_name.length()) != http_name)

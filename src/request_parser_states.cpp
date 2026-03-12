@@ -1,4 +1,3 @@
-// #include "http_types.h"
 #include "request_parser.h"
 #include "request_parser_states.h"
 #include <string>
@@ -110,7 +109,7 @@ void RequestStates::ParsingHead::parse(Request* request)
 	size_t& pos = request->m_pos;
 	request_t& infos = request->m_infos;
 
-	// The rfc9112 specify that we SHOULD ignore at least one crlf prior to the request.
+	// ignore crlfs prior to the request.
 	while (buffer.substr(pos, 2) == CRLF)
 		pos += 2;
 

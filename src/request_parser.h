@@ -17,7 +17,6 @@
 #  define MAX_URI_LEN 8192 // 8KB
 # endif
 
-// TODO: add an init function that creates the method and protocol maps
 class Request {
 public:
 	Request(const config_t& config, Cookies &cookie_jar);

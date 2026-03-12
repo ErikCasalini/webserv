@@ -117,8 +117,6 @@ std::string Headers::extract_value(const std::string& buffer,
 		size_t start = pos;
 		while (buffer.substr(pos, nl.size()) != nl)
 			++pos;
-		// Push the full string without any checks,
-		// actual parsing is done after only if the key is recognized.
 		while (buffer.at(start) == ' ') {
 			++start;
 			if (start >= buffer.size())
@@ -143,7 +141,6 @@ long Headers::parse_content_length(unsigned long max)
 			char* end = NULL;
 			errno = 0;
 			unsigned long len = std::strtoul(val.c_str(), &end, 10);
-			// is it a specific status code?
 			if (*end || errno || len > max) {
 				errno = 0;
 				throw Headers::BadHeader("invalid content-length");

@@ -2,7 +2,6 @@
 # define CGIPARSER_H
 
 # include "Headers.h"
-# include "Config.h"
 # include "Cgi.hpp"
 # include "Response.hpp"
 # include <string>
