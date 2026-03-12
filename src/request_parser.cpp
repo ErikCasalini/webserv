@@ -307,8 +307,6 @@ namespace _Request {
 			headers.keep_alive = raw_headers.parse_connection();
 			headers.content_type = raw_headers.parse_content_type();
 			headers.cookies = raw_headers.parse_cookie();
-			// if (request.method == get)
-			// 	headers.if_modified_since = raw_headers.parse_if_modified_since(raw_headers);
 			const long cl = raw_headers.parse_content_length();
 			if (cl == -1) {
 				if (request.method == post)

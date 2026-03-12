@@ -385,7 +385,6 @@ void test_parse_headers()
 	// std::string b_all = "content-length: 123" CRLF
 	// 	"cookie: theme=light; sessionToken=abc123" CRLF
 	// 	"connection: keep_alive" CRLF
-	// 	"if_modified_since: Wed, 9 Jun 2021 10:18:14 GMT" CRLF;
 	// request_t request;
 	// request.method = get;
 	// request.target = "/";
@@ -394,7 +393,6 @@ void test_parse_headers()
 	// assert((all.content_length == 123));
 	// assert((all.cookies == "theme=light; sessionToken=abc123"));
 	// assert((all.keep_alive == true));
-	// assert((all.if_modified_since == "Wed, 9 Jun 2021 10:18:14 GMT"));
 
 	std::string b_alive = "connection: keep-alive" CRLF CRLF;
 	pos = 0;
