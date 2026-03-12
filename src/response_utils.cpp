@@ -89,12 +89,14 @@ status_t	read_file_to_body(const string &file_name, string &body)
 		return (ok);
 }
 
-void	set_body_headers(headers_t &headers, string body, string file_name, const config_t & config)
+void	set_body_headers(headers_t &headers, const string &body, const string &file_name, const config_t & config)
 {
-	(void)file_name;
-	(void)config;
 	headers.content_length = body.size();
-	headers.content_type = "text/html"; // remplacer par fonction qui cherche (si trouve pas -> bit stream)
+	if (file_name.rfind(".") == std::string::npos
+		|| config.http.types.count(file_name.substr(file_name.rfind(".") + 1)) == 0)
+		headers.content_type = config.http.default_type;
+	else
+		headers.content_type = config.http.types.at(file_name.substr(file_name.rfind(".") + 1));
 }
 
 bool	is_bad_method(method_t method, const vector<method_t> &limit_except)
