@@ -119,6 +119,7 @@ struct location_t {
 	location_t();
 	bool autoindex;
 	bool cgi;
+	bool cgi_nph;
 	error_page_t error_page;
 	bool exact_match;
 	std::string index;

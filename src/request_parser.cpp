@@ -190,8 +190,6 @@ namespace _Request {
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("unexpected EOL in place of sp");
 		}
-
-
 	}
 
 	void consume_crlf(const string& buffer, size_t& pos)

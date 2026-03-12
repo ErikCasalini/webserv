@@ -368,6 +368,15 @@ bool ConfigParser::parse_cgi()
 	return (val);
 }
 
+bool ConfigParser::parse_cgi_nph()
+{
+	consume();
+	bool val = extract_boolean();
+	consume();
+	consume(";");
+	return (val);
+}
+
 string ConfigParser::parse_index()
 {
 	consume();
@@ -453,6 +462,8 @@ void ConfigParser::parse_location(location_t& location)
 			location.autoindex = parse_autoindex();
 		} else if (*m_tok_it == "cgi") {
 			location.cgi = parse_cgi();
+		} else if (*m_tok_it == "cgi_nph") {
+			location.cgi_nph = parse_cgi_nph();
 		} else if (*m_tok_it == "error_page") {
 			parse_error_page(location.error_page);
 		} else if (*m_tok_it == "index") {

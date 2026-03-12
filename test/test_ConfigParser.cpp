@@ -1,5 +1,4 @@
 #include "../src/ConfigParser.h"
-#include "../src/ConfigLexer.h"
 #include "lib_test.h"
 
 using std::string;
@@ -450,6 +449,7 @@ void test_full_text_config(char* exec_path)
 	assert((std::strcmp((*path_it).c_str(), "/") == 0));
 	assert((location.autoindex == false));
 	assert((location.cgi == false));
+	assert((location.cgi_nph == true));
 	const char* err_403 = "<html>\n"
 						  "<head><title>403 Forbidden</title></head>\n"
 						  "<body>\n"

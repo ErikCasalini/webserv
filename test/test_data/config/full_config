@@ -38,6 +38,7 @@ http {
 		location = / {
 			autoindex		false;
 			cgi				false;
+			cgi_nph			true;
 			error_page		403	html/403.html;
 			# ONLY IN CONFIG STRUCT # exact_match 	true; # If equal sign after location key
 			index			index.html;

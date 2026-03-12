@@ -263,13 +263,11 @@ void	handle_client_disconnected(epoll_event &event, Sockets &sockets, ActiveMess
 			}
 			// CHILD SUCCEEDED OR NOT EXITED YET--> CLEAN, SET FD TRACKING AGAIN, HANDLE RESPONSE
 			cgi->reset_state(sockets.epoll_inst());
-			(void)cgi->get_config(); // Const ref
-			(void)cgi->get_location(); // Pointeur sur const location_t
 
-			// if (!response.at(i).location.cgi_nph) {
-			CgiParser cgi_response(&responses.at(i));
-			cgi_response.parse();
-			// }
+			if (!responses.at(i).get_location()->cgi_nph) {
+				CgiParser cgi_response(&responses.at(i));
+				cgi_response.parse();
+			}
 
 			epoll_event	new_event = EpollManager::create(cgi->get_socket(), EPOLLOUT);
 			responses.at(i).set_status(sending_resp);

@@ -8,6 +8,7 @@ listen_t::listen_t()
 location_t::location_t()
 	: autoindex(false)
 	, cgi(false)
+	, cgi_nph(false)
 	, exact_match(false)
 	, redirection(parsing, "")
 {};

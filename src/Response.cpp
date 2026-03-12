@@ -119,6 +119,11 @@ cgi_status_t	Response::get_cgi_status(void) const
 	return (m_cgi.get_status());
 }
 
+const location_t	*Response::get_location(void) const
+{
+	return (m_location);
+}
+
 void	Response::set_status(status_t status)
 {
 	m_status = status;
