@@ -66,6 +66,16 @@
 "</html>"
 # endif
 
+# ifndef DEFAULT_ERROR_405
+#  define DEFAULT_ERROR_405 "<html>"\
+"<head><title>405 Method Not Allowed</title></head>"\
+"<body>"\
+"<center><h1>405 Method Not Allowed</h1></center>"\
+"<hr><center>" VERSION "</center>"\
+"</body>"\
+"</html>"
+# endif
+
 # ifndef DEFAULT_ERROR_500
 #  define DEFAULT_ERROR_500 "<html>"\
 "<head><title>500 Internal Server Error</title></head>"\
