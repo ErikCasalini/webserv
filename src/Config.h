@@ -12,14 +12,6 @@
 #  define DEFAULT_MAX_CONNECTIONS 512
 # endif
 
-# ifndef DEFAULT_IP
-#  define DEFAULT_IP 0x7F000001 // 127.0.0.1
-# endif
-
-# ifndef DEFAULT_PORT
-#  define DEFAULT_PORT 8080
-# endif
-
 # ifndef VERSION
 #  define VERSION "webserv/2026"
 # endif
@@ -110,7 +102,6 @@ typedef std::map<int, std::string> error_page_t;
 typedef std::pair<std::list<std::string>, std::string> storage_t; // url, real_path
 
 struct listen_t {
-	listen_t();
 	u_int32_t ip;
 	u_int16_t port;
 };

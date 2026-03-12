@@ -38,6 +38,9 @@ const location_t	*find_location(const list<string> &path, const vector<location_
 	vector<location_t>::const_iterator	it_loc = locations.begin();
 	vector<location_t>::const_iterator	ret = locations.end();
 
+	if (locations.size() == 0)
+		throw (bad_location("No locations set inside server"));
+
 	for (int best_match = 0, match_rate; it_loc < locations.end(); it_loc++) {
 		if (it_loc->exact_match) {
 			if (is_exact_match(path, it_loc->path))

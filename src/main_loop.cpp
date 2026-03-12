@@ -30,9 +30,14 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 	epoll_event							event;
 	int									server_id = 0;
 
-	while (serv_it < servers.end() && sockets.size() < sockets.limit()) {
-		vector<listen_t>::const_iterator lis_it = serv_it->listen.begin(); // empecher de lancer si serveur n'a aucun listen (ou pas des serv)
+	if (servers.size() == 0)
+		throw CriticalException("\033[1;31mNo servers declared in config file\033[0m");
 
+	while (serv_it < servers.end() && sockets.size() < sockets.limit()) {
+		vector<listen_t>::const_iterator lis_it = serv_it->listen.begin();
+		if (lis_it == serv_it->listen.end())
+			throw CriticalException("\033[1;31mNo listen interface for declared server\033[0m");
+			
 		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
 			socket_t socket;
 			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0); // throws
