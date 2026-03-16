@@ -202,13 +202,12 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 				int i_resp = responses.add(sock, requests.at(i_req).get_infos());
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
-				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
+				std::cout << requests.at(i_req).get_infos() << '\n';
 				requests.at(i_req).clear_infos();
-				if (req_status == bad_request)
-					responses.at(i_req).set_status(bad_request);
-				else
+				responses.at(i_req).set_status(req_status);
+				if (req_status == ok)
 					responses.at(i_resp).parse_uri();
-				responses.at(i_resp).process(sockets); // unset tracking of socket fd if CGI
+				responses.at(i_resp).process(sockets);
 			}
 		}
 	}
