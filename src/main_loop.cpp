@@ -38,7 +38,9 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 		if (lis_it == serv_it->listen.end())
 			throw CriticalException("\033[1;31mNo listen interface for declared server\033[0m");
 
-		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
+		while (lis_it < serv_it->listen.end()) {
+			if (sockets.size() >= sockets.limit())
+				throw CriticalException("\033[1;31mNot enought connections allowed to satisfy all the listen interfaces\033[0m");
 			socket_t socket;
 			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 			socket.local_data.sin_family = AF_INET;
