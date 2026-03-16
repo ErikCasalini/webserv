@@ -424,5 +424,6 @@ int	cgi_uri_infos_t::init(const location_t &location, std::list<std::string> pat
 	script_abs_path = script_dir + script_name;
 	if (script_name == "")
 		return (-1);
+	script_name = "./" + script_name;
 	return (0);
 }
