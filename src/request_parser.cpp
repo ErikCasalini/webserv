@@ -199,7 +199,7 @@ namespace _Request {
 		} catch (const std::out_of_range& e) {
 			throw Request::BadRequest("unexpected EOL in method");
 		}
-		throw Request::BadRequest("illformed method");
+		throw Request::NotImplemented("unknown method");
 	}
 
 	string parse_target(const string& buffer, size_t& pos)
