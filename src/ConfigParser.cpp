@@ -76,6 +76,18 @@ bool ConfigParser::extract_boolean()
 		throw ConfigParser::InvalidValue("expected boolean");
 }
 
+bool ConfigParser::check_min_connections()
+{
+	unsigned int listens = 0;
+	for (unsigned long i = 0; i < m_config.http.server.size(); ++i) {
+		listens += m_config.http.server.at(i).listen.size();
+	}
+	if (m_config.events.max_connections < listens + 1)
+		return (false);
+	else
+		return (true);
+}
+
 unsigned int ConfigParser::parse_max_connections()
 {
 	consume();
@@ -95,8 +107,7 @@ void ConfigParser::parse_events()
 	consume("{");
 	while (m_tok_it != m_tokens.end()) {
 		if (*m_tok_it == "max_connections") {
-			m_config.events.max_connections
-				= parse_max_connections();
+			m_config.events.max_connections = parse_max_connections();
 		} else if (*m_tok_it == "}") {
 			m_tokens.erase(m_tok_it++);
 			return;
@@ -624,7 +635,7 @@ config_t ConfigParser::parse()
 		++m_depth;
 		m_tok_it = m_tokens.begin();
 	}
-	if (m_config.events.max_connections < m_config.http.server.size() + 1)
+	if (!check_min_connections())
 		throw ConfigParser::InvalidValue("not enough allowed connections");
 	return (m_config);
 }

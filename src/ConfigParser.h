@@ -81,6 +81,7 @@ private:
 	std::string parse_default_type();
 	void parse_type(std::map<std::string, std::string>& types);
 	std::map<std::string, std::string> parse_types();
+	bool check_min_connections();
 	unsigned int parse_max_connections();
 	bool parse_autoindex();
 	std::list<std::string>::iterator get_error_filename_pos();

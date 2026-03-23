@@ -10,7 +10,7 @@ CXX := c++
 STD_FLAGS :=	-std=c++98
 WARNINGS :=		-Wall -Werror -Wextra
 CXXFLAGS :=		$(STD_FLAGS) $(WARNINGS)
-CXXFLAGS_DB :=	$(STD_FLAGS) $(WARNINGS) -g3
+CXXFLAGS_DB :=	$(STD_FLAGS) $(WARNINGS) -g3 -DPRINT_REQUEST
 CXXFLAGS_NE :=	$(STD_FLAGS) -Wall -Wextra -g3
 CXXFLAGS_AS :=	$(STD_FLAGS) $(WARNINGS) -g3 \
 				-fsanitize=address
