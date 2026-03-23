@@ -53,8 +53,14 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 			int opt = 1;
 			setsockopt(socket.fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-			bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data));
-			listen_ex(socket.fd, 1024);
+			try {
+				bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data));
+				listen_ex(socket.fd, 1024);
+			}
+			catch (CriticalException &e) {
+				close(socket.fd);
+				throw (e);
+			}
 
 			int i = sockets.add(socket);
 			event = EpollManager::create(&sockets.at(i), EPOLLIN);
