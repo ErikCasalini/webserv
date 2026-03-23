@@ -212,7 +212,7 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
 				std::cout << requests.at(i_req).get_infos() << '\n';
 				requests.at(i_req).clear_infos();
-				responses.at(i_req).set_status(req_status);
+				responses.at(i_resp).set_status(req_status);
 				if (req_status == ok)
 					responses.at(i_resp).parse_uri();
 				responses.at(i_resp).process(sockets);
