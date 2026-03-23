@@ -121,7 +121,7 @@ void RequestStates::ParsingHead::parse(Request* request)
 		// Start line for 0.9 don't have the PROTOCOL field
 		if (buffer.substr(pos, 2) == CRLF) {
 			infos.protocol = zero_nine;
-			throw Request::NotImplemented("HTTP 0.9 is not handled");
+			throw Request::BadRequest("HTTP 0.9 is not handled");
 		}
 		_Request::consume_sp(buffer, pos);
 		infos.protocol = _Request::parse_protocol(buffer, pos);
