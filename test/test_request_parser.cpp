@@ -29,28 +29,28 @@ void test_parse_method()
 	try {
 		parse_method(no_method, pos);
 		assert((false && "no_method"));
-	} catch (const Request::BadRequest& e) {};
+	} catch (const Request::NotImplemented& e) {};
 
 	std::string lowercase = "get";
 	pos = 0;
 	try {
 		parse_method(lowercase, pos);
 		assert((false && "lowercase"));
-	} catch (const Request::BadRequest& e) {};
+	} catch (const Request::NotImplemented& e) {};
 
 	std::string space_front = " GET";
 	pos = 0;
 	try {
 		parse_method(lowercase, pos);
 		assert((false && "lowercase"));
-	} catch (const Request::BadRequest& e) {};
+	} catch (const Request::NotImplemented& e) {};
 
 	std::string empty = "";
 	pos = 0;
 	try {
 		parse_method(empty, pos);
 		assert((false && "empty"));
-	} catch (const Request::BadRequest& e) {};
+	} catch (const Request::NotImplemented& e) {};
 }
 
 void test_parse_target()
@@ -331,12 +331,12 @@ void test_parse()
 	assert((o_nine.method == get));
 	assert((o_nine.target == "/"));
 	assert((o_nine.protocol == zero_nine));
-	assert((o_nine.status == not_implemented));
+	assert((o_nine.status == bad_request));
 
 	Request j_t_c(config, "" CRLF CRLF);
 	j_t_c.parse();
 	request_t just_two_crlf = j_t_c.get_infos();
-	assert((just_two_crlf.status == bad_request));
+	assert((just_two_crlf.status == not_implemented));
 
 	// Multiple recv requests
 	Request m(config, "GET / HTTP/1.0" CRLF);
