@@ -38,7 +38,9 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 		if (lis_it == serv_it->listen.end())
 			throw CriticalException("\033[1;31mNo listen interface for declared server\033[0m");
 
-		while (lis_it < serv_it->listen.end() && sockets.size() < sockets.limit()) {
+		while (lis_it < serv_it->listen.end()) {
+			if (sockets.size() >= sockets.limit())
+				throw CriticalException("\033[1;31mNot enought connections allowed to satisfy all the listen interfaces\033[0m");
 			socket_t socket;
 			socket.fd = socket_ex(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 			socket.local_data.sin_family = AF_INET;
@@ -51,8 +53,14 @@ void	init_listen_sockets(vector<server_t> &servers, Sockets &sockets)
 			int opt = 1;
 			setsockopt(socket.fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
-			bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data));
-			listen_ex(socket.fd, 1024);
+			try {
+				bind_ex(socket.fd, reinterpret_cast<struct sockaddr*>(&socket.local_data), sizeof(socket.local_data));
+				listen_ex(socket.fd, 1024);
+			}
+			catch (CriticalException &e) {
+				close(socket.fd);
+				throw (e);
+			}
 
 			int i = sockets.add(socket);
 			event = EpollManager::create(&sockets.at(i), EPOLLIN);
@@ -202,13 +210,12 @@ void	handle_read_event(epoll_event &event, Sockets &sockets, ActiveMessages<Requ
 				int i_resp = responses.add(sock, requests.at(i_req).get_infos());
 				event.events = EPOLLOUT;
 				epoll_ctl_ex(sockets.epoll_inst(), EPOLL_CTL_MOD, sock->fd, &event);
-				std::cout << requests.at(i_req).get_infos() << '\n'; // DEBUG
+				std::cout << requests.at(i_req).get_infos() << '\n';
 				requests.at(i_req).clear_infos();
-				if (req_status == bad_request)
-					responses.at(i_req).set_status(bad_request);
-				else
+				responses.at(i_resp).set_status(req_status);
+				if (req_status == ok)
 					responses.at(i_resp).parse_uri();
-				responses.at(i_resp).process(sockets); // unset tracking of socket fd if CGI
+				responses.at(i_resp).process(sockets);
 			}
 		}
 	}

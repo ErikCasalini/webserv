@@ -182,9 +182,9 @@ bool	Response::cgi_timeout(void)
 void	Response::generate_response(void)
 {
 	std::stringstream	buf;
-
+	// SET STATUS LINE
 	buf << m_version << ' ' << static_cast<int>(m_status) << ' ' << Response::get_status_codes().at(m_status) << CRLF;
-
+	// SET SPECIFIC HEADERS
 	switch (m_status) {
 		case method_not_allowed:
 			buf << "Allow: " << m_headers.allow << CRLF
@@ -209,13 +209,23 @@ void	Response::generate_response(void)
 				<< "Content-Length: " << m_headers.content_length << CRLF;
 			break ;
 		}
+	// SET GENERAL HEADERS
 		buf << "Connection: " << (m_headers.keep_alive ? "Keep-Alive" : "Close") << CRLF
 		<< "Server: " << m_headers.server << CRLF
 		<< "Date: " << get_date(std::time(NULL)) << CRLF;
-		if (m_headers.set_cookie.size())
-			buf << "Set-Cookie: " << m_headers.set_cookie << CRLF;
+	// SET COOKIES IF NORMAL BEHAVIOUR
+		switch (m_status) {
+			case bad_request:
+			case not_implemented:
+			case internal_err:
+				break ;
+			default:
+				if (m_headers.set_cookie.size())
+					buf << "Set-Cookie: " << m_headers.set_cookie << CRLF;
+		}
+	// FINAL CRLF
 		buf << CRLF;
-
+	// BODY
 	if (m_body.size())
 		buf << m_body;
 
@@ -474,6 +484,13 @@ void	Response::process(Sockets &sockets)
 				set_error(internal_err, m_location->error_page.at(internal_err));
 			else
 				set_error(internal_err, m_config.http.server.at(m_socket->server_id).error_page.at(internal_err));
+			generate_response();
+			return ;
+		case not_implemented:
+			if (m_location)
+				set_error(not_implemented, m_location->error_page.at(not_implemented));
+			else
+				set_error(not_implemented, m_config.http.server.at(m_socket->server_id).error_page.at(not_implemented));
 			generate_response();
 			return ;
 		default:
